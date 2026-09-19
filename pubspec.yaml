@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.2.0+7
+version: 0.3.0+8
 
 environment:
   sdk: ^3.13.3
@@ -41,6 +41,8 @@ dependencies:
   uuid: ^4.6.0
   path: ^1.9.1
   intl: ^0.20.3
+  image_picker: ^1.2.3
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:
@@ -65,6 +67,19 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # IBM Plex Sans Arabic (SIL OFL 1.1, assets/fonts/OFL.txt): Arabic and Latin
+  # in one family, bundled so nothing is fetched at run time.
+  fonts:
+    - family: IBMPlexSansArabic
+      fonts:
+        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
+        - asset: assets/fonts/IBMPlexSansArabic-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSansArabic-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexSansArabic-Bold.ttf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:

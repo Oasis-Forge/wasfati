@@ -37,6 +37,9 @@ class RecipeRepository {
 
   static const trashDays = 30; // DEL-2
 
+  /// The database, for the other states that keep rows in it (settings).
+  Database get db => _db;
+
   String newId() => _ids();
   DateTime now() => _clock();
 

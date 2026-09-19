@@ -80,8 +80,8 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
 - [x] Platform decision: Android on Google Play in v1, iOS after, no desktop (19 September 2026, PRODUCT_RULES Decision 3).
 
 ## Phase 2a: Offline core (W3–W5)
-- [ ] **Settings:** language (system / العربية / English), digit style (Western 123 by default, Arabic ١٢٣; QTY-5, Decision 5), units (metric / cups and spoons), week start (default by locale: Saturday in the Gulf), theme.
-- [ ] **Recipes and cookbooks** (REC-3–REC-11, ORG-1, ORG-2, ORG-7):
+- [x] **Settings:** language (system / العربية / English), digit style (Western 123 by default, Arabic ١٢٣; QTY-5, Decision 5), units (metric / cups and spoons), week start (default by locale: Saturday in the Gulf), theme.
+- [ ] **Recipes and cookbooks** (REC-3–REC-11, ORG-1, ORG-2, ORG-7). Done in PR 1 (v0.3.0): write, edit and view a recipe, photo, groups, steps. Cookbooks, tags and grid view come with PR 2:
   - Write a recipe by hand, edit it, add a photo from the picker.
   - Cookbooks and tags.
   - Grid or list view.
@@ -92,7 +92,7 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
   - Conversion between cups and spoons and grams/ml, where a density is known.
   - Scaling never silently skips a line: a line it can't scale is flagged.
 - [ ] **Website import on the device** (IMP-2, IMP-5, IMP-6, IMP-9): paste or share a link → read the schema.org recipe → preview → save. Free and unlimited. A site without recipe data offers AI import instead (Phase 2b).
-- [ ] **Delete, undo, trash** (DEL-1, DEL-2)
+- [x] **Delete, undo, trash** (DEL-1, DEL-2)
 - [ ] **First run:** empty states with one clear first action, and one built-in sample recipe (RUN-1)
 
 ## Phase 2b: AI import (W6–W7)
