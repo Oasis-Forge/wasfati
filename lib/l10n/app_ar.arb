@@ -1,0 +1,11 @@
+{
+  "@@locale": "ar",
+  "appTitle": "وصفاتي",
+  "recipesEmptyTitle": "لا توجد وصفات بعد",
+  "recipesEmptyBody": "شارك وصفة من تيك توك أو إنستغرام أو يوتيوب، أو أضف وصفتك.",
+  "recipesAdd": "أضف وصفة",
+  "recipesCount": "{count, plural, =0{لا توجد وصفات} =1{وصفة واحدة} =2{وصفتان} few{{count} وصفات} many{{count} وصفة} other{{count} وصفة}}",
+  "errorSaveFailed": "تعذّر الحفظ. لم تضِع تعديلاتك، حاول مرة أخرى.",
+  "deletedSnack": "حُذفت الوصفة",
+  "undo": "تراجع"
+}

@@ -60,23 +60,23 @@ Set up before the first feature, while it's cheap.
 ## Phase 1: Foundations (W1–W2)
 Groundwork every feature builds on. Settle everything that shapes stored data now, before real users have any.
 - [x] Strict lints (unawaited futures, declared return types, consistent quotes, const where possible).
-- [ ] Inject the storage layer and every device service into the state layer, so tests use an in-memory database and no-op fakes (sqflite + provider, per `docs/STACK_NOTES.md`).
-- [ ] Migration scaffold: an ordered list of schema steps run on upgrade, with a test that upgrades the oldest schema.
-- [ ] Reliable writes: write first, then change state; on failure roll back and show an error.
-- [ ] Localization scaffolding with **Arabic as the first language and English second**. Every UI string lives in the ARB files, and right-to-left is the default layout (LANG-1–LANG-6).
-- [ ] Schema step: record rules on every table: UUIDs, timestamps, soft delete (REC-1, REC-2, DEL-1).
-- [ ] Schema step, recipes (REC-3–REC-9, ORG-1, ORG-2, and the install ID from SRV-4):
+- [x] Inject the storage layer and every device service into the state layer, so tests use an in-memory database and no-op fakes (sqflite + provider, per `docs/STACK_NOTES.md`).
+- [x] Migration scaffold: an ordered list of schema steps run on upgrade, with a test that upgrades the oldest schema.
+- [x] Reliable writes: write first, then change state; on failure roll back and show an error.
+- [x] Localization scaffolding with **Arabic as the first language and English second**. Every UI string lives in the ARB files, and right-to-left is the default layout (LANG-1–LANG-6).
+- [x] Schema step: record rules on every table: UUIDs, timestamps, soft delete (REC-1, REC-2, DEL-1).
+- [x] Schema step, recipes (REC-3–REC-9, ORG-1, ORG-2, and the install ID from SRV-4):
   - A recipe: title, photo, source URL and type, prep and cook time, servings.
   - Ingredient **groups** ("for the sauce").
   - Ingredient lines, each with an amount (a number or a range), a unit ID, a name, a note and the **original text**.
   - Steps as an ordered list.
   - Cookbooks, tags, notes, and a "cooked" count.
-- [ ] **Quantity parser and formatter** (QTY-1–QTY-8; prototype from S1 already in `lib/models/quantity/`, with its table) and Arabic search normalization (ORG-4), as pure Dart with a test table built from the S1 fixtures:
+- [x] **Quantity parser and formatter** (QTY-1–QTY-8; prototype from S1 already in `lib/models/quantity/`, with its table) and Arabic search normalization (ORG-4), as pure Dart with a test table built from the S1 fixtures:
   - Parses Western and Eastern Arabic digits, fractions, ranges, and Arabic and metric/US units.
   - Displays in the user's digit style.
   - Rounds countable items (حبة، فص، بيضة) sensibly.
   - Shows fractions, not 0.5.
-- [ ] Tests: model round-trip, each migration step, the parser and scaler tables, widget tests for the main flows in right-to-left and left-to-right.
+- [x] Tests: model round-trip, each migration step, the parser and scaler tables, widget tests for the main flows in right-to-left and left-to-right.
 - [x] Platform decision: Android on Google Play in v1, iOS after, no desktop (19 September 2026, PRODUCT_RULES Decision 3).
 
 ## Phase 2a: Offline core (W3–W5)
