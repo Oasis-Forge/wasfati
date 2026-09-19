@@ -8,7 +8,14 @@ import 'package:wasfati/models/settings.dart';
 import 'package:wasfati/providers/recipes_state.dart';
 import 'package:wasfati/providers/settings_state.dart';
 import 'package:wasfati/providers/timers_state.dart';
+
+import 'dart:async';
+
 import 'package:wasfati/services/cook_services.dart';
+import 'package:wasfati/services/importer.dart';
+import 'package:wasfati/services/web_import.dart';
+
+import '../services/importer_test.dart' show FakeFetcher, kabsaPage;
 
 import '../helpers.dart';
 
@@ -34,6 +41,21 @@ Future<void> settle(WidgetTester tester) async {
 late TimersState timers;
 late NoopTimerAlerts alerts;
 
+/// Shares sent into the app during a test (IMP-1).
+late StreamController<String> shares;
+
+class FakeShareInbox implements ShareInbox {
+  FakeShareInbox(this.stream);
+  final Stream<String> stream;
+  int resets = 0;
+  @override
+  Future<String?> initial() async => null;
+  @override
+  Stream<String> get incoming => stream;
+  @override
+  Future<void> reset() async => resets++;
+}
+
 Future<(RecipesState, SettingsState)> pumpApp(
   WidgetTester tester, {
   LanguagePref language = LanguagePref.ar,
@@ -43,15 +65,23 @@ Future<(RecipesState, SettingsState)> pumpApp(
 }) async {
   late RecipesState recipes;
   late SettingsState settings;
+  late Importer importer;
   await tester.runAsync(() async {
     final (repo, _, _) = await testRepo();
     settings = SettingsState(repo.db);
     await settings.update(AppSettings(language: language, digits: digits));
     recipes = RecipesState(repo);
+    importer = Importer(
+      FakeFetcher({'https://site.com/kabsa': kabsaPage}),
+      repo,
+      savePhoto: (_, _) async => null,
+    );
     if (withRecipe) await recipes.save(kabsa(repo));
     await recipes.load();
   });
   alerts = NoopTimerAlerts();
+  shares = StreamController<String>();
+  addTearDown(shares.close);
   timers = TimersState(alerts, autoTick: false);
   addTearDown(timers.dispose);
   tester.view.physicalSize = const Size(1080, 2400); // a phone (LANG-6)
@@ -60,7 +90,13 @@ Future<(RecipesState, SettingsState)> pumpApp(
   await tester.pumpWidget(
     MediaQuery(
       data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
-      child: WasfatiApp(recipes: recipes, settings: settings, timers: timers),
+      child: WasfatiApp(
+        recipes: recipes,
+        settings: settings,
+        timers: timers,
+        importer: importer,
+        shareInbox: FakeShareInbox(shares.stream),
+      ),
     ),
   );
   await tester.pumpAndSettle();
@@ -361,6 +397,71 @@ void main() {
     expect(shown('2 cups flour'), findsOneWidget); // never "٢ cups flour"
     expect(shown('٣ أكواب رز'), findsOneWidget);
     expect(find.text('٤ حصص'), findsOneWidget); // the app's own text
+  });
+
+  testWidgets('import a link: preview, save, then a duplicate (IMP-2/5/9)', (
+    tester,
+  ) async {
+    final (recipes, _) = await pumpApp(tester);
+    await tester.tap(find.text('استيراد من رابط'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'https://site.com/kabsa');
+    await tester.tap(find.text('استيراد'));
+    await settle(tester);
+
+    // The preview is the editor, prefilled; nothing is saved yet (IMP-5).
+    expect(find.text('راجع واحفظ'), findsOneWidget);
+    expect(find.text('كبسة دجاج'), findsOneWidget);
+    expect(recipes.recipes, isEmpty);
+    await tester.tap(find.text('حفظ'));
+    await settle(tester);
+    expect(shown('1 كيلو دجاج'), findsOneWidget); // "١ ك دجاج" parsed
+    expect(find.text('من site.com'), findsOneWidget);
+
+    // The same page again offers the saved one (IMP-9).
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('استيراد من رابط'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'https://site.com/kabsa/');
+    await tester.tap(find.text('استيراد'));
+    await settle(tester);
+    expect(find.text('محفوظة مسبقًا'), findsOneWidget);
+    await tester.tap(find.text('افتح المحفوظة'));
+    await settle(tester);
+    expect(find.text('كبسة دجاج'), findsOneWidget);
+    expect(recipes.recipes.length, 1);
+  });
+
+  testWidgets('a page without recipe data says so and offers by hand', (
+    tester,
+  ) async {
+    await pumpApp(tester);
+    await tester.tap(find.text('استيراد من رابط'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'https://down.com/x');
+    await tester.tap(find.text('استيراد'));
+    await settle(tester);
+    expect(
+      find.text('تعذّر فتح الصفحة. تأكد من الرابط والاتصال.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('Arabic text shared from another app becomes a draft (IMP-13)', (
+    tester,
+  ) async {
+    final (recipes, _) = await pumpApp(tester);
+    shares.add(
+      'كبسة لحم\nالمقادير:\n1 كيلو لحم\nكوبين رز\nالطريقة:\nيسلق اللحم ساعة',
+    );
+    await settle(tester);
+    expect(find.text('راجع واحفظ'), findsOneWidget);
+    await tester.tap(find.text('حفظ'));
+    await settle(tester);
+    expect(find.text('كبسة لحم'), findsOneWidget);
+    expect(shown('2 كوبان رز'), findsOneWidget);
+    expect(recipes.recipes.single.title, 'كبسة لحم');
   });
 
   testWidgets('the title is required (REC-3)', (tester) async {

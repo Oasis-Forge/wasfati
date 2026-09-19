@@ -439,4 +439,54 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get dismiss => 'حسنًا';
+
+  @override
+  String get importTitle => 'استيراد من رابط';
+
+  @override
+  String get importHint => 'الصق رابط الوصفة';
+
+  @override
+  String get importExplain =>
+      'تُقرأ وصفات مواقع مثل فتافيت وكوكباد على هاتفك، مجانًا وبلا حدود.';
+
+  @override
+  String get paste => 'لصق';
+
+  @override
+  String get importAction => 'استيراد';
+
+  @override
+  String get importReading => 'جارٍ فتح الصفحة…';
+
+  @override
+  String get importUnderstanding => 'جارٍ قراءة الوصفة…';
+
+  @override
+  String get importInvalidUrl => 'هذا لا يبدو رابطًا.';
+
+  @override
+  String get importUnreachable => 'تعذّر فتح الصفحة. تأكد من الرابط والاتصال.';
+
+  @override
+  String get importNoRecipe =>
+      'لم يجد التطبيق بيانات وصفة في هذه الصفحة بعد. يمكنك إضافتها بنفسك.';
+
+  @override
+  String get addByHand => 'أضفها بنفسك';
+
+  @override
+  String get duplicateTitle => 'محفوظة مسبقًا';
+
+  @override
+  String get duplicateBody => 'حفظت وصفة من هذه الصفحة من قبل.';
+
+  @override
+  String get openSaved => 'افتح المحفوظة';
+
+  @override
+  String get importAgain => 'استورد مرة أخرى';
+
+  @override
+  String get importedRecipe => 'راجع واحفظ';
 }

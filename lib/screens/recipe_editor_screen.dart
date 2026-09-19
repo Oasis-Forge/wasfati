@@ -17,11 +17,20 @@ import '../widgets/content_direction.dart';
 /// each; a line ending with ":" starts a group (REC-4, REC-6). Pops the saved
 /// recipe's ID. No ads here (principle 4).
 class RecipeEditorScreen extends StatefulWidget {
-  const RecipeEditorScreen({super.key, this.recipe, this.initialCookbookId});
+  const RecipeEditorScreen({
+    super.key,
+    this.recipe,
+    this.initialCookbookId,
+    this.imported = false,
+  });
   final Recipe? recipe;
 
   /// A new recipe started from a cookbook goes into it (ORG-1).
   final String? initialCookbookId;
+
+  /// [recipe] is an unsaved import: this is its preview (IMP-5). Leaving
+  /// asks first, and a discarded import's downloaded photo is deleted.
+  final bool imported;
 
   @override
   State<RecipeEditorScreen> createState() => _RecipeEditorScreenState();
@@ -62,6 +71,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     for (final c in _controllers) {
       c.addListener(_markDirty);
     }
+    _dirty = widget.imported;
   }
 
   List<TextEditingController> get _controllers => [
@@ -184,12 +194,23 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
         if (await _confirmDiscard() && context.mounted) {
+          final photo = widget.recipe?.photoPath;
+          if (widget.imported && photo != null) {
+            await context.read<PhotoStore>().delete(photo);
+          }
+          if (!context.mounted) return;
           Navigator.of(context).pop();
         }
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.recipe == null ? l10n.newRecipe : l10n.editRecipe),
+          title: Text(
+            widget.imported
+                ? l10n.importedRecipe
+                : widget.recipe == null
+                ? l10n.newRecipe
+                : l10n.editRecipe,
+          ),
           actions: [
             Padding(
               padding: const EdgeInsetsDirectional.only(end: 8),

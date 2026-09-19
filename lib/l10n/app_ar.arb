@@ -118,5 +118,21 @@
   "timerDone": "انتهى المؤقت: الخطوة {n}",
   "timerChannel": "مؤقتات الطبخ",
   "alertsOff": "تنبيهات المؤقت في الخلفية متوقفة. يرن المؤقت ما دام التطبيق مفتوحًا.",
-  "dismiss": "حسنًا"
+  "dismiss": "حسنًا",
+  "importTitle": "استيراد من رابط",
+  "importHint": "الصق رابط الوصفة",
+  "importExplain": "تُقرأ وصفات مواقع مثل فتافيت وكوكباد على هاتفك، مجانًا وبلا حدود.",
+  "paste": "لصق",
+  "importAction": "استيراد",
+  "importReading": "جارٍ فتح الصفحة…",
+  "importUnderstanding": "جارٍ قراءة الوصفة…",
+  "importInvalidUrl": "هذا لا يبدو رابطًا.",
+  "importUnreachable": "تعذّر فتح الصفحة. تأكد من الرابط والاتصال.",
+  "importNoRecipe": "لم يجد التطبيق بيانات وصفة في هذه الصفحة بعد. يمكنك إضافتها بنفسك.",
+  "addByHand": "أضفها بنفسك",
+  "duplicateTitle": "محفوظة مسبقًا",
+  "duplicateBody": "حفظت وصفة من هذه الصفحة من قبل.",
+  "openSaved": "افتح المحفوظة",
+  "importAgain": "استورد مرة أخرى",
+  "importedRecipe": "راجع واحفظ"
 }

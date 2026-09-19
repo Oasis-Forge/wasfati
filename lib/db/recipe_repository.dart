@@ -387,6 +387,19 @@ class RecipeRepository {
     if (c != 1) throw StateError('No recipe $id');
   }
 
+  /// The live recipe imported from [normalizedUrl], if any (IMP-9).
+  Future<String?> findBySourceUrl(String normalizedUrl) async {
+    final rows = await _db.query(
+      'recipes',
+      columns: ['id'],
+      where: 'source_url = ? AND deleted_at IS NULL',
+      whereArgs: [normalizedUrl],
+      orderBy: 'created_at DESC',
+      limit: 1,
+    );
+    return rows.isEmpty ? null : rows.single['id']! as String;
+  }
+
   /// "Mark as cooked" (REC-9, COOK-6): one more cook, and when.
   Future<void> markCooked(String id) async {
     final now = _clock().millisecondsSinceEpoch;

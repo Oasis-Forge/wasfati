@@ -9,6 +9,8 @@ import 'providers/recipes_state.dart';
 import 'providers/settings_state.dart';
 import 'providers/timers_state.dart';
 import 'services/cook_services.dart';
+import 'services/importer.dart';
+import 'services/web_import.dart';
 import 'services/photo_store.dart';
 
 /// The only place real services are built; tests use fakes (CLAUDE.md).
@@ -43,6 +45,8 @@ Future<void> main() async {
       photos: photos,
       timers: timers,
       screenAwake: const DeviceScreenAwake(),
+      importer: Importer(DeviceFetcher(), repo),
+      shareInbox: const DeviceShareInbox(),
     ),
   );
 }

@@ -110,8 +110,8 @@ jobs:
       # List the ones the app may declare; any other fails the release.
       - name: Check the APK's permissions
         env:
-          # COOK-5: cook-mode timer notifications; VIBRATE comes with them.
-          ALLOWED: 'android.permission.POST_NOTIFICATIONS android.permission.VIBRATE'
+          # IMP-2: website import. COOK-5: timer notifications; VIBRATE comes with them.
+          ALLOWED: 'android.permission.INTERNET android.permission.POST_NOTIFICATIONS android.permission.VIBRATE'
         run: |
           aapt2=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -n 1)
           "$aapt2" dump permissions build/app/outputs/flutter-apk/app-release.apk | tee permissions.txt

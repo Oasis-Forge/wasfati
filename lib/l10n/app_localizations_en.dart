@@ -425,4 +425,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dismiss => 'OK';
+
+  @override
+  String get importTitle => 'Import from a link';
+
+  @override
+  String get importHint => 'Paste a recipe link';
+
+  @override
+  String get importExplain =>
+      'Recipes from sites like Fatafeat and Cookpad are read on your phone, free and unlimited.';
+
+  @override
+  String get paste => 'Paste';
+
+  @override
+  String get importAction => 'Import';
+
+  @override
+  String get importReading => 'Opening the page…';
+
+  @override
+  String get importUnderstanding => 'Reading the recipe…';
+
+  @override
+  String get importInvalidUrl => 'That doesn\'t look like a link.';
+
+  @override
+  String get importUnreachable =>
+      'Couldn\'t open the page. Check the link and your connection.';
+
+  @override
+  String get importNoRecipe =>
+      'Wasfati can\'t find recipe data on this page yet. You can still add it by hand.';
+
+  @override
+  String get addByHand => 'Add by hand';
+
+  @override
+  String get duplicateTitle => 'Already saved';
+
+  @override
+  String get duplicateBody => 'You saved a recipe from this page before.';
+
+  @override
+  String get openSaved => 'Open the saved one';
+
+  @override
+  String get importAgain => 'Import again';
+
+  @override
+  String get importedRecipe => 'Check and save';
 }

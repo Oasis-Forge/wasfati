@@ -6,6 +6,7 @@ import '../models/cookbook.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../widgets/content_direction.dart';
+import 'import_screen.dart';
 import 'library_view.dart';
 import 'recipe_editor_screen.dart';
 import 'recipe_screen.dart';
@@ -27,6 +28,13 @@ class HomeScreen extends StatelessWidget {
         appBar: AppBar(
           title: Text(l10n.appTitle),
           actions: [
+            IconButton(
+              tooltip: l10n.importTitle,
+              icon: const Icon(Icons.link),
+              onPressed: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const ImportScreen())),
+            ),
             IconButton(
               tooltip: l10n.settings,
               icon: const Icon(Icons.settings_outlined),
@@ -301,6 +309,14 @@ class _Empty extends StatelessWidget {
               onPressed: () => openEditor(context),
               icon: const Icon(Icons.add),
               label: Text(l10n.recipesAdd),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const ImportScreen())),
+              icon: const Icon(Icons.link),
+              label: Text(l10n.importTitle),
             ),
           ],
         ),

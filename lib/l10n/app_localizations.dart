@@ -811,6 +811,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OK'**
   String get dismiss;
+
+  /// IMP-2. Screen title and button.
+  ///
+  /// In en, this message translates to:
+  /// **'Import from a link'**
+  String get importTitle;
+
+  /// IMP-2. Link field hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a recipe link'**
+  String get importHint;
+
+  /// IMP-2. Under the link field.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipes from sites like Fatafeat and Cookpad are read on your phone, free and unlimited.'**
+  String get importExplain;
+
+  /// Reads the clipboard only when tapped (IMP-12).
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get paste;
+
+  /// IMP-2. Button.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get importAction;
+
+  /// IMP-4. Progress step.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the page…'**
+  String get importReading;
+
+  /// IMP-4. Progress step.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading the recipe…'**
+  String get importUnderstanding;
+
+  /// IMP-2. Error.
+  ///
+  /// In en, this message translates to:
+  /// **'That doesn\'t look like a link.'**
+  String get importInvalidUrl;
+
+  /// IMP-2. Error.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open the page. Check the link and your connection.'**
+  String get importUnreachable;
+
+  /// IMP-2, IMP-11. The page has no schema.org recipe; AI import comes later.
+  ///
+  /// In en, this message translates to:
+  /// **'Wasfati can\'t find recipe data on this page yet. You can still add it by hand.'**
+  String get importNoRecipe;
+
+  /// Opens the editor with the link as the source.
+  ///
+  /// In en, this message translates to:
+  /// **'Add by hand'**
+  String get addByHand;
+
+  /// IMP-9. Dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Already saved'**
+  String get duplicateTitle;
+
+  /// IMP-9. Dialog text.
+  ///
+  /// In en, this message translates to:
+  /// **'You saved a recipe from this page before.'**
+  String get duplicateBody;
+
+  /// IMP-9. Dialog button.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the saved one'**
+  String get openSaved;
+
+  /// IMP-9. Dialog button.
+  ///
+  /// In en, this message translates to:
+  /// **'Import again'**
+  String get importAgain;
+
+  /// IMP-5. Title of the preview (the editor, prefilled).
+  ///
+  /// In en, this message translates to:
+  /// **'Check and save'**
+  String get importedRecipe;
 }
 
 class _AppLocalizationsDelegate

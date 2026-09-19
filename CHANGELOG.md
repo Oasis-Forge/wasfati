@@ -4,6 +4,13 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-19
+
+### Added
+- Import a recipe from a link: paste or share a link from sites like Fatafeat, Cookpad or Sayidaty, check the recipe, and save it. Pages are read on your phone, free and unlimited, and the photo comes too.
+- Share recipe text from any app into Wasfati: it opens as a draft with the title, ingredients and steps already split.
+- If you import a page you already saved, Wasfati offers to open the saved one.
+
 ## [0.6.0] - 2026-09-19
 
 ### Added
