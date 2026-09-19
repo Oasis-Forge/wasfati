@@ -9,6 +9,7 @@ import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../widgets/content_direction.dart';
 import '../models/quantity/rational.dart';
+import 'cook_mode_screen.dart';
 import 'ingredients_section.dart';
 import 'recipe_editor_screen.dart';
 
@@ -171,6 +172,17 @@ class _RecipeBody extends StatelessWidget {
         ],
         if (r.steps.isNotEmpty) ...[
           _Heading(l10n.steps),
+          // COOK-1: free, and no ads in cook mode.
+          FilledButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => CookModeScreen(recipe: r, factor: factor),
+              ),
+            ),
+            icon: const Icon(Icons.soup_kitchen_outlined),
+            label: Text(l10n.startCooking),
+          ),
+          const SizedBox(height: 8),
           ..._stepRows(context, r.steps, s),
         ],
         if (r.notes != null && r.notes!.trim().isNotEmpty) ...[

@@ -184,7 +184,7 @@ class _IngredientRow extends StatelessWidget {
         : formatLine(
             line,
             arabic: hasArabic(line.original),
-            digits: digits,
+            digits: digitsFor(line.original, digits),
             isolate: true,
           );
     final theme = Theme.of(context);

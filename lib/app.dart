@@ -6,6 +6,8 @@ import 'l10n/app_localizations.dart';
 import 'providers/recipes_state.dart';
 import 'providers/settings_state.dart';
 import 'screens/home_screen.dart';
+import 'providers/timers_state.dart';
+import 'services/cook_services.dart';
 import 'services/photo_store.dart';
 
 const _seed = Color(0xFFB5542B); // saffron / terracotta
@@ -19,11 +21,15 @@ class WasfatiApp extends StatelessWidget {
     required this.recipes,
     required this.settings,
     this.photos = const NoopPhotoStore(),
+    required this.timers,
+    this.screenAwake = const NoopScreenAwake(),
   });
 
   final RecipesState recipes;
   final SettingsState settings;
   final PhotoStore photos;
+  final TimersState timers;
+  final ScreenAwake screenAwake;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +38,8 @@ class WasfatiApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: recipes),
         ChangeNotifierProvider.value(value: settings),
         Provider<PhotoStore>.value(value: photos),
+        ChangeNotifierProvider.value(value: timers),
+        Provider<ScreenAwake>.value(value: screenAwake),
       ],
       child: Consumer<SettingsState>(
         builder: (context, s, _) => MaterialApp(

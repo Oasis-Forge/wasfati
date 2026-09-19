@@ -75,4 +75,24 @@ void main() {
     expect(entries.single.cookbookIds, {book});
     expect(entries.single.tags, ['عزايم']);
   });
+
+  test('mark as cooked counts and dates it (REC-9, COOK-6)', () async {
+    final (repo, clock, _) = await testRepo();
+    final r = await repo.save(kabsa(repo));
+    clock.advance(const Duration(hours: 1));
+    await repo.markCooked(r.id);
+    await repo.markCooked(r.id);
+    final back = (await repo.get(r.id))!;
+    expect(back.cookedCount, 2);
+    expect(back.lastCookedAt, clock.now);
+  });
+
+  test('cook mode resumes on its page within 12 hours (COOK-6)', () async {
+    final (repo, clock, _) = await testRepo();
+    await repo.setCookPage('a', 3);
+    clock.advance(const Duration(hours: 11));
+    expect(await repo.cookPage('a'), 3);
+    clock.advance(const Duration(hours: 2));
+    expect(await repo.cookPage('a'), isNull);
+  });
 }

@@ -368,4 +368,61 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get viewKitchen => 'Cups';
+
+  @override
+  String get startCooking => 'Start cooking';
+
+  @override
+  String stepOf(String n, String total) {
+    return 'Step $n of $total';
+  }
+
+  @override
+  String stepN(String n) {
+    return 'Step $n';
+  }
+
+  @override
+  String get previousStep => 'Previous';
+
+  @override
+  String get nextStep => 'Next';
+
+  @override
+  String get closeCooking => 'Close cook mode';
+
+  @override
+  String get finishTitle => 'Enjoy your meal!';
+
+  @override
+  String get markCooked => 'Mark as cooked';
+
+  @override
+  String get markedCooked => 'Marked as cooked';
+
+  @override
+  String get done => 'Done';
+
+  @override
+  String timerStart(String time) {
+    return 'Start a $time timer';
+  }
+
+  @override
+  String get timerStop => 'Stop timer';
+
+  @override
+  String timerDone(String n) {
+    return 'Timer done: step $n';
+  }
+
+  @override
+  String get timerChannel => 'Cooking timers';
+
+  @override
+  String get alertsOff =>
+      'Background timer alerts are off. Timers still ring while Wasfati is open.';
+
+  @override
+  String get dismiss => 'OK';
 }

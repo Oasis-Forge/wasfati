@@ -382,4 +382,61 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get viewKitchen => 'أكواب';
+
+  @override
+  String get startCooking => 'ابدأ الطبخ';
+
+  @override
+  String stepOf(String n, String total) {
+    return 'الخطوة $n من $total';
+  }
+
+  @override
+  String stepN(String n) {
+    return 'الخطوة $n';
+  }
+
+  @override
+  String get previousStep => 'السابق';
+
+  @override
+  String get nextStep => 'التالي';
+
+  @override
+  String get closeCooking => 'إغلاق وضع الطبخ';
+
+  @override
+  String get finishTitle => 'بالهناء والشفاء!';
+
+  @override
+  String get markCooked => 'تم طبخها';
+
+  @override
+  String get markedCooked => 'سُجّلت كوصفة مطبوخة';
+
+  @override
+  String get done => 'تم';
+
+  @override
+  String timerStart(String time) {
+    return 'ابدأ مؤقت $time';
+  }
+
+  @override
+  String get timerStop => 'إيقاف المؤقت';
+
+  @override
+  String timerDone(String n) {
+    return 'انتهى المؤقت: الخطوة $n';
+  }
+
+  @override
+  String get timerChannel => 'مؤقتات الطبخ';
+
+  @override
+  String get alertsOff =>
+      'تنبيهات المؤقت في الخلفية متوقفة. يرن المؤقت ما دام التطبيق مفتوحًا.';
+
+  @override
+  String get dismiss => 'حسنًا';
 }

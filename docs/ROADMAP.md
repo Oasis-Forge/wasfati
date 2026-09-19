@@ -86,7 +86,7 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
   - Cookbooks and tags.
   - Grid or list view.
 - [x] **Find** (ORG-3–ORG-6, v0.4.0): search by title **and ingredient** (it ignores Arabic diacritics and hamza/taa-marbuta variants, LANG-4); sort by recently added, A–Z, most cooked; filter by cookbook, tag and time.
-- [ ] **Cook mode, free** (COOK-1–COOK-6; timers notify in the background, Decision 6): screen stays on, one step at a time in large text, step timers found in the text ("لمدة 15 دقيقة"), ingredient checklist, swipe between steps in right-to-left.
+- [x] **Cook mode, free** (COOK-1–COOK-6; timers notify in the background, Decision 6; v0.6.0): screen stays on, one step at a time in large text, step timers found in the text ("لمدة 15 دقيقة"), ingredient checklist, swipe between steps in right-to-left.
 - [x] **Scaling and conversion, free** (SCALE-1–SCALE-6; v0.5.0, schema step 2 stores the per-recipe view):
   - Servings −/+ and ×½ / ×2.
   - Conversion between cups and spoons and grams/ml, where a density is known.
@@ -105,6 +105,7 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
 - [ ] **Share-sheet import** (IMP-1, IMP-3–IMP-9): TikTok, Instagram, YouTube and Facebook share into Wasfati → progress → **preview to edit before saving** → save. "Report a mistake" sends only the source link and the user's note, and only when they tap it.
 - [ ] **Instagram fallback** (IMP-12, Decision 8): when a caption can't be read, offer paste or screenshot.
 - [ ] **Emulator check of real share payloads** (S4 follow-up): what TikTok, Instagram, YouTube and Facebook put in a share (link only, or caption too). The user logs in to each app on the emulator. If Instagram includes the caption, IMP-12 becomes a rare path.
+- [ ] **Translate to Arabic** (Decision 9, pending): decide it with `/spec` round 2, then build it on the import server.
 - [ ] **Photo import** (IMP-1, IMP-10): a cookbook page or handwritten recipe, from the camera or picker → server vision → preview.
 - [ ] **Free AI-import quota** (IMP-7, SRV-4; 10 a month, Decision 4): a counter visible in the header, the reset date shown, and an import only counts when saved.
 - [ ] **Network permission and privacy:** the first release with the server rewrites the privacy policy and the data-safety form in the same PR.

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:sqflite/sqflite.dart';
 
 import '../models/cookbook.dart';
@@ -383,6 +385,66 @@ class RecipeRepository {
       whereArgs: [id],
     );
     if (c != 1) throw StateError('No recipe $id');
+  }
+
+  /// "Mark as cooked" (REC-9, COOK-6): one more cook, and when.
+  Future<void> markCooked(String id) async {
+    final now = _clock().millisecondsSinceEpoch;
+    final c = await _db.rawUpdate(
+      'UPDATE recipes SET cooked_count = cooked_count + 1, '
+      'last_cooked_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL',
+      [now, now, id],
+    );
+    if (c != 1) throw StateError('No recipe $id');
+  }
+
+  static const _cookKey = 'cook_progress';
+  static const resumeWindow = Duration(hours: 12); // COOK-6
+
+  /// The cook-mode page to resume on, if left within 12 hours (COOK-6).
+  Future<int?> cookPage(String recipeId) async {
+    final all = await _cookProgress();
+    final p = all[recipeId];
+    if (p == null) return null;
+    final at = DateTime.fromMillisecondsSinceEpoch(
+      p['at']! as int,
+      isUtc: true,
+    );
+    if (_clock().difference(at) > resumeWindow) return null;
+    return p['page']! as int;
+  }
+
+  /// Remembers the cook-mode page; entries older than 12 hours are dropped.
+  Future<void> setCookPage(String recipeId, int page) async {
+    final all = await _cookProgress();
+    final now = _clock();
+    all.removeWhere(
+      (_, v) =>
+          now.difference(
+            DateTime.fromMillisecondsSinceEpoch(v['at']! as int, isUtc: true),
+          ) >
+          resumeWindow,
+    );
+    all[recipeId] = {'page': page, 'at': now.millisecondsSinceEpoch};
+    await _db.insert('meta', {
+      'key': _cookKey,
+      'value': jsonEncode(all),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<Map<String, Map<String, Object?>>> _cookProgress() async {
+    final rows = await _db.query(
+      'meta',
+      where: 'key = ?',
+      whereArgs: [_cookKey],
+    );
+    if (rows.isEmpty) return {};
+    final m =
+        jsonDecode(rows.single['value']! as String) as Map<String, Object?>;
+    return {
+      for (final e in m.entries)
+        e.key: (e.value! as Map).cast<String, Object?>(),
+    };
   }
 
   /// Moves a recipe to the trash (DEL-1). Its children stay as they are, so

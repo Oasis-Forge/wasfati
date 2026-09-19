@@ -161,6 +161,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 - **QTY-4** Amounts are stored as exact numbers: a rational (numerator/denominator), or a decimal with up to 3 places. Parsing then showing a line without changes gives back the same value (round-trip test).
 - **QTY-5** Display:
   - Amounts use the digit style from Settings: Western 123 by default, Arabic ١٢٣ optional (Decision 5), in both languages.
+  - Lines in other languages always use 123, so an English line never reads "٤ cups" (19 September 2026). The app's own text follows the setting.
   - Fractions show as ½ ⅓ ¼ ⅔ ¾ ⅛ or mixed numbers (1½), never 0.5, for cups, spoons and count units.
   - Mass and volume in g/ml show whole numbers, and kg/l show up to 2 decimals.
   - An amount inside Arabic text is wrapped in a left-to-right isolate (LANG-5), so "1½ كوب" reads correctly.
@@ -225,7 +226,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
   - It rings and vibrates in the app.
   - In the background, it posts a notification. Notification permission is asked the first time a timer starts, not before (RUN-3).
   - If notifications are refused, the timer still rings while the app is open, and cook mode says once that background alerts are off.
-  - This adds `POST_NOTIFICATIONS` to the release build's allowed list (RUN-2). It uses an inexact alarm, so no exact-alarm permission is needed.
+  - This adds `POST_NOTIFICATIONS` to the release build's allowed list (RUN-2). So does `VIBRATE`, which the notifications plugin declares; it's granted at install with no dialog. It uses an inexact alarm, so no exact-alarm permission is needed.
 - **COOK-6** The last page offers "Mark as cooked" (REC-9) and "Done". Leaving cook mode anywhere keeps the page, so reopening within 12 hours resumes at the same step.
 
 ## 11. Organizing and finding
@@ -339,6 +340,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 6. (19 September 2026) Cook-mode timers alert in the background with a notification; permission is asked at the first timer (COOK-4, COOK-5). The import server runs on Cloudflare Workers, with its code in a private repo, Oasis-Forge/wasfati-import (SRV-1).
 7. (19 September 2026) Starter rule MONEY-1 doesn't apply: Wasfati handles no money. Prices come only from the store (PAY-2).
 8. (19 September 2026) Instagram: users share the post link as usual. Because Instagram blocks logged-out reading, Wasfati then asks for the caption, pasted as text, or a screenshot, read by photo import (IMP-12, SRV-10). Faking a crawler is ruled out. Applying for Meta's official oEmbed API is a later item; if it's approved and returns captions, a shared link alone will be enough.
+9. (pending, for Phase 2b) "Translate to Arabic" for a recipe in another language: a button on the recipe page that sends the recipe to the import server and saves an Arabic copy, keeping the original. It costs one AI import (IMP-7). The open questions are whether the copy replaces the original or sits beside it, and how units and quantities are protected, since they must not change. Until this is decided, recipes are never translated (IMP-6).
 
 ## Roadmap impact
 <!-- Rules that change the data model or the build order, and where they land in docs/ROADMAP.md. Schema changes go in Phase 1. -->

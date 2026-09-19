@@ -30,6 +30,12 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- COOK-5: fires scheduled cook-timer notifications. No boot
+             receiver: timers are minutes long and needn't survive a reboot,
+             and it would add RECEIVE_BOOT_COMPLETED (RUN-2). -->
+        <receiver
+            android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
