@@ -4,6 +4,11 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-09-19
+
+### Changed
+- Planned how Instagram recipes are imported: share the post, then paste its caption or share a screenshot. No app changes yet.
+
 ## [0.1.4] - 2026-09-19
 
 ### Changed

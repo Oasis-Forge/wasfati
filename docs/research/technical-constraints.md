@@ -105,8 +105,5 @@ For each new case: add a row first, then fix it (QTY-7).
 - `fb.watch/…`, `facebook.com/share/r/…`
 
 ## Decisions needed
-1. **Instagram captions.** Options:
-   - (a) the official Meta oEmbed API: needs a Meta developer app and review, and whether it returns captions is unconfirmed
-   - (b) Instagram imports ask the user to paste the caption
-   - (c) the crawler workaround: not recommended
+1. ~~**Instagram captions.**~~ Decided 19 September 2026 (Decision 8, IMP-12): share the link, then paste the caption or share a screenshot. The Meta oEmbed API comes after v1.
 2. **API key for S3b.** Set `ANTHROPIC_API_KEY` in your environment (from console.anthropic.com), then run `npm run spike:cost` in `wasfati-import`. A few cents of usage.
