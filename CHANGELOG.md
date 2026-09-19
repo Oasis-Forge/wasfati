@@ -4,6 +4,15 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-19
+
+### Added
+- Write your own recipes: title, photo, servings, times, ingredients (one per line; a line ending with ":" starts a group like "للدقوس:"), steps and notes. Amounts are read as you type, including ١٢٣, fractions and words like كوبين.
+- A recipe page with the amounts in your chosen digits (123 or ١٢٣), and each line reading in its own direction, so English and Arabic recipes both look right.
+- Delete a recipe and undo it within 5 seconds; deleted recipes stay in the trash for 30 days.
+- Settings: language, numbers (123 / ١٢٣), units, week start and theme.
+- The IBM Plex Sans Arabic font.
+
 ## [0.2.0] - 2026-09-19
 
 ### Added

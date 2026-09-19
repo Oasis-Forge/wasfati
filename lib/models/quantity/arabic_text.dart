@@ -63,3 +63,13 @@ String easternDigits(String s) {
   }
   return out.toString();
 }
+
+/// Whether [s] has any Arabic letter (the Arabic and Arabic Supplement
+/// blocks, and the presentation forms).
+bool hasArabic(String s) => s.runes.any(
+  (r) =>
+      (r >= 0x0600 && r <= 0x06FF) ||
+      (r >= 0x0750 && r <= 0x077F) ||
+      (r >= 0xFB50 && r <= 0xFDFF) ||
+      (r >= 0xFE70 && r <= 0xFEFF),
+);
