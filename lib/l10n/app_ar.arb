@@ -94,5 +94,13 @@
   "tagsInvalid": "حتى 20 وسمًا، 30 حرفًا لكل وسم",
   "fieldCookbooks": "كتب الطبخ",
   "cancel": "إلغاء",
-  "create": "إنشاء"
+  "create": "إنشاء",
+  "scaleReset": "إعادة",
+  "servingsLess": "حصص أقل",
+  "servingsMore": "حصص أكثر",
+  "notScaled": "لم يُعدَّل",
+  "notScaledCount": "{count, plural, =1{مكوّن واحد لم يُعدَّل} =2{مكوّنان لم يُعدَّلا} few{{shown} مكوّنات لم تُعدَّل} many{{shown} مكوّنًا لم يُعدَّل} other{{shown} مكوّن لم يُعدَّل}}",
+  "viewAsWritten": "كما كُتبت",
+  "viewMetric": "غ / مل",
+  "viewKitchen": "أكواب"
 }

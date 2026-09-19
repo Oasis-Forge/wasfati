@@ -667,6 +667,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create'**
   String get create;
+
+  /// SCALE-2. Back to ×1.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get scaleReset;
+
+  /// SCALE-2. Tooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Fewer servings'**
+  String get servingsLess;
+
+  /// SCALE-2. Tooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'More servings'**
+  String get servingsMore;
+
+  /// SCALE-4. Mark on a line the scaler couldn't change.
+  ///
+  /// In en, this message translates to:
+  /// **'not scaled'**
+  String get notScaled;
+
+  /// SCALE-4. Header when some lines couldn't be scaled.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 ingredient wasn\'t scaled} other{{shown} ingredients weren\'t scaled}}'**
+  String notScaledCount(int count, String shown);
+
+  /// SCALE-5. Conversion view.
+  ///
+  /// In en, this message translates to:
+  /// **'As written'**
+  String get viewAsWritten;
+
+  /// SCALE-5. Conversion view.
+  ///
+  /// In en, this message translates to:
+  /// **'g / ml'**
+  String get viewMetric;
+
+  /// SCALE-5. Conversion view.
+  ///
+  /// In en, this message translates to:
+  /// **'Cups'**
+  String get viewKitchen;
 }
 
 class _AppLocalizationsDelegate

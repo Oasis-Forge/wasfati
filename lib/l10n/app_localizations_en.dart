@@ -336,4 +336,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get create => 'Create';
+
+  @override
+  String get scaleReset => 'Reset';
+
+  @override
+  String get servingsLess => 'Fewer servings';
+
+  @override
+  String get servingsMore => 'More servings';
+
+  @override
+  String get notScaled => 'not scaled';
+
+  @override
+  String notScaledCount(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown ingredients weren\'t scaled',
+      one: '1 ingredient wasn\'t scaled',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get viewAsWritten => 'As written';
+
+  @override
+  String get viewMetric => 'g / ml';
+
+  @override
+  String get viewKitchen => 'Cups';
 }

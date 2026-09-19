@@ -421,5 +421,45 @@
   "create": "Create",
   "@create": {
     "description": "Dialog button."
+  },
+  "scaleReset": "Reset",
+  "@scaleReset": {
+    "description": "SCALE-2. Back to ×1."
+  },
+  "servingsLess": "Fewer servings",
+  "@servingsLess": {
+    "description": "SCALE-2. Tooltip."
+  },
+  "servingsMore": "More servings",
+  "@servingsMore": {
+    "description": "SCALE-2. Tooltip."
+  },
+  "notScaled": "not scaled",
+  "@notScaled": {
+    "description": "SCALE-4. Mark on a line the scaler couldn't change."
+  },
+  "notScaledCount": "{count, plural, =1{1 ingredient wasn't scaled} other{{shown} ingredients weren't scaled}}",
+  "@notScaledCount": {
+    "description": "SCALE-4. Header when some lines couldn't be scaled.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
+  },
+  "viewAsWritten": "As written",
+  "@viewAsWritten": {
+    "description": "SCALE-5. Conversion view."
+  },
+  "viewMetric": "g / ml",
+  "@viewMetric": {
+    "description": "SCALE-5. Conversion view."
+  },
+  "viewKitchen": "Cups",
+  "@viewKitchen": {
+    "description": "SCALE-5. Conversion view."
   }
 }

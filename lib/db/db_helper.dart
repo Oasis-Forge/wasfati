@@ -9,7 +9,7 @@ class DBHelper {
   DBHelper._();
 
   /// The ordered steps; the schema version is their count.
-  static final List<SchemaStep> steps = [_v1Recipes];
+  static final List<SchemaStep> steps = [_v1Recipes, _v2UnitView];
 
   static int get version => steps.length;
 
@@ -139,3 +139,8 @@ CREATE TABLE meta (
     await db.execute(sql);
   }
 }
+
+/// Step 2: the conversion view each recipe remembers (SCALE-5). Null is
+/// "as written".
+Future<void> _v2UnitView(DatabaseExecutor db) =>
+    db.execute('ALTER TABLE recipes ADD COLUMN unit_view TEXT');

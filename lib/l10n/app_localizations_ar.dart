@@ -347,4 +347,39 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get create => 'إنشاء';
+
+  @override
+  String get scaleReset => 'إعادة';
+
+  @override
+  String get servingsLess => 'حصص أقل';
+
+  @override
+  String get servingsMore => 'حصص أكثر';
+
+  @override
+  String get notScaled => 'لم يُعدَّل';
+
+  @override
+  String notScaledCount(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown مكوّن لم يُعدَّل',
+      many: '$shown مكوّنًا لم يُعدَّل',
+      few: '$shown مكوّنات لم تُعدَّل',
+      two: 'مكوّنان لم يُعدَّلا',
+      one: 'مكوّن واحد لم يُعدَّل',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get viewAsWritten => 'كما كُتبت';
+
+  @override
+  String get viewMetric => 'غ / مل';
+
+  @override
+  String get viewKitchen => 'أكواب';
 }

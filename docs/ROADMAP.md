@@ -87,7 +87,7 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
   - Grid or list view.
 - [x] **Find** (ORG-3–ORG-6, v0.4.0): search by title **and ingredient** (it ignores Arabic diacritics and hamza/taa-marbuta variants, LANG-4); sort by recently added, A–Z, most cooked; filter by cookbook, tag and time.
 - [ ] **Cook mode, free** (COOK-1–COOK-6; timers notify in the background, Decision 6): screen stays on, one step at a time in large text, step timers found in the text ("لمدة 15 دقيقة"), ingredient checklist, swipe between steps in right-to-left.
-- [ ] **Scaling and conversion, free** (SCALE-1–SCALE-6):
+- [x] **Scaling and conversion, free** (SCALE-1–SCALE-6; v0.5.0, schema step 2 stores the per-recipe view):
   - Servings −/+ and ×½ / ×2.
   - Conversion between cups and spoons and grams/ml, where a density is known.
   - Scaling never silently skips a line: a line it can't scale is flagged.

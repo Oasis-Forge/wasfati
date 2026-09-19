@@ -198,6 +198,12 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
   - Volume converts exactly: 1 cup = 240 ml, 1 tbsp = 15 ml, 1 tsp = 5 ml.
   - Converting volume to mass happens only when the ingredient is in the density table (flour, sugar, rice, butter, oil, milk, water, honey and about 30 more, Arabic and English names); otherwise the line stays in its own unit.
   - The chosen view is remembered per recipe.
+  - Added 19 September 2026, while building it:
+    - **Liquids** (water, milk, broth, oil, cream) show in ml/l in the metric view, never grams.
+    - Metric amounts of 1,000 or more step up to kg/l.
+    - In the cups view, less than ¼ cup shows in spoons.
+    - A spoon of unknown size ("ملعقة") is never converted.
+  - The recipe page offers three views: as written (the default), g/ml, and cups. Scaling happens first, then conversion, then one rounding step (SCALE-3), so rounding errors never stack up.
 - **SCALE-6** The scale factor and conversion view carry into cook mode (COOK-2) and into "add to groceries" (GRO rules, round 2).
 
 ## 10. Cook mode

@@ -4,6 +4,14 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-19
+
+### Added
+- Scale any recipe: ×½, ×2, ×3, or one serving at a time. Amounts round the way a cook would (½ onion, ⅛ cup, whole grams), including amounts written in ١٢٣.
+- Lines that can't be scaled, like "salt to taste", are marked "not scaled", so nothing changes behind your back.
+- Show amounts as written, in grams and millilitres, or in cups and spoons. Flour, sugar, rice and about 30 other ingredients convert by weight; water, milk, broth and oil stay in ml. Each recipe remembers your choice.
+- Scaling and conversion are free.
+
 ## [0.4.0] - 2026-09-19
 
 ### Added
