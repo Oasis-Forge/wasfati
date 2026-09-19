@@ -103,6 +103,8 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
   - Rate limit per device, Play Integrity check, a monthly spending cap and alerts.
   - A test suite with the S1 and S3 fixtures that fails on regressions.
 - [ ] **Share-sheet import** (IMP-1, IMP-3–IMP-9): TikTok, Instagram, YouTube and Facebook share into Wasfati → progress → **preview to edit before saving** → save. "Report a mistake" sends only the source link and the user's note, and only when they tap it.
+- [ ] **Instagram fallback** (IMP-12, Decision 8): when a caption can't be read, offer paste or screenshot.
+- [ ] **Emulator check of real share payloads** (S4 follow-up): what TikTok, Instagram, YouTube and Facebook put in a share (link only, or caption too). The user logs in to each app on the emulator. If Instagram includes the caption, IMP-12 becomes a rare path.
 - [ ] **Photo import** (IMP-1, IMP-10): a cookbook page or handwritten recipe, from the camera or picker → server vision → preview.
 - [ ] **Free AI-import quota** (IMP-7, SRV-4; 10 a month, Decision 4): a counter visible in the header, the reset date shown, and an import only counts when saved.
 - [ ] **Network permission and privacy:** the first release with the server rewrites the privacy policy and the data-safety form in the same PR.
@@ -152,6 +154,7 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
 - [ ] iOS: TestFlight from a release, App Store privacy labels, listings in Arabic and English, then App Review.
 
 ## After v1
+- Apply for Meta's official Instagram oEmbed API (Decision 8). If it returns captions, a shared Instagram link imports directly.
 - Accounts and cloud sync across devices (only if users ask).
 - Nutrition estimates tuned for Arab dishes (Premium).
 - Links to Gulf grocery delivery apps.

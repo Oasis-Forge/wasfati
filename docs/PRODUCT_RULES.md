@@ -270,6 +270,13 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
   - The recipe can be inside `@graph`, in a list, or in microdata.
   - Instructions can be one string (split on line breaks), a list of strings, `HowToStep` items, or `HowToSection` groups (REC-6).
   - Microdata with no ingredients counts as "no recipe data", so the page goes to AI import (IMP-3).
+- **IMP-12** When a shared link's caption can't be read (Instagram always, per Decision 8; any `private_post` from SRV-7), the app shows one screen:
+  - The post's link, and a one-line reason ("إنستغرام لا يسمح بقراءة هذا المنشور").
+  - **Paste the caption:** a text box with a Paste button. The clipboard is read only when the user taps Paste, never on its own. It goes through text import (IMP-3).
+  - **Share a screenshot:** opens the photo picker. It goes through photo import (IMP-10).
+  - Cancel.
+  - The source URL is kept on the saved recipe, so duplicates are still caught (IMP-9) and "Open original" works.
+  - Only the paste or screenshot import uses the quota, and only when saved (IMP-7). Reaching this screen costs nothing.
 - **IMP-3** Otherwise the import goes to our server (SRV-1): social links, pages without recipe data, pasted text, and photos. The user sees **before sending**, in one line, that it uses one of their AI imports and the count left ("سيستخدم استيرادًا واحدًا · بقي 7 من 10"). Premium hides the count.
 - **IMP-4** Progress shows a single step list (reading, understanding, done). It can be cancelled. Past 45 seconds, it offers "Keep waiting" or "Cancel". A cancelled or failed import doesn't use the quota.
 - **IMP-5** Every import opens a **preview** before anything is saved:
@@ -302,7 +309,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 - **SRV-10** How the server gets a caption (S3):
   - **TikTok:** the public oEmbed endpoint.
   - **YouTube:** the public watch page's description.
-  - **Instagram:** no approved method yet (Decision 8, pending).
+  - **Instagram:** not read by the server (Decision 8). A shared Instagram link goes straight to the fallback in IMP-12, without a server request and without using the quota.
   - The server never pretends to be another company's crawler or browser, and never logs in.
   - A platform it can't read returns `private_post` (SRV-7), and the app offers to paste the caption as text (IMP-1).
 - **SRV-3** The server keeps no content: no request bodies, captions, images or results in logs. Only aggregate counters are kept (imports, errors, tokens, cost per day). Images are held only in memory for the request.
@@ -325,7 +332,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 5. (19 September 2026) Digits: Western 123 by default in both languages, Arabic ١٢٣ as a Settings option; the parser always reads both (QTY-1, QTY-5).
 6. (19 September 2026) Cook-mode timers alert in the background with a notification; permission is asked at the first timer (COOK-4, COOK-5). The import server runs on Cloudflare Workers, with its code in a private repo, Oasis-Forge/wasfati-import (SRV-1).
 7. (19 September 2026) Starter rule MONEY-1 doesn't apply: Wasfati handles no money. Prices come only from the store (PAY-2).
-8. (pending) How the server reads Instagram captions: the official Meta oEmbed API, asking the user to paste the caption, or dropping Instagram from server import (SRV-10). Faking a crawler is ruled out.
+8. (19 September 2026) Instagram: users share the post link as usual. Because Instagram blocks logged-out reading, Wasfati then asks for the caption, pasted as text, or a screenshot, read by photo import (IMP-12, SRV-10). Faking a crawler is ruled out. Applying for Meta's official oEmbed API is a later item; if it's approved and returns captions, a shared link alone will be enough.
 
 ## Roadmap impact
 <!-- Rules that change the data model or the build order, and where they land in docs/ROADMAP.md. Schema changes go in Phase 1. -->
