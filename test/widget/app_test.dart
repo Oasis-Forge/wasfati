@@ -7,6 +7,8 @@ import 'package:wasfati/models/recipe.dart';
 import 'package:wasfati/models/settings.dart';
 import 'package:wasfati/providers/recipes_state.dart';
 import 'package:wasfati/providers/settings_state.dart';
+import 'package:wasfati/providers/timers_state.dart';
+import 'package:wasfati/services/cook_services.dart';
 
 import '../helpers.dart';
 
@@ -28,6 +30,10 @@ Future<void> settle(WidgetTester tester) async {
   await tester.pump(const Duration(seconds: 1)); // route transitions
 }
 
+/// The timers and their fake alerts from the last [pumpApp].
+late TimersState timers;
+late NoopTimerAlerts alerts;
+
 Future<(RecipesState, SettingsState)> pumpApp(
   WidgetTester tester, {
   LanguagePref language = LanguagePref.ar,
@@ -45,13 +51,16 @@ Future<(RecipesState, SettingsState)> pumpApp(
     if (withRecipe) await recipes.save(kabsa(repo));
     await recipes.load();
   });
+  alerts = NoopTimerAlerts();
+  timers = TimersState(alerts, autoTick: false);
+  addTearDown(timers.dispose);
   tester.view.physicalSize = const Size(1080, 2400); // a phone (LANG-6)
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     MediaQuery(
       data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
-      child: WasfatiApp(recipes: recipes, settings: settings),
+      child: WasfatiApp(recipes: recipes, settings: settings, timers: timers),
     ),
   );
   await tester.pumpAndSettle();
@@ -277,6 +286,81 @@ void main() {
     await settle(tester);
     expect(shown('555 غرامًا ارز بسمتي'), findsOneWidget);
     expect(recipes.lastError, isNull);
+  });
+
+  testWidgets('cook mode: steps, a timer from the text, mark as cooked', (
+    tester,
+  ) async {
+    final (recipes, _) = await pumpApp(tester, withRecipe: true);
+    await tester.tap(find.text('كبسة لحم'));
+    await settle(tester);
+    await tester.tap(find.text('×2')); // SCALE-6: the scale goes along
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('ابدأ الطبخ'), 200);
+    await tester.tap(find.text('ابدأ الطبخ'));
+    await settle(tester);
+
+    expect(find.text('الخطوة 1 من 2'), findsWidgets);
+    expect(find.text('يحمر اللحم في الزبدة.'), findsOneWidget);
+
+    // The ingredients sheet shows the ×2 amounts, with checkboxes.
+    await tester.tap(find.byTooltip('المكونات'));
+    await tester.pumpAndSettle();
+    expect(shown('2 كيلو لحم ضأن'), findsOneWidget);
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(20, 20)); // close the sheet
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('التالي'));
+    await tester.pumpAndSettle();
+    expect(find.text('يضاف الأرز ويترك 15 دقيقة.'), findsOneWidget);
+    await tester.tap(find.text('15:00')); // COOK-4: found in the text
+    await settle(tester);
+    expect(timers.running.single.total, const Duration(minutes: 15));
+    expect(alerts.asked, 1); // asked at the first timer (COOK-5)
+    expect(alerts.scheduled, hasLength(1));
+
+    await tester.tap(find.text('التالي'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('تم طبخها'));
+    await settle(tester);
+    expect(find.text('سُجّلت كوصفة مطبوخة'), findsOneWidget);
+    expect(recipes.recipes.single.cookedCount, 1);
+  });
+
+  testWidgets('English lines keep 123 with Arabic digits on (QTY-5)', (
+    tester,
+  ) async {
+    final (recipes, _) = await pumpApp(tester, digits: DigitStyle.arabic);
+    await tester.runAsync(() async {
+      final repo = recipes.repository;
+      final now = repo.now();
+      await recipes.save(
+        Recipe(
+          id: repo.newId(),
+          title: 'Mixed',
+          servings: 4,
+          ingredients: [
+            Section(
+              id: repo.newId(),
+              items: [
+                IngredientLine.parse(repo.newId(), '2 cups flour'),
+                IngredientLine.parse(repo.newId(), '3 كوب رز'),
+              ],
+            ),
+          ],
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+    });
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mixed'));
+    await settle(tester);
+    expect(shown('2 cups flour'), findsOneWidget); // never "٢ cups flour"
+    expect(shown('٣ أكواب رز'), findsOneWidget);
+    expect(find.text('٤ حصص'), findsOneWidget); // the app's own text
   });
 
   testWidgets('the title is required (REC-3)', (tester) async {

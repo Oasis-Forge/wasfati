@@ -4,6 +4,17 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-19
+
+### Added
+- Cook mode, free and without ads: one step at a time in large text, and the screen stays on while you cook.
+- Timers straight from the recipe: "لمدة 15 دقيقة" or "ساعة ونصف" becomes a button. Several can run at once, and you're told when one ends, even with the app in the background.
+- The ingredients, scaled the way you set them, one tap away in cook mode, with checkboxes.
+- "Mark as cooked" at the end. Cook mode picks up where you left off within 12 hours.
+
+### Changed
+- English ingredient lines always use 123, even when you've chosen ١٢٣.
+
 ## [0.5.0] - 2026-09-19
 
 ### Added

@@ -7,6 +7,8 @@ import 'db/db_helper.dart';
 import 'db/recipe_repository.dart';
 import 'providers/recipes_state.dart';
 import 'providers/settings_state.dart';
+import 'providers/timers_state.dart';
+import 'services/cook_services.dart';
 import 'services/photo_store.dart';
 
 /// The only place real services are built; tests use fakes (CLAUDE.md).
@@ -27,5 +29,20 @@ Future<void> main() async {
   await settings.load();
   final recipes = RecipesState(repo);
   await recipes.load();
-  runApp(WasfatiApp(recipes: recipes, settings: settings, photos: photos));
+  final alerts = DeviceTimerAlerts();
+  await alerts.init();
+  final timers = TimersState(
+    alerts,
+    inForeground: () =>
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed,
+  );
+  runApp(
+    WasfatiApp(
+      recipes: recipes,
+      settings: settings,
+      photos: photos,
+      timers: timers,
+      screenAwake: const DeviceScreenAwake(),
+    ),
+  );
 }

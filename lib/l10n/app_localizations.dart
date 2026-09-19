@@ -715,6 +715,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cups'**
   String get viewKitchen;
+
+  /// COOK-1. Button on the recipe page.
+  ///
+  /// In en, this message translates to:
+  /// **'Start cooking'**
+  String get startCooking;
+
+  /// COOK-2. Cook mode progress; numbers already in the chosen digit style.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {n} of {total}'**
+  String stepOf(String n, String total);
+
+  /// COOK-4. Which step a running timer belongs to.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {n}'**
+  String stepN(String n);
+
+  /// COOK-2. Button.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get previousStep;
+
+  /// COOK-2. Button.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get nextStep;
+
+  /// COOK-6. Tooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Close cook mode'**
+  String get closeCooking;
+
+  /// COOK-6. Last cook-mode page.
+  ///
+  /// In en, this message translates to:
+  /// **'Enjoy your meal!'**
+  String get finishTitle;
+
+  /// COOK-6, REC-9. Button.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as cooked'**
+  String get markCooked;
+
+  /// COOK-6. Confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Marked as cooked'**
+  String get markedCooked;
+
+  /// COOK-6. Leaves cook mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
+
+  /// COOK-4. Tooltip on a timer found in a step.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a {time} timer'**
+  String timerStart(String time);
+
+  /// COOK-4. Tooltip and dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop timer'**
+  String get timerStop;
+
+  /// COOK-5. In-app banner and notification body.
+  ///
+  /// In en, this message translates to:
+  /// **'Timer done: step {n}'**
+  String timerDone(String n);
+
+  /// COOK-5. Android notification channel name.
+  ///
+  /// In en, this message translates to:
+  /// **'Cooking timers'**
+  String get timerChannel;
+
+  /// COOK-5. Shown once after notification permission is refused.
+  ///
+  /// In en, this message translates to:
+  /// **'Background timer alerts are off. Timers still ring while Wasfati is open.'**
+  String get alertsOff;
+
+  /// Button.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get dismiss;
 }
 
 class _AppLocalizationsDelegate

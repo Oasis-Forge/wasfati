@@ -102,5 +102,21 @@
   "notScaledCount": "{count, plural, =1{مكوّن واحد لم يُعدَّل} =2{مكوّنان لم يُعدَّلا} few{{shown} مكوّنات لم تُعدَّل} many{{shown} مكوّنًا لم يُعدَّل} other{{shown} مكوّن لم يُعدَّل}}",
   "viewAsWritten": "كما كُتبت",
   "viewMetric": "غ / مل",
-  "viewKitchen": "أكواب"
+  "viewKitchen": "أكواب",
+  "startCooking": "ابدأ الطبخ",
+  "stepOf": "الخطوة {n} من {total}",
+  "stepN": "الخطوة {n}",
+  "previousStep": "السابق",
+  "nextStep": "التالي",
+  "closeCooking": "إغلاق وضع الطبخ",
+  "finishTitle": "بالهناء والشفاء!",
+  "markCooked": "تم طبخها",
+  "markedCooked": "سُجّلت كوصفة مطبوخة",
+  "done": "تم",
+  "timerStart": "ابدأ مؤقت {time}",
+  "timerStop": "إيقاف المؤقت",
+  "timerDone": "انتهى المؤقت: الخطوة {n}",
+  "timerChannel": "مؤقتات الطبخ",
+  "alertsOff": "تنبيهات المؤقت في الخلفية متوقفة. يرن المؤقت ما دام التطبيق مفتوحًا.",
+  "dismiss": "حسنًا"
 }

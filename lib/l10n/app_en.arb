@@ -461,5 +461,92 @@
   "viewKitchen": "Cups",
   "@viewKitchen": {
     "description": "SCALE-5. Conversion view."
+  },
+  "startCooking": "Start cooking",
+  "@startCooking": {
+    "description": "COOK-1. Button on the recipe page."
+  },
+  "stepOf": "Step {n} of {total}",
+  "@stepOf": {
+    "description": "COOK-2. Cook mode progress; numbers already in the chosen digit style.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "stepN": "Step {n}",
+  "@stepN": {
+    "description": "COOK-4. Which step a running timer belongs to.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "previousStep": "Previous",
+  "@previousStep": {
+    "description": "COOK-2. Button."
+  },
+  "nextStep": "Next",
+  "@nextStep": {
+    "description": "COOK-2. Button."
+  },
+  "closeCooking": "Close cook mode",
+  "@closeCooking": {
+    "description": "COOK-6. Tooltip."
+  },
+  "finishTitle": "Enjoy your meal!",
+  "@finishTitle": {
+    "description": "COOK-6. Last cook-mode page."
+  },
+  "markCooked": "Mark as cooked",
+  "@markCooked": {
+    "description": "COOK-6, REC-9. Button."
+  },
+  "markedCooked": "Marked as cooked",
+  "@markedCooked": {
+    "description": "COOK-6. Confirmation."
+  },
+  "done": "Done",
+  "@done": {
+    "description": "COOK-6. Leaves cook mode."
+  },
+  "timerStart": "Start a {time} timer",
+  "@timerStart": {
+    "description": "COOK-4. Tooltip on a timer found in a step.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "timerStop": "Stop timer",
+  "@timerStop": {
+    "description": "COOK-4. Tooltip and dialog title."
+  },
+  "timerDone": "Timer done: step {n}",
+  "@timerDone": {
+    "description": "COOK-5. In-app banner and notification body.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "timerChannel": "Cooking timers",
+  "@timerChannel": {
+    "description": "COOK-5. Android notification channel name."
+  },
+  "alertsOff": "Background timer alerts are off. Timers still ring while Wasfati is open.",
+  "@alertsOff": {
+    "description": "COOK-5. Shown once after notification permission is refused."
+  },
+  "dismiss": "OK",
+  "@dismiss": {
+    "description": "Button."
   }
 }

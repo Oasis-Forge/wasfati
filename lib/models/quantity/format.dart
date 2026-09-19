@@ -5,6 +5,12 @@ import 'units.dart';
 
 enum DigitStyle { western, arabic }
 
+/// The digits for a recipe line: the chosen style for Arabic lines, and
+/// always 123 for lines in other languages, so an English line never reads
+/// "٤ cups" (QTY-5, 19 September 2026).
+DigitStyle digitsFor(String line, DigitStyle chosen) =>
+    hasArabic(line) ? chosen : DigitStyle.western;
+
 /// Scales a line by [factor] with the rounding of SCALE-3. A line with no
 /// amount comes back unchanged and [ScaledLine.scaled] is false (SCALE-4).
 ScaledLine scaleLine(ParsedLine line, Rational factor) {

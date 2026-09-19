@@ -85,6 +85,15 @@ class RecipesState extends ChangeNotifier {
       }) ??
       false;
 
+  /// "Mark as cooked" (REC-9, COOK-6).
+  Future<bool> markCooked(String id) async =>
+      await _write(() async {
+        await _repo.markCooked(id);
+        await _reload();
+        return true;
+      }) ??
+      false;
+
   /// Remembers a recipe's conversion view (SCALE-5).
   Future<bool> setUnitView(String id, UnitView view) async =>
       await _write(() async {
