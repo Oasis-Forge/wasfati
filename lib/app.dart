@@ -8,7 +8,10 @@ import 'providers/settings_state.dart';
 import 'screens/home_screen.dart';
 import 'providers/timers_state.dart';
 import 'services/cook_services.dart';
+import 'services/importer.dart';
 import 'services/photo_store.dart';
+import 'services/web_import.dart';
+import 'widgets/share_router.dart';
 
 const _seed = Color(0xFFB5542B); // saffron / terracotta
 const fontFamily = 'IBMPlexSansArabic';
@@ -23,6 +26,8 @@ class WasfatiApp extends StatelessWidget {
     this.photos = const NoopPhotoStore(),
     required this.timers,
     this.screenAwake = const NoopScreenAwake(),
+    required this.importer,
+    this.shareInbox = const NoopShareInbox(),
   });
 
   final RecipesState recipes;
@@ -30,6 +35,10 @@ class WasfatiApp extends StatelessWidget {
   final PhotoStore photos;
   final TimersState timers;
   final ScreenAwake screenAwake;
+  final Importer importer;
+  final ShareInbox shareInbox;
+
+  static final navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +49,8 @@ class WasfatiApp extends StatelessWidget {
         Provider<PhotoStore>.value(value: photos),
         ChangeNotifierProvider.value(value: timers),
         Provider<ScreenAwake>.value(value: screenAwake),
+        Provider<Importer>.value(value: importer),
+        Provider<ShareInbox>.value(value: shareInbox),
       ],
       child: Consumer<SettingsState>(
         builder: (context, s, _) => MaterialApp(
@@ -55,6 +66,9 @@ class WasfatiApp extends StatelessWidget {
           themeMode: s.themeMode,
           theme: _theme(Brightness.light),
           darkTheme: _theme(Brightness.dark),
+          navigatorKey: navigatorKey,
+          builder: (context, child) =>
+              ShareRouter(navigator: navigatorKey, child: child!),
           home: const HomeScreen(),
         ),
       ),

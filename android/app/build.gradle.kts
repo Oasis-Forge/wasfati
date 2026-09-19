@@ -6,7 +6,8 @@ plugins {
 
 android {
     namespace = "com.oasisforge.wasfati"
-    compileSdk = flutter.compileSdkVersion
+    // receive_sharing_intent (IMP-1) needs API 37 to compile against.
+    compileSdk = maxOf(flutter.compileSdkVersion, 37)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

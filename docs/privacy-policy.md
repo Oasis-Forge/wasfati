@@ -6,28 +6,31 @@ This policy covers the Wasfati app ("the app"). <!-- Update it in every PR that 
 
 ## Summary
 
-Wasfati needs no account, and your recipes stay on your device. The app shows ads, and when you ask it to import a recipe from a post or a photo, it sends that link, caption or photo to our import server to turn it into a recipe; the server doesn't keep it. <!-- Draft (19 September 2026). Rewrite with the ad SDK's data and the import server's details in the release that adds them (ADS-6). -->
+Wasfati needs no account, and your recipes stay on your device. There are no ads and no analytics in this version. <!-- The ads release rewrites this page (ADS-6); the import-server release adds what it receives (SRV-9). -->
 
 ## Information stored on your device
 
-<!-- What the app stores, where (on the device only?), and that it is removed when the app is uninstalled. -->
+Your recipes, photos, cookbooks, tags and settings are stored only in the app's private storage on your device. They are removed when you uninstall the app. Wasfati also stores a random install ID on the device; it identifies no one and is not sent anywhere in this version.
 
-## Information we collect
+## Information that leaves your device
 
-<!-- Draft: the import server (what it receives, that it keeps nothing), the ad SDK and consent (ADS-5, ADS-6), and purchases handled by Google Play. -->
+- **Importing from a link:** when you ask Wasfati to import a recipe link, your device downloads that page, and its photo, directly from the recipe's website, like a browser would. That website sees the request and your device's IP address. Nothing is sent to us.
+- **Text shared into Wasfati** stays on your device.
+- **Cook-mode timers** use a notification scheduled on your device. Nothing is sent anywhere.
 
 ## Backups and exports
 
-<!-- Files the app creates only when you ask it to, where they go, and that we never see them. -->
+<!-- Backup and restore arrive in a later release (BAK-1–BAK-5). -->
 
 ## Permissions
 
-<!-- Each permission the release build declares, why, and what still works if it is refused. -->
+- **Internet:** to download recipe pages you choose to import.
+- **Notifications:** asked the first time you start a cook-mode timer, so it can alert you when the app is in the background. If you refuse, timers still work while the app is open.
+- **Vibrate:** for timer alerts.
 
 ## Deleting your information
 
-<!-- e.g. delete records in the app, or uninstall the app to remove everything. Backup files you saved stay where you put them. -->
-
+Delete a recipe in the app. It stays in the trash for 30 days, then it and its photo are removed. Uninstalling the app removes everything.
 ## Children
 
 The app isn't directed at children under 13 and collects no information from anyone.

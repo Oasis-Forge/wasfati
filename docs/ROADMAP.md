@@ -91,7 +91,7 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
   - Servings −/+ and ×½ / ×2.
   - Conversion between cups and spoons and grams/ml, where a density is known.
   - Scaling never silently skips a line: a line it can't scale is flagged.
-- [ ] **Website import on the device** (IMP-2, IMP-5, IMP-6, IMP-9): paste or share a link → read the schema.org recipe → preview → save. Free and unlimited. A site without recipe data offers AI import instead (Phase 2b).
+- [x] **Website import on the device** (IMP-2, IMP-5, IMP-6, IMP-9, IMP-11, IMP-13; v0.7.0; the share target for links and text is in too): paste or share a link → read the schema.org recipe → preview → save. Free and unlimited. A site without recipe data offers AI import instead (Phase 2b).
 - [x] **Delete, undo, trash** (DEL-1, DEL-2)
 - [ ] **First run:** empty states with one clear first action, and one built-in sample recipe (RUN-1)
 

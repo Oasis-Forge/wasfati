@@ -303,6 +303,13 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 - **IMP-9** Duplicates: importing a source URL that's already saved asks "Open the saved one / Import again". It matches the normalized URL: no tracking parameters, and it follows `youtu.be` and `vm.tiktok.com` short links.
 - **IMP-10** A photo import sends the images resized to at most 1600 px (JPEG 80), and the server discards them after the response (SRV-3). The recipe keeps the first image as its photo (REC-8), unless the user removes it in the preview.
 
+- **IMP-13** Until AI import exists (Phase 2b), text shared into Wasfati or pasted opens as an editable draft (added 19 September 2026):
+  - The first line is the title.
+  - Lines after a heading like "المقادير" or "Ingredients" are ingredients; lines after "طريقة التحضير" or "Method" are steps.
+  - With no headings, everything is an ingredient.
+  - Hashtag lines are dropped.
+  - The draft opens as the preview (IMP-5), and nothing is saved until Save.
+  - A shared text that contains a link imports the link instead (IMP-2).
 ## 13. Import server
 
 **They do:** not visible. The server-side import worked for Arabic in about 25 s.

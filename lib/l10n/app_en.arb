@@ -548,5 +548,69 @@
   "dismiss": "OK",
   "@dismiss": {
     "description": "Button."
+  },
+  "importTitle": "Import from a link",
+  "@importTitle": {
+    "description": "IMP-2. Screen title and button."
+  },
+  "importHint": "Paste a recipe link",
+  "@importHint": {
+    "description": "IMP-2. Link field hint."
+  },
+  "importExplain": "Recipes from sites like Fatafeat and Cookpad are read on your phone, free and unlimited.",
+  "@importExplain": {
+    "description": "IMP-2. Under the link field."
+  },
+  "paste": "Paste",
+  "@paste": {
+    "description": "Reads the clipboard only when tapped (IMP-12)."
+  },
+  "importAction": "Import",
+  "@importAction": {
+    "description": "IMP-2. Button."
+  },
+  "importReading": "Opening the page…",
+  "@importReading": {
+    "description": "IMP-4. Progress step."
+  },
+  "importUnderstanding": "Reading the recipe…",
+  "@importUnderstanding": {
+    "description": "IMP-4. Progress step."
+  },
+  "importInvalidUrl": "That doesn't look like a link.",
+  "@importInvalidUrl": {
+    "description": "IMP-2. Error."
+  },
+  "importUnreachable": "Couldn't open the page. Check the link and your connection.",
+  "@importUnreachable": {
+    "description": "IMP-2. Error."
+  },
+  "importNoRecipe": "Wasfati can't find recipe data on this page yet. You can still add it by hand.",
+  "@importNoRecipe": {
+    "description": "IMP-2, IMP-11. The page has no schema.org recipe; AI import comes later."
+  },
+  "addByHand": "Add by hand",
+  "@addByHand": {
+    "description": "Opens the editor with the link as the source."
+  },
+  "duplicateTitle": "Already saved",
+  "@duplicateTitle": {
+    "description": "IMP-9. Dialog title."
+  },
+  "duplicateBody": "You saved a recipe from this page before.",
+  "@duplicateBody": {
+    "description": "IMP-9. Dialog text."
+  },
+  "openSaved": "Open the saved one",
+  "@openSaved": {
+    "description": "IMP-9. Dialog button."
+  },
+  "importAgain": "Import again",
+  "@importAgain": {
+    "description": "IMP-9. Dialog button."
+  },
+  "importedRecipe": "Check and save",
+  "@importedRecipe": {
+    "description": "IMP-5. Title of the preview (the editor, prefilled)."
   }
 }
