@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wasfati/app.dart';
 import 'package:wasfati/models/quantity/format.dart';
+import 'package:wasfati/models/library.dart';
 import 'package:wasfati/models/recipe.dart';
 import 'package:wasfati/models/settings.dart';
 import 'package:wasfati/providers/recipes_state.dart';
@@ -11,12 +12,18 @@ import '../helpers.dart';
 
 /// Lets database work (ffi, real async) finish, then settles the UI.
 Future<void> settle(WidgetTester tester) async {
-  // Pumps frames instead of pumpAndSettle: a loading spinner never settles.
-  for (var i = 0; i < 6; i++) {
+  // Pumps frames instead of pumpAndSettle (a loading spinner never
+  // settles), until nothing is loading and no route is moving.
+  for (var i = 0; i < 40; i++) {
     await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      () => Future<void>.delayed(const Duration(milliseconds: 30)),
     );
     await tester.pump(const Duration(milliseconds: 100));
+    if (i > 3 &&
+        find.byType(CircularProgressIndicator).evaluate().isEmpty &&
+        !tester.binding.hasScheduledFrame) {
+      break;
+    }
   }
   await tester.pump(const Duration(seconds: 1)); // route transitions
 }
@@ -148,6 +155,76 @@ void main() {
     expect(line('3 أكواب رز').textDirection, TextDirection.rtl); // QTY-6
     // Both line up with the app's reading edge (right, in Arabic).
     expect(line('kg chicken').textAlign, TextAlign.right);
+  });
+
+  testWidgets('search finds a recipe by ingredient and says so (ORG-3)', (
+    tester,
+  ) async {
+    await pumpApp(tester, withRecipe: true);
+    await tester.enterText(find.byType(SearchBar), 'طماطم');
+    await tester.pumpAndSettle();
+    expect(find.text('كبسة لحم'), findsOneWidget);
+    expect(find.textContaining('يحتوي: طماطم'), findsOneWidget);
+
+    await tester.enterText(find.byType(SearchBar), 'بيتزا');
+    await tester.pumpAndSettle();
+    expect(find.text('لا توجد وصفات مطابقة'), findsOneWidget);
+    await tester.tap(find.text('مسح عوامل التصفية'));
+    await tester.pumpAndSettle();
+    expect(find.text('كبسة لحم'), findsOneWidget);
+  });
+
+  testWidgets('create a cookbook and put a recipe in it (ORG-1)', (
+    tester,
+  ) async {
+    await pumpApp(tester, withRecipe: true);
+    await tester.tap(find.text('كتب الطبخ'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('كتاب طبخ جديد'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField), 'رمضان');
+    await tester.tap(find.text('إنشاء'));
+    await settle(tester);
+    expect(find.text('رمضان'), findsOneWidget);
+    expect(find.text('لا وصفات'), findsOneWidget);
+
+    // Put the recipe in it from the editor.
+    await tester.tap(find.text('كل الوصفات'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('كبسة لحم'));
+    await settle(tester);
+    await tester.tap(find.byTooltip('تعديل'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      scrollable: find.byType(Scrollable).first, // the form, not a text box
+      find.widgetWithText(FilterChip, 'رمضان'),
+      200,
+    );
+    await tester.tap(find.widgetWithText(FilterChip, 'رمضان'));
+    await tester.pump();
+    await tester.tap(find.text('حفظ'));
+    await settle(tester);
+    expect(find.widgetWithText(Chip, 'رمضان'), findsOneWidget); // on the page
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('كتب الطبخ'));
+    await tester.pumpAndSettle();
+    expect(find.text('وصفة واحدة'), findsOneWidget);
+  });
+
+  testWidgets('sort and grid view are remembered (ORG-5)', (tester) async {
+    final (_, settings) = await pumpApp(tester, withRecipe: true);
+    await tester.tap(find.text('الأحدث إضافة'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('أ–ي'));
+    await settle(tester);
+    expect(settings.settings.sort, LibrarySort.az);
+
+    await tester.tap(find.byTooltip('عرض شبكي'));
+    await settle(tester);
+    expect(settings.settings.grid, isTrue);
+    expect(find.byType(GridView), findsOneWidget);
   });
 
   testWidgets('the title is required (REC-3)', (tester) async {

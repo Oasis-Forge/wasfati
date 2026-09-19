@@ -129,7 +129,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get fieldIngredientsHint =>
-      'مكوّن في كل سطر، مثل: ٢ كوب أرز\nالسطر الذي ينتهي بنقطتين يبدأ مجموعة، مثل: للصلصة:';
+      'مكوّن في كل سطر، مثل: 2 كوب أرز\nالسطر الذي ينتهي بنقطتين يبدأ مجموعة، مثل: للصلصة:';
 
   @override
   String get fieldStepsHint => 'خطوة في كل سطر';
@@ -138,7 +138,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fieldNumberInvalid => 'أرقام فقط';
 
   @override
-  String get stepTooLong => 'إحدى الخطوات أطول من ٢٠٠٠ حرف';
+  String get stepTooLong => 'إحدى الخطوات أطول من 2000 حرف';
 
   @override
   String get photoAdd => 'أضف صورة';
@@ -205,4 +205,146 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get themeDark => 'داكن';
+
+  @override
+  String get tabAllRecipes => 'كل الوصفات';
+
+  @override
+  String get tabCookbooks => 'كتب الطبخ';
+
+  @override
+  String get searchHint => 'ابحث عن وصفة أو مكوّن';
+
+  @override
+  String get searchClear => 'مسح البحث';
+
+  @override
+  String containsIngredient(String name) {
+    return 'يحتوي: $name';
+  }
+
+  @override
+  String get noResults => 'لا توجد وصفات مطابقة';
+
+  @override
+  String get clearFilters => 'مسح عوامل التصفية';
+
+  @override
+  String get sortBy => 'الترتيب';
+
+  @override
+  String get sortRecent => 'الأحدث إضافة';
+
+  @override
+  String get sortAz => 'أ–ي';
+
+  @override
+  String get sortRecentlyCooked => 'طُبخت مؤخرًا';
+
+  @override
+  String get sortMostCooked => 'الأكثر طبخًا';
+
+  @override
+  String get filterCookbook => 'كتاب الطبخ';
+
+  @override
+  String get filterTag => 'الوسم';
+
+  @override
+  String get filterSource => 'المصدر';
+
+  @override
+  String get filterTime => 'الوقت';
+
+  @override
+  String get filterPhoto => 'بصورة';
+
+  @override
+  String get sourceWritten => 'كتبتها بنفسي';
+
+  @override
+  String get sourceWebsite => 'موقع إلكتروني';
+
+  @override
+  String get sourceSocial => 'مواقع التواصل';
+
+  @override
+  String get sourcePhoto => 'صورة';
+
+  @override
+  String get timeUnder30 => 'أقل من 30 دقيقة';
+
+  @override
+  String get time30to60 => '30–60 دقيقة';
+
+  @override
+  String get timeOver60 => 'أكثر من ساعة';
+
+  @override
+  String get any => 'الكل';
+
+  @override
+  String get viewGrid => 'عرض شبكي';
+
+  @override
+  String get viewList => 'عرض قائمة';
+
+  @override
+  String get cookbookNew => 'كتاب طبخ جديد';
+
+  @override
+  String get cookbookName => 'الاسم';
+
+  @override
+  String get cookbookNameInvalid => 'من 1 إلى 60 حرفًا';
+
+  @override
+  String get cookbookRename => 'إعادة تسمية';
+
+  @override
+  String get cookbookDelete => 'حذف كتاب الطبخ';
+
+  @override
+  String get cookbookDeleteBody => 'ستبقى الوصفات في مكتبتك.';
+
+  @override
+  String cookbookRecipes(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown وصفة',
+      many: '$shown وصفة',
+      few: '$shown وصفات',
+      two: 'وصفتان',
+      one: 'وصفة واحدة',
+      zero: 'لا وصفات',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cookbooksEmpty =>
+      'رتّب وصفاتك كما تحب: رمضان، عشاء سريع، أكلات العائلة.';
+
+  @override
+  String get cookbookEmpty =>
+      'لا وصفات في هذا الكتاب بعد. أضفها من شاشة تعديل الوصفة.';
+
+  @override
+  String get fieldTags => 'الوسوم';
+
+  @override
+  String get fieldTagsHint => 'افصل بينها بفاصلة، مثل: حار، رمضان';
+
+  @override
+  String get tagsInvalid => 'حتى 20 وسمًا، 30 حرفًا لكل وسم';
+
+  @override
+  String get fieldCookbooks => 'كتب الطبخ';
+
+  @override
+  String get cancel => 'إلغاء';
+
+  @override
+  String get create => 'إنشاء';
 }

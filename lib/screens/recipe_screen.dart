@@ -23,28 +23,42 @@ class RecipeScreen extends StatefulWidget {
 }
 
 class _RecipeScreenState extends State<RecipeScreen> {
-  late Future<Recipe?> _recipe = _load();
+  Future<Recipe?>? _recipe;
+  int _revision = -1;
+  bool _closing = false;
 
-  Future<Recipe?> _load() =>
-      context.read<RecipesState>().repository.get(widget.recipeId);
-
-  Future<void> _edit(Recipe r) async {
-    final saved = await Navigator.of(context).push<String>(
-      MaterialPageRoute(builder: (_) => RecipeEditorScreen(recipe: r)),
-    );
-    if (saved != null) setState(() => _recipe = _load());
+  /// Reloads whenever the library changed (an edit, a cookbook rename, an
+  /// undo), so the page never shows stale data.
+  Future<Recipe?> _current(RecipesState state) {
+    // While closing after a delete, keep what's shown instead of flashing
+    // "no longer here".
+    if (_recipe == null || (_revision != state.revision && !_closing)) {
+      _revision = state.revision;
+      _recipe = state.repository.get(widget.recipeId);
+    }
+    return _recipe!;
   }
 
+  Future<void> _edit(Recipe r) => Navigator.of(context).push<String>(
+    MaterialPageRoute(builder: (_) => RecipeEditorScreen(recipe: r)),
+  );
+
   Future<void> _delete(Recipe r) async {
+    _closing = true;
     final ok = await context.read<RecipesState>().delete(r.id); // DEL-1
-    if (ok && mounted) Navigator.of(context).pop(true);
+    if (!mounted) return;
+    if (ok) {
+      Navigator.of(context).pop(true);
+    } else {
+      setState(() => _closing = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return FutureBuilder<Recipe?>(
-      future: _recipe,
+      future: _current(context.watch<RecipesState>()),
       builder: (context, snap) {
         final r = snap.data;
         return Scaffold(
@@ -123,6 +137,23 @@ class _RecipeBody extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [for (final f in facts) Chip(label: Text(f))],
+          ),
+        ],
+        if (r.tags.isNotEmpty || r.cookbookIds.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final c in context.watch<RecipesState>().cookbooks)
+                if (r.cookbookIds.contains(c.id))
+                  Chip(
+                    avatar: const Icon(Icons.menu_book_outlined, size: 18),
+                    label: ContentText(c.name),
+                  ),
+              for (final t in r.tags)
+                Chip(label: ContentText('#$t', source: t)),
+            ],
           ),
         ],
         if (r.ingredients.isNotEmpty) ...[

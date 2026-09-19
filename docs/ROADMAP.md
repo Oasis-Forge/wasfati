@@ -81,11 +81,11 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
 
 ## Phase 2a: Offline core (W3–W5)
 - [x] **Settings:** language (system / العربية / English), digit style (Western 123 by default, Arabic ١٢٣; QTY-5, Decision 5), units (metric / cups and spoons), week start (default by locale: Saturday in the Gulf), theme.
-- [ ] **Recipes and cookbooks** (REC-3–REC-11, ORG-1, ORG-2, ORG-7). Done in PR 1 (v0.3.0): write, edit and view a recipe, photo, groups, steps. Cookbooks, tags and grid view come with PR 2:
+- [x] **Recipes and cookbooks** (REC-3–REC-11, ORG-1, ORG-2, ORG-7): PR 1 (v0.3.0) editor and recipe page; PR 2 (v0.4.0) cookbooks, tags, grid view:
   - Write a recipe by hand, edit it, add a photo from the picker.
   - Cookbooks and tags.
   - Grid or list view.
-- [ ] **Find** (ORG-3–ORG-6): search by title **and ingredient** (it ignores Arabic diacritics and hamza/taa-marbuta variants, LANG-4); sort by recently added, A–Z, most cooked; filter by cookbook, tag and time.
+- [x] **Find** (ORG-3–ORG-6, v0.4.0): search by title **and ingredient** (it ignores Arabic diacritics and hamza/taa-marbuta variants, LANG-4); sort by recently added, A–Z, most cooked; filter by cookbook, tag and time.
 - [ ] **Cook mode, free** (COOK-1–COOK-6; timers notify in the background, Decision 6): screen stays on, one step at a time in large text, step timers found in the text ("لمدة 15 دقيقة"), ingredient checklist, swipe between steps in right-to-left.
 - [ ] **Scaling and conversion, free** (SCALE-1–SCALE-6):
   - Servings −/+ and ×½ / ×2.

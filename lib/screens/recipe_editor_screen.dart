@@ -4,18 +4,24 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/cookbook.dart';
+import '../models/library.dart';
 import '../models/quantity/arabic_text.dart';
 import '../models/recipe.dart';
 import '../models/recipe_text.dart';
 import '../providers/recipes_state.dart';
 import '../services/photo_store.dart';
+import '../widgets/content_direction.dart';
 
 /// Adds or edits a recipe (REC-3–REC-8). Ingredients and steps are one line
 /// each; a line ending with ":" starts a group (REC-4, REC-6). Pops the saved
 /// recipe's ID. No ads here (principle 4).
 class RecipeEditorScreen extends StatefulWidget {
-  const RecipeEditorScreen({super.key, this.recipe});
+  const RecipeEditorScreen({super.key, this.recipe, this.initialCookbookId});
   final Recipe? recipe;
+
+  /// A new recipe started from a cookbook goes into it (ORG-1).
+  final String? initialCookbookId;
 
   @override
   State<RecipeEditorScreen> createState() => _RecipeEditorScreenState();
@@ -25,7 +31,8 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   final _form = GlobalKey<FormState>();
   late final String _id;
   late final TextEditingController _title, _servings, _prep, _cook;
-  late final TextEditingController _ingredients, _steps, _notes;
+  late final TextEditingController _ingredients, _steps, _notes, _tags;
+  late Set<String> _cookbooks;
   String? _photo;
   bool _dirty = false;
   bool _saving = false;
@@ -45,6 +52,12 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     );
     _steps = TextEditingController(text: r == null ? '' : stepsToText(r.steps));
     _notes = TextEditingController(text: r?.notes ?? '');
+    _tags = TextEditingController(text: (r?.tags ?? const []).join('، '));
+    _cookbooks = {
+      ...?r?.cookbookIds,
+      if (r == null && widget.initialCookbookId != null)
+        widget.initialCookbookId!,
+    };
     _photo = r?.photoPath;
     for (final c in _controllers) {
       c.addListener(_markDirty);
@@ -59,6 +72,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     _ingredients,
     _steps,
     _notes,
+    _tags,
   ];
 
   void _markDirty() {
@@ -115,6 +129,11 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
         repo.newId,
       ),
       steps: stepsFromText(_steps.text, before?.steps ?? const [], repo.newId),
+      cookbookIds: [
+        for (final c in state.cookbooks)
+          if (_cookbooks.contains(c.id)) c.id,
+      ],
+      tags: parseTags(_tags.text),
       createdAt: before?.createdAt ?? now,
       updatedAt: now,
     );
@@ -267,6 +286,29 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
+                controller: _tags,
+                decoration: InputDecoration(
+                  labelText: l10n.fieldTags,
+                  hintText: l10n.fieldTagsHint,
+                ),
+                validator: (v) {
+                  final tags = parseTags(v ?? '');
+                  return tags.length > Tag.maxPerRecipe ||
+                          tags.any((t) => t.length > Tag.maxName)
+                      ? l10n.tagsInvalid
+                      : null;
+                },
+              ),
+              _TagSuggestions(controller: _tags),
+              _CookbookPicker(
+                selected: _cookbooks,
+                onChanged: (id, on) => setState(() {
+                  on ? _cookbooks.add(id) : _cookbooks.remove(id);
+                  _dirty = true;
+                }),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
                 controller: _notes,
                 minLines: 2,
                 maxLines: null,
@@ -356,6 +398,84 @@ class _PhotoRow extends StatelessWidget {
             label: Text(l10n.photoRemove),
           ),
       ],
+    );
+  }
+}
+
+/// Tags already in use, one tap to add (ORG-2).
+class _TagSuggestions extends StatelessWidget {
+  const _TagSuggestions({required this.controller});
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final all = context.watch<RecipesState>().tags;
+    return ValueListenableBuilder(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        final have = parseTags(value.text).map(normalizeArabic).toSet();
+        final left = all
+            .where((t) => !have.contains(normalizeArabic(t)))
+            .take(8)
+            .toList();
+        if (left.isEmpty) return const SizedBox(height: 8);
+        return Padding(
+          padding: const EdgeInsetsDirectional.only(top: 8),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              for (final t in left)
+                ActionChip(
+                  label: ContentText(t),
+                  onPressed: () {
+                    final text = value.text.trim();
+                    controller.text = text.isEmpty ? t : '$text، $t';
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Which cookbooks the recipe is in, any number (ORG-1).
+class _CookbookPicker extends StatelessWidget {
+  const _CookbookPicker({required this.selected, required this.onChanged});
+  final Set<String> selected;
+  final void Function(String id, bool on) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final List<Cookbook> books = context.watch<RecipesState>().cookbooks;
+    if (books.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.fieldCookbooks,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              for (final c in books)
+                FilterChip(
+                  label: ContentText(c.name),
+                  selected: selected.contains(c.id),
+                  onSelected: (on) => onChanged(c.id, on),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
