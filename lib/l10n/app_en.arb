@@ -1,0 +1,19 @@
+{
+  "@@locale": "en",
+  "appTitle": "Wasfati",
+  "@appTitle": {"description": "App name in the app bar and launcher."},
+  "recipesEmptyTitle": "No recipes yet",
+  "@recipesEmptyTitle": {"description": "RUN-1. Empty recipe list heading."},
+  "recipesEmptyBody": "Share a recipe from TikTok, Instagram or YouTube, or add your own.",
+  "@recipesEmptyBody": {"description": "RUN-1. Empty recipe list explanation."},
+  "recipesAdd": "Add a recipe",
+  "@recipesAdd": {"description": "RUN-1. The one clear first action on the empty list."},
+  "recipesCount": "{count, plural, =0{No recipes} =1{1 recipe} other{{count} recipes}}",
+  "@recipesCount": {"description": "Number of saved recipes.", "placeholders": {"count": {"type": "int"}}},
+  "errorSaveFailed": "Couldn't save. Your changes weren't lost; try again.",
+  "@errorSaveFailed": {"description": "Reliable writes: shown when a database write fails and state was rolled back."},
+  "deletedSnack": "Recipe deleted",
+  "@deletedSnack": {"description": "DEL-2. Snackbar after deleting a recipe."},
+  "undo": "Undo",
+  "@undo": {"description": "DEL-2. Snackbar action."}
+}

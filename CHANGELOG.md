@@ -4,6 +4,12 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-19
+
+### Added
+- The first app build: Wasfati opens in Arabic (right to left) or English, following the phone's language, with an empty recipe library ready for Phase 2.
+- Recipes are stored safely on the phone: every save is all or nothing, deleted recipes wait 30 days in the trash, and nothing leaves the device.
+
 ## [0.1.5] - 2026-09-19
 
 ### Changed
