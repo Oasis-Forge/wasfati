@@ -4,6 +4,11 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-09-19
+
+### Changed
+- Groundwork: the engine that reads Arabic ingredient amounts and units (١٢٣, fractions, words like نصف and كوبين), with tests from real recipes. Not visible in the app yet.
+
 ## [0.1.3] - 2026-09-19
 
 ### Changed

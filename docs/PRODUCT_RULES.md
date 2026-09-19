@@ -166,6 +166,12 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
   - An amount inside Arabic text is wrapped in a left-to-right isolate (LANG-5), so "1½ كوب" reads correctly.
 - **QTY-6** Unit names agree with the number in Arabic: 1 كوب، 2 كوبان/كوبين، 3–10 أكواب، 11+ كوبًا. English uses singular and plural. They come from ICU plural messages (LANG-2), not string joining.
 - **QTY-7** The parser is pure Dart with a table-driven test. The table's first rows are every ingredient line from both ReciMe tests (`docs/research/competitor-analysis.md`). A new parsing bug found anywhere becomes a new row before it's fixed.
+- **QTY-8** A line with no number (added after the S1 spike, 19 September 2026):
+  - A **singular** unit word means one ("حبة بصل", "كوب جزر", "ملعقة كبيرة ملح").
+  - A **dual** form means two (كوبين، حزمتين، فصّان، ملعقتين كبيرتين).
+  - A **plural** unit word with no number is just part of the name ("قطع الدجاج", "حبات هال").
+  - An informal unit with no number ("رشة ملح") is to taste (QTY-2).
+  - A bracketed equivalent ("3 أكواب (450 غرام)") is kept as the line's note, not as a second amount.
 
 ## 9. Scaling and conversion
 
@@ -259,6 +265,11 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
   - a photo from the camera or gallery (up to 3 pages per recipe)
   - text pasted in "Import"
 - **IMP-2** A link is tried **on the device first**. If the page has schema.org `Recipe` data (JSON-LD or microdata), it's parsed locally (QTY-1) and is **free and unlimited**: it never uses the AI quota and never contacts our server. Only the page itself is fetched, directly from its site.
+- **IMP-11** Reading website recipe data (S2, `docs/research/technical-constraints.md`):
+  - The page is read with an HTML parser, not pattern matching (some sites leave the `type` attribute unquoted).
+  - The recipe can be inside `@graph`, in a list, or in microdata.
+  - Instructions can be one string (split on line breaks), a list of strings, `HowToStep` items, or `HowToSection` groups (REC-6).
+  - Microdata with no ingredients counts as "no recipe data", so the page goes to AI import (IMP-3).
 - **IMP-3** Otherwise the import goes to our server (SRV-1): social links, pages without recipe data, pasted text, and photos. The user sees **before sending**, in one line, that it uses one of their AI imports and the count left ("سيستخدم استيرادًا واحدًا · بقي 7 من 10"). Premium hides the count.
 - **IMP-4** Progress shows a single step list (reading, understanding, done). It can be cancelled. Past 45 seconds, it offers "Keep waiting" or "Cancel". A cancelled or failed import doesn't use the quota.
 - **IMP-5** Every import opens a **preview** before anything is saved:
@@ -288,6 +299,12 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 
 - **SRV-1** The server runs on Cloudflare Workers (Decision 6). It has one endpoint that takes a link, text, or up to 3 images, and returns a recipe in the REC structure (JSON validated against a schema). The model is Claude Haiku 4.5 to start, with structured output. The model and prompt version come back with each result, for debugging.
 - **SRV-2** For a link, the server fetches the public page or post (title, caption or description, and any recipe data) and sends only that text to the model. It never logs into anything, and never fetches a private post.
+- **SRV-10** How the server gets a caption (S3):
+  - **TikTok:** the public oEmbed endpoint.
+  - **YouTube:** the public watch page's description.
+  - **Instagram:** no approved method yet (Decision 8, pending).
+  - The server never pretends to be another company's crawler or browser, and never logs in.
+  - A platform it can't read returns `private_post` (SRV-7), and the app offers to paste the caption as text (IMP-1).
 - **SRV-3** The server keeps no content: no request bodies, captions, images or results in logs. Only aggregate counters are kept (imports, errors, tokens, cost per day). Images are held only in memory for the request.
 - **SRV-4** Abuse and cost:
   - Each request carries an anonymous random install ID (created on first launch, stored on the device, included in backups) and a Play Integrity token. Requests without a valid token are refused.
@@ -308,6 +325,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 5. (19 September 2026) Digits: Western 123 by default in both languages, Arabic ١٢٣ as a Settings option; the parser always reads both (QTY-1, QTY-5).
 6. (19 September 2026) Cook-mode timers alert in the background with a notification; permission is asked at the first timer (COOK-4, COOK-5). The import server runs on Cloudflare Workers, with its code in a private repo, Oasis-Forge/wasfati-import (SRV-1).
 7. (19 September 2026) Starter rule MONEY-1 doesn't apply: Wasfati handles no money. Prices come only from the store (PAY-2).
+8. (pending) How the server reads Instagram captions: the official Meta oEmbed API, asking the user to paste the caption, or dropping Instagram from server import (SRV-10). Faking a crawler is ruled out.
 
 ## Roadmap impact
 <!-- Rules that change the data model or the build order, and where they land in docs/ROADMAP.md. Schema changes go in Phase 1. -->
