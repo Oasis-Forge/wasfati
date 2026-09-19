@@ -44,7 +44,7 @@ Set up before the first feature, while it's cheap.
   - **IMP** import: website, share, photo, preview, report mistake
   - **SRV** the import server's contract, quotas and limits
 - [ ] **`/spec` round 2** (by W7): **PLAN** meal plan, **GRO** groceries and aisles, **RAM** Ramadan mode, and the final **PAY** quotas and tiers.
-- [ ] **Spikes** (W0), each with a written result in `docs/research/technical-constraints.md`:
+- [ ] **Spikes** (W0), each with a written result in `docs/research/technical-constraints.md`. Done 19 September 2026: S1 (80-row parser table passes, QTY-8), S2 (5 of 8 Arabic sites work on the device, IMP-11) and S4 (`receive_sharing_intent`, manifest only). **S3 is half done:** caption fetching works for TikTok and YouTube, Instagram is pending (Decision 8), and the cost measurement needs an API key.
   - **S1 Quantity parser:** Western and Eastern Arabic digits, fractions (½, 1/2, ¼), ranges (2–3), Arabic units and abbreviations (كيلو، ك، غ/جرام، كوب، ملعقة كبيرة/صغيرة، حبة، فص، عود، رشة، حزمة، علبة). Use the real lines from both ReciMe tests as fixtures.
   - **S2 Website import on the device:** read schema.org `Recipe` JSON-LD from Fatafeat and 5 other Arabic sites. Record which have it and which need AI.
   - **S3 Import server:**
@@ -71,7 +71,7 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
   - Ingredient lines, each with an amount (a number or a range), a unit ID, a name, a note and the **original text**.
   - Steps as an ordered list.
   - Cookbooks, tags, notes, and a "cooked" count.
-- [ ] **Quantity parser and formatter** (QTY-1–QTY-7) and Arabic search normalization (ORG-4), as pure Dart with a test table built from the S1 fixtures:
+- [ ] **Quantity parser and formatter** (QTY-1–QTY-8; prototype from S1 already in `lib/models/quantity/`, with its table) and Arabic search normalization (ORG-4), as pure Dart with a test table built from the S1 fixtures:
   - Parses Western and Eastern Arabic digits, fractions, ranges, and Arabic and metric/US units.
   - Displays in the user's digit style.
   - Rounds countable items (حبة، فص، بيضة) sensibly.
