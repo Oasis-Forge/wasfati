@@ -4,6 +4,11 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-09-19
+
+### Changed
+- The full plan to v1: build order, weekly timeline, and a launch before Ramadan 2027. No app changes yet.
+
 ## [0.1.1] - 2026-09-19
 
 ### Changed
