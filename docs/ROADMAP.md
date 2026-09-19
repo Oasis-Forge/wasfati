@@ -5,11 +5,11 @@ Goal: build the full v1 feature set, then ship Wasfati to Google Play. Behavior 
 ## Phase 0: Tooling
 Set up before the first feature, while it's cheap.
 - [x] `CLAUDE.md`, `.claude/` settings, format hook, `/spec` `/verify` `/release` `/ship` `/handoff` skills, `build-doctor` agent (`/kickoff`)
-- [ ] GitHub repo, Dependabot, CI (checks + a build for every mobile platform) green on a first PR
-- [ ] `main` ruleset: PR required, the CI checks required, no force pushes or deletion (`docs/RELEASING.md`)
-- [ ] Every merged PR is a release: the CI version check, then a tag and a draft GitHub Release on merge. `v0.1.0` is the first.
+- [x] GitHub repo, Dependabot, CI (checks + a build for every mobile platform) green on a first PR
+- [x] `main` ruleset: PR required, the CI checks required, no force pushes or deletion (`docs/RELEASING.md`)
+- [x] Every merged PR is a release: the CI version check, then a tag and a draft GitHub Release on merge. `v0.1.0` is the first.
 - [ ] The release workflow runs once by hand without secrets (unsigned artifacts, nothing published)
-- [ ] Privacy policy draft served by GitHub Pages
+- [x] Privacy policy draft served by GitHub Pages
 - [ ] Competitor research (`docs/research/competitor-analysis.md`) and the first product rules (`docs/PRODUCT_RULES.md`)
 
 ## Phase 1: Foundations

@@ -38,4 +38,4 @@ Changes are published on this page with a new effective date.
 
 ## Contact
 
-Questions: open an issue at https://github.com/Oasis-Forge/wasfati/issues.
+Questions: email oasisforge.support@gmail.com, or open an issue at https://github.com/Oasis-Forge/wasfati/issues.

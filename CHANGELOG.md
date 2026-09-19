@@ -4,6 +4,11 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-19
+
+### Changed
+- Hands-on research of the leading recipe app, and the support email in the privacy policy. No app changes yet.
+
 ## [0.1.0] - 2026-09-19
 
 ### Added
