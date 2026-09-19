@@ -19,7 +19,7 @@ Weeks start on Mondays. W0 is 21 September 2026.
 | W3–W5 | 12 Oct–1 Nov | 2a | Recipes, cookbooks, search, cook mode, scaling, website import |
 | W6–W7 | 2–15 Nov | 2b | Import server, share-sheet import with a preview, photo import |
 | W8 | 16–22 Nov | 5 | **Closed test starts** (12 testers, 14 days) on the 2a+2b build; later items ship as updates during the test |
-| W8–W10 | 16 Nov–6 Dec | 2c | Meal plan, groceries, Ramadan mode, backup, trash |
+| W8–W10 | 16 Nov–6 Dec | 2c | Meal plan, Ramadan mode, groceries, sharing, backup |
 | W11 | 7–13 Dec | 4 | Ads, Pro, Premium; first-run walkthrough |
 | W12 | 14–20 Dec | 5 | Apply for production (after the 14 days); store listing in Arabic and English |
 | W13–W14 | 21 Dec–3 Jan | 5 | Production review and rollout. **Target: live by 3 January 2027** |
@@ -43,7 +43,14 @@ Set up before the first feature, while it's cheap.
   - **ORG** cookbooks, tags, search and sort
   - **IMP** import: website, share, photo, preview, report mistake
   - **SRV** the import server's contract, quotas and limits
-- [ ] **`/spec` round 2** (by W7): **PLAN** meal plan, **GRO** groceries and aisles, **RAM** Ramadan mode, and the final **PAY** quotas and tiers.
+- [x] **`/spec` round 2** (20 September 2026): §14–§17 of `docs/PRODUCT_RULES.md`, new rules in §2, §3, §6, §12 and §13, and Decisions 9–13. Areas:
+  - **PLAN** meal plan
+  - **RAM** Ramadan mode
+  - **GRO** groceries and aisles
+  - **SHARE** sharing a recipe as text or images
+  - **BAK** the backup file, restore, the reminder and export
+  - **ADS/PAY** where banners go, tiers, products and prices (no trial)
+  - **IMP/SRV** Translate (Decision 9)
 - [ ] **Spikes** (W0), each with a written result in `docs/research/technical-constraints.md`. Done 19 September 2026: S1 (80-row parser table passes, QTY-8), S2 (5 of 8 Arabic sites work on the device, IMP-11) and S4 (`receive_sharing_intent`, manifest only). **S3 is half done:** caption fetching works for TikTok and YouTube, Instagram is pending (Decision 8), and the cost measurement needs an API key.
   - **S1 Quantity parser:** Western and Eastern Arabic digits, fractions (½, 1/2, ¼), ranges (2–3), Arabic units and abbreviations (كيلو، ك، غ/جرام، كوب، ملعقة كبيرة/صغيرة، حبة، فص، عود، رشة، حزمة، علبة). Use the real lines from both ReciMe tests as fixtures.
   - **S2 Website import on the device:** read schema.org `Recipe` JSON-LD from Fatafeat and 5 other Arabic sites. Record which have it and which need AI.
@@ -96,52 +103,53 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
 - [ ] **First run:** empty states with one clear first action, and one built-in sample recipe (RUN-1)
 
 ## Phase 2b: AI import (W6–W7)
-- [ ] **Import server** (SRV-1–SRV-9):
+- [ ] **Import server** (SRV-1–SRV-11):
   - Deploy the proxy from S3.
   - It turns a link, caption or image into the REC structure (structured output).
   - It keeps nothing it receives, and caches results by public post URL.
   - Rate limit per device, Play Integrity check, a monthly spending cap and alerts.
   - A test suite with the S1 and S3 fixtures that fails on regressions.
+  - Check S3b's measured cost per import against Premium's price (PAY-8): a Premium user at the 300 fair-use cap must cost less than the monthly plan pays after the store's fee (about AED 8.49). If not, lower the cap (SRV-4) before launch.
 - [ ] **Share-sheet import** (IMP-1, IMP-3–IMP-9): TikTok, Instagram, YouTube and Facebook share into Wasfati → progress → **preview to edit before saving** → save. "Report a mistake" sends only the source link and the user's note, and only when they tap it.
 - [ ] **Instagram fallback** (IMP-12, Decision 8): when a caption can't be read, offer paste or screenshot.
 - [ ] **Emulator check of real share payloads** (S4 follow-up): what TikTok, Instagram, YouTube and Facebook put in a share (link only, or caption too). The user logs in to each app on the emulator. If Instagram includes the caption, IMP-12 becomes a rare path.
-- [ ] **Translate to Arabic** (Decision 9, pending): decide it with `/spec` round 2, then build it on the import server.
+- [ ] **Translate** (IMP-14–IMP-16, SRV-11, Decision 9): "ترجم إلى العربية" on a recipe in another language, and in the import preview, saves a linked copy and leaves the original alone. Amounts and units never go through the model. Schema step 3 stores the link to the original.
 - [ ] **Photo import** (IMP-1, IMP-10): a cookbook page or handwritten recipe, from the camera or picker → server vision → preview.
 - [ ] **Free AI-import quota** (IMP-7, SRV-4; 10 a month, Decision 4): a counter visible in the header, the reset date shown, and an import only counts when saved.
 - [ ] **Network permission and privacy:** the first release with the server rewrites the privacy policy and the data-safety form in the same PR.
 
 ## Phase 2c: Plan and shop (W8–W10, shipped as updates during the closed test)
-- [ ] **Meal plan** (PLAN-*): a week view with the locale's week start; add by day and meal (breakfast, lunch, dinner, snack); add the whole week to groceries.
-- [ ] **Ramadan mode** (RAM-*):
-  - Suhoor and iftar slots instead of meals.
-  - A 30-day plan with Hijri dates.
-  - Portions for gatherings.
-  - Turned on automatically near Ramadan, and able to be switched off.
-- [ ] **Groceries** (GRO-*):
-  - Built from recipes and the plan.
+- [ ] **Meal plan** (PLAN-1–PLAN-6; schema step 4 comes first, with the grocery tables): a week view starting on the day from Settings; recipes or notes by day and meal (breakfast, lunch, dinner, snack), each with its own servings; add the week to groceries.
+- [ ] **Ramadan mode** (RAM-1–RAM-5):
+  - Suhoor, iftar and snack slots on Ramadan days, with Hijri dates (Umm al-Qura, movable by a day).
+  - A whole-month view for planning Ramadan; gatherings use each entry's servings.
+  - Offered by a card 7 days before Ramadan, never switched on by itself.
+  - No prayer or iftar times (they would need location).
+- [ ] **Groceries** (GRO-1–GRO-7):
+  - Built from recipes and the plan, scaled as shown.
   - Merges the same item across recipes with unit maths.
-  - Aisles that know Arabic ingredient names.
+  - 12 aisles that know Arabic ingredient names (at least 95% of the test fixtures placed).
   - Share the list as text on WhatsApp.
-- [ ] **Share a recipe:** as an Arabic image card and as text (WhatsApp first).
-- [ ] **Backup, restore, export** (BAK-1–BAK-5): after the last schema step, so the format covers every table.
+- [ ] **Share a recipe** (SHARE-1–SHARE-4): as text, or as image pages sized for WhatsApp.
+- [ ] **Backup, restore, export** (BAK-1–BAK-10): after the last schema step, so the format covers every table. A backup file with photos, merge or replace, a monthly reminder, Android's device backup without photos, and a text export.
 
 ## Phase 3: Store readiness (alongside 2c)
 - [ ] Display name "وصفاتي" (Arabic) and "Wasfati" (English) on every platform: launcher label, bundle names.
 - [ ] Launcher icons and splash screen, generated from one committed source.
 - [ ] Store IDs, permanent after the first upload and free of personal names: `com.oasisforge.wasfati`.
 - [ ] Privacy policy published, and updated for every feature that touches user data.
-- [ ] The release build declares only the permissions the store listing admits to; the release workflow dumps the built artifact's permissions and fails on any it doesn't expect (RUN-2). Write the list against a real build, not from memory, and check both directions: a permission the app needs and lost is as much a bug as one a plugin added. Expected: INTERNET (the import server, ads), and camera only if the photo import uses it directly.
+- [ ] The release build declares only the permissions the store listing admits to; the release workflow dumps the built artifact's permissions and fails on any it doesn't expect (RUN-2). Write the list against a real build, not from memory, and check both directions: a permission the app needs and lost is as much a bug as one a plugin added. Today: INTERNET, POST_NOTIFICATIONS and VIBRATE. Ads add ACCESS_NETWORK_STATE and AD_ID, and purchases add BILLING (Roadmap impact in `docs/PRODUCT_RULES.md`). No camera permission: photos come through the system camera and picker.
 
 ## Phase 4: Before release (W11)
 - [ ] **Languages** (LANG-1–LANG-6): Arabic and English complete; every screen driven in Arabic at 1.3× text size.
-- [ ] **Ads, Pro and Premium** (ADS-1–ADS-8, PAY-1–PAY-6; Decision 1):
-  - Banners only on the library, grocery and plan screens; never in cook mode, the editor or the import preview.
-  - Pro (one-time) removes ads.
-  - Premium (subscription) gives AI imports beyond the quota, and nutrition later.
-  - Every paywall has a visible close button.
-  - The trial is reminded before it charges.
+- [ ] **Ads, Pro and Premium** (ADS-1–ADS-9, PAY-1–PAY-11; Decisions 1, 10–12):
+  - One banner unit on the library, the recipe page, the plan and groceries; never in cook mode, the editor or the import preview. The IDs are in `docs/RELEASING.md` (ADS-8).
+  - Pro (`pro`, AED 14.99 one-time) removes ads.
+  - Premium (`premium`, AED 9.99 a month or AED 59.99 a year) removes ads and raises AI imports to 300 a month. No trial (Decision 11).
+  - The purchase screen has a close button from the first frame, and no crossed-out prices or countdowns (PAY-10).
+  - Cancelling is two taps from Settings (PAY-11).
   - It rewrites the privacy policy, the data-safety form and the store listing in the same release (ADS-6).
-- [ ] **Review prompt:** only after a successful import **and** a cooked recipe, never during setup.
+- [ ] **Review prompt** (RUN-5): only after a saved import **and** a recipe marked as cooked, at most once every 120 days, never during setup.
 - [ ] **First-run setup and walkthrough** (RUN-3, RUN-4): last. Language and digit style, then up to four pages. No profiling questions.
 
 ## Phase 5: Google Play

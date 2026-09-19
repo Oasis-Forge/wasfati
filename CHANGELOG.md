@@ -4,6 +4,11 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-09-20
+
+### Changed
+- The rules for the meal plan, Ramadan mode, groceries, sharing a recipe, backups, translation, and the Pro and Premium prices. No app changes yet.
+
 ## [0.7.0] - 2026-09-19
 
 ### Added
