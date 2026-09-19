@@ -1,13 +1,13 @@
 # Product rules
 
-_19 September 2026._
+_19 September 2026; round 2 on 20 September 2026._
 
 This file defines how Wasfati behaves: the calculations, defaults, and edge cases behind each screen. Each section says what the competitor does (see `docs/research/competitor-analysis.md`), what we take from it, and our rule. We learn from their app; we don't copy its rules.
 
 - Rule IDs (`DATA-1`) are stable: never renumber or reuse one. A dropped rule stays, struck through, with its date and reason. Tests, code comments, PRs, and roadmap items reference them.
 - A rule is testable: a number, a default, an order, an edge case. "Entry is fast" isn't a rule; "a basic entry takes about four taps" is.
 - "Not verified" marks competitor behavior we saw only partly.
-- Every rule keeps the product principles in `CLAUDE.md`: Arabic first (right-to-left, Arabic units and numerals); no account in v1, and recipes leave the device only through a backup the user chooses to make; only what the user sends for an AI import (a post link, caption or photo) goes to our import server, which neither keeps it nor sells it; ads never appear in cook mode, the recipe editor or the import review; honest paying: store prices, two-tap cancel, a reminder before any trial charges, and nothing that already works moves behind a payment.
+- Every rule keeps the product principles in `CLAUDE.md`: Arabic first (right-to-left, Arabic units and numerals); no account in v1, and recipes leave the device only when the user sends them: a backup, a share, or a translation; only what the user sends for an AI import (a post link, caption, photo, or a recipe to translate) goes to our import server, which neither keeps it nor sells it; ads never appear in cook mode, the recipe editor or the import review; honest paying: store prices, two-tap cancel, a reminder before any trial charges, and nothing that already works moves behind a payment.
 
 ## Section shape
 
@@ -44,6 +44,19 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 - **BAK-3** Merge matches records by ID (REC-2); the later `updated_at` wins, deletions included (DEL-1). The app then shows how many records were added, updated, and unchanged.
 - **BAK-4** A backup from a newer schema is refused with a message to update the app. Older backups are migrated with the app's own schema steps.
 - **BAK-5** Exported files use ISO dates and plain decimals with a `.`, whatever the language. Spreadsheet text starting with `=`, `+`, `-`, or `@` gets a leading apostrophe.
+- **BAK-6** The backup file (round 2, 20 September 2026):
+  - One zip file, `wasfati-backup-YYYY-MM-DD.zip`, holding `backup.json` and a `photos` folder.
+  - Settings → Backup → "Save a backup" opens the system's save dialog, so the user picks Google Drive, Files or any folder; "Share" sends the same file through the share sheet. No storage permission is needed (RUN-2).
+  - It holds everything the app keeps: recipes with their groups, lines, steps, photos, cookbooks, tags and cooked counts (REC-11), translation links (IMP-14), plan entries (PLAN-2), the grocery list and aisle choices (GRO-1, GRO-4), settings, the install ID and this month's AI-import count (SRV-4, IMP-7).
+  - Records in the trash come along only as deletions, so a merge carries them (BAK-3); they never show as recipes (ORG-7).
+  - Purchases aren't in it: they follow the store account (PAY-1).
+- **BAK-7** Restore: Settings → Backup → "Restore" opens the system's file picker. The app first shows what the file holds ("١٢٠ وصفة، ٤ كتب طبخ، ٣ أسابيع في الخطة"), then offers **Merge** (the default, BAK-3) or **Replace** (confirmed twice).
+  - Merge keeps this phone's settings and install ID; Replace takes the file's.
+  - The automatic backup made first (BAK-2) is kept in the app's storage, the latest 3, and can be restored from the same screen.
+  - A file that isn't a Wasfati backup, or is damaged, changes nothing and says so.
+- **BAK-8** Reminder: with at least 10 recipes and no backup in the last 30 days (or ever), the library shows a one-line card ("آخر نسخة احتياطية قبل ٤٥ يومًا") with "Back up" and "Later". "Later" hides it for 30 days, and a switch in Settings turns it off for good. It never blocks anything and never shows in cook mode, the editor or the import preview.
+- **BAK-9** Android's own device backup (to the user's Google account, when it's turned on in the phone's settings) includes the recipe database and settings, but not photos or caches: photos would pass Android's 25 MB limit, which stops the whole backup. A new phone restored that way gets its recipes back without photos; the backup file (BAK-6) carries them. A phone-to-phone transfer during setup has no such limit and includes photos. A recipe whose photo file is missing shows no photo, never a broken image.
+- **BAK-10** Export: all recipes, or one cookbook, as a single text file in the shared-text format (SHARE-2), through the save dialog. It's for reading and printing, not for restoring, so amounts read as on screen (QTY-5); BAK-5 applies to the backup's JSON. Export is free, like backup (PAY-7).
 
 ## 3. First run and trust
 
@@ -53,6 +66,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 - **RUN-2** The release build declares no permission a shipped feature doesn't need, so the store's data-safety answers stay true. The release workflow checks it.
 - **RUN-3** The first launch asks only what the device can't tell (for example the language and currency) on one page, preselected from the locale. Permissions are requested when the feature that needs them is first used, and everything else works if they're refused.
 - **RUN-4** A walkthrough of up to four pages follows setup. Every page has Skip, it respects reduce motion, it can be replayed from Settings, and it shows once. An update on a device that already has data skips setup and the walkthrough.
+- **RUN-5** The store's review prompt (added 20 September 2026) is asked for only after the user has saved an import and marked a recipe as cooked (REC-9), right after cook mode closes with "Done", and at most once every 120 days. Never during setup, the walkthrough or a purchase. The app never asks "Do you like Wasfati?" first: the store's prompt isn't filtered by mood.
 
 ## 4. Languages
 
@@ -86,12 +100,41 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 - **ADS-6** What the ad SDK collects is declared in the store data-safety form, the privacy labels, and the privacy policy, in the same plain words as the rest. The release that adds ads rewrites all of them, and the first-run privacy page, together.
 - **ADS-7** The ad SDK is handed nothing from the app: no user records, and no keywords derived from them. One place in the code decides whether a slot fills, so an ad-free build and a paid ad-free app are the same code path.
 - **ADS-8** Only a release build asks with the real ad units; every other build uses the network's test units. Serving live ads from a development build is how an ad account gets suspended. IDs are not secrets — they ship in the binary — so they live in the repo, and a test fails if the copies in the code and the platform manifests drift apart.
-- **PAY-1** Two products, each for what it costs us. **Pro** is a one-time purchase that removes ads. **Premium** is a subscription for what has a running server cost: AI imports beyond the free monthly quota, and nutrition. Premium also removes ads. Both follow the store account, "Restore purchases" sits beside the prices, and the app asks the store what is owned at each launch, so a refund, a lapsed subscription or a family-shared purchase lands without a reinstall. Exact quotas and tier contents: `/spec` after the hands-on research (Decision 1).
+- **ADS-9** Where banners go (Decision 12): one anchored adaptive banner in the bottom bar (ADS-3) of four screens: the library (All recipes and Cookbooks), the recipe page, the meal plan (PLAN-1) and groceries (GRO-5).
+  - Never in cook mode (COOK-1), the editor, the import screens and preview (IMP-5), Settings, the purchase screen (PAY-10), sheets, dialogs or menus, the first run (ADS-4), or anything the app makes: shared text and images (SHARE-4), the grocery list it sends (GRO-6), backups and exports (BAK-6, BAK-10).
+  - One ad unit serves every slot. It was created on 20 September 2026; its ID and the app ID are in `docs/RELEASING.md` (ADS-8).
+  - A slot keeps at least 8 dp from any button, including the recipe page's "ابدأ الطبخ" and the navigation bar, so a tap meant for them can't land on the ad (AdMob's accidental-click policy).
+- **PAY-1** Two products, each for what it costs us. **Pro** is a one-time purchase that removes ads. **Premium** is a subscription for what has a running server cost: AI imports beyond the free monthly quota, and later nutrition (PAY-3). Premium also removes ads. Both follow the store account, "Restore purchases" sits beside the prices, and the app asks the store what is owned at each launch, so a refund, a lapsed subscription or a family-shared purchase lands without a reinstall. Tiers, products and prices: PAY-7–PAY-11 (Decisions 1, 10, 11).
 - **PAY-2** Prices come from the store, in the buyer's currency. Never hard-coded, and nothing to do with any currency setting in the app.
 - **PAY-3** Nothing is sold before it exists. A tier that isn't finished is shown as "coming soon", with no price and no button.
 - **PAY-4** Nothing that already works moves behind a payment. Paying removes ads and adds what is new.
 - **PAY-5** Selling is quiet: one row in Settings, one small target on the ad slot, and one line where the free import quota runs out. No interstitial upsell, no countdown. A Premium trial is allowed only if the app reminds the user before it charges (at least 24 hours ahead) and cancelling is at most two taps from Settings (it opens the store's subscription page).
 - **PAY-6** A purchase that fails or is left pending never charges twice and never leaves the app half-paid: the app finishes every purchase with the store whatever the outcome, and the slots stay as they were until it is confirmed. A store with no such product configured is a real state — show "nothing to sell yet" rather than a button that only fails.
+- **PAY-7** Tiers at launch (round 2, 20 September 2026):
+
+  | | Free | Pro (one-time) | Premium (subscription) |
+  |---|---|---|---|
+  | Banners (ADS-9) | Yes | None | None |
+  | AI imports a month: social links, pasted text, photos and translations (IMP-7, IMP-16) | 10 | 10 | 300, fair use (SRV-4) |
+  | Everything else: website import, cook mode, scaling and conversion, the plan, Ramadan mode, groceries, sharing, backup and export | Free | Free | Free |
+
+  - Nutrition isn't listed or sold until it ships (PAY-3); it's an after-v1 item.
+  - Pro and Premium can be owned together; the purchase screen marks what's owned.
+- **PAY-8** Store products (Decision 10). Product IDs are permanent after the first upload, like the app ID:
+  - `pro`: a one-time product, AED 14.99.
+  - `premium`: a subscription with two auto-renewing base plans, `monthly` at AED 9.99 and `yearly` at AED 59.99.
+  - These are the Play Console base prices. Other countries get Play's local prices, and the app only ever shows the store's price (PAY-2).
+- **PAY-9** No free trial in v1 (Decision 11): the 10 free AI imports a month are how anyone tries Premium. If a trial is ever added, PAY-5's reminder and two-tap cancel come with it.
+- **PAY-10** The purchase screen opens only from PAY-5's three places. It shows:
+  - Pro and Premium side by side, with store prices (Premium monthly and yearly), what each includes (PAY-7), and "Owned" on what's bought.
+  - "Restore purchases" next to the prices (PAY-1).
+  - A close button at the top from the first frame, never delayed or hidden.
+  - For Premium: that it renews until cancelled, and where to cancel (PAY-11).
+  - No crossed-out prices, countdowns, "most popular" badges or preselected plan, and no ads (ADS-9).
+- **PAY-11** Settings shows a "Subscription" row with the plan and, when Google Play's record gives it (SRV-4), the renewal date. "Manage or cancel" opens Google Play's page for this subscription: two taps from Settings (PAY-5).
+  - When the store reports that Premium has ended, banners come back (unless Pro is owned) and the quota drops to 10 at once.
+  - The month's count carries over both ways: 12 imports used stays 12 used, of 300 or of 10.
+  - Everything imported stays (PAY-4).
 
 ## 7. Recipes
 
@@ -250,7 +293,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
   - "طماطم" and "بندورة" are **not** treated as the same (no dictionary in v1).
 - **ORG-5** Sort: Recently added (default), A–Z (Arabic alphabet order for Arabic titles), Recently cooked, Most cooked. The choice is remembered.
 - **ORG-6** Filter chips: cookbook, tag, source type (REC-3), total time (under 30 min, 30–60 min, over 1 h), and "Has photo". Filters combine with search.
-- **ORG-7** Deleted recipes go to the trash (DEL-1, DEL-2) and appear nowhere else: not in search, cookbooks, counts or backup exports.
+- **ORG-7** Deleted recipes go to the trash (DEL-1, DEL-2) and appear nowhere else: not in search, cookbooks, counts, the plan (PLAN-6) or exports (BAK-10). A backup carries them only as deletions, for merging (BAK-6).
 
 ## 12. Import
 
@@ -310,6 +353,18 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
   - Hashtag lines are dropped.
   - The draft opens as the preview (IMP-5), and nothing is saved until Save.
   - A shared text that contains a link imports the link instead (IMP-2).
+- **IMP-14** Translate (Decision 9, 20 September 2026). A recipe written mostly in another language than the app's shows "ترجم إلى العربية" (or "Translate to English") on its page and in the import preview (IMP-5). "Mostly" means fewer than half of its title, ingredient names and steps are in the app's script (Arabic letters for Arabic, Latin for English).
+  - It sends the recipe's words to the import server (SRV-11), then opens the result as a preview; nothing is saved until Save.
+  - Saving makes a **copy**, a new recipe (REC-2), and never changes the original. The copy keeps the source URL and type, servings, times, cookbooks and tags; its cooked count starts at 0, and its photo is a copied file, so deleting one recipe never removes the other's photo (REC-8).
+  - The copy shows "مترجمة من: <title>" and the original shows "الترجمة: <title>", each opening the other. Deleting either leaves the other whole; the link just disappears.
+  - Both keep the source URL, so importing it again finds a duplicate (IMP-9) and offers the one saved last.
+- **IMP-15** Amounts never go through the model:
+  - The app sends only words, each keyed by its ID: the title, group names, each line's name and note, and each step. It rebuilds every line with its original amount, range and unit ID (REC-5), so scaling, conversion and groceries behave exactly as before.
+  - A line the parser couldn't read (REC-5) is sent whole. Every number in a returned line or step must match the numbers sent, or that line or step keeps its original text. Durations stay numbers, so cook-mode timers still work (COOK-4).
+  - Every ID must come back exactly once; otherwise nothing changes, and the app offers "Try again" without using the quota (SRV-7).
+  - Tested with a fake server that changes numbers: the saved copy's amounts, units and timers never change.
+- **IMP-16** A translation is one AI import (IMP-7), counted only when the copy is saved, with IMP-3's line shown before sending. Translating in the preview of an AI import is part of that import and costs nothing more; translating a website import (IMP-2) or a saved recipe costs one.
+
 ## 13. Import server
 
 **They do:** not visible. The server-side import worked for Arabic in about 25 s.
@@ -318,7 +373,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 - The server is a cost and a privacy surface.
 - It must be cheap per import, keep nothing, and never be abusable as a free AI proxy.
 
-- **SRV-1** The server runs on Cloudflare Workers (Decision 6). It has one endpoint that takes a link, text, or up to 3 images, and returns a recipe in the REC structure (JSON validated against a schema). The model is Claude Haiku 4.5 to start, with structured output. The model and prompt version come back with each result, for debugging.
+- **SRV-1** The server runs on Cloudflare Workers (Decision 6). It has one endpoint that takes a link, text, or up to 3 images, and returns a recipe in the REC structure (JSON validated against a schema). The same endpoint translates a recipe (SRV-11). The model is Claude Haiku 4.5 to start, with structured output. The model and prompt version come back with each result, for debugging.
 - **SRV-2** For a link, the server fetches the public page or post (title, caption or description, and any recipe data) and sends only that text to the model. It never logs into anything, and never fetches a private post.
 - **SRV-10** How the server gets a caption (S3):
   - **TikTok:** the public oEmbed endpoint.
@@ -335,7 +390,137 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 - **SRV-6** Spending cap: a monthly budget set in the Worker's config. At 80% it sends an alert. At 100%, AI imports pause for everyone with the message "Import is busy, try again later", and website imports (IMP-2) keep working.
 - **SRV-7** Errors return a short code (`unreachable`, `not_a_recipe`, `private_post`, `limit_reached`, `busy`), which the app shows as a translated message (LANG-2). None of them uses the quota (IMP-4).
 - **SRV-8** A regression suite of real Arabic inputs (both ReciMe test sources, plus the S3 spike's 10 captions and 5 photos) runs in the server repo's CI. A prompt or model change must keep every expected ingredient line and amount.
-- **SRV-9** The privacy policy names the server, what it receives (IMP-3, IMP-10) and that it keeps nothing, in the release that ships it (ADS-6 style, same PR).
+- **SRV-9** The privacy policy names the server, what it receives (IMP-3, IMP-10, and recipes sent for translation, IMP-14) and that it keeps nothing, in the release that ships it (ADS-6 style, same PR).
+- **SRV-11** Translation (IMP-14, IMP-15): a request carries one recipe's words, keyed by ID, and the target language (ar or en). The server returns the same keys translated, with structured output.
+  - It refuses more than 300 keys or 20,000 characters, so it can't serve as a general translator, and it counts against the same limits as imports (SRV-4).
+  - Translations are never cached (SRV-5), and nothing is kept (SRV-3).
+  - SRV-8's suite gains English and Arabic recipes to translate, and fails if any number changes.
+
+## 14. Meal plan
+
+**They do:**
+- A weekly plan by date and meal type. The week starts on Monday by default, and that can be changed.
+- A recipe goes to the plan, and a recipe or the whole week goes to groceries, in about two taps.
+- Not verified: notes without a recipe, servings per entry, moving entries, and what happens to entries when a recipe is deleted.
+
+**Learn:**
+- A plan is how a saved recipe actually gets cooked. Families plan the week around lunch, the main meal in the Gulf, and around gatherings.
+- A Monday week doesn't match the Arab weekend (weak spot 8).
+- The plan feeds groceries, so it has to know how many people each meal is for.
+
+- **PLAN-1** The plan shows one week as a list of 7 days, each with four meal slots in this order: فطور، غداء، عشاء، وجبة خفيفة (breakfast, lunch, dinner, snack).
+  - The week starts on the day set in Settings. The default, "حسب المنطقة" (By region), takes it from the phone's region using the Unicode CLDR calendar data built into the app: Saturday in Egypt or Kuwait, Sunday in Saudi Arabia, Monday in the UK. With no region, it's Saturday in Arabic and Sunday in English.
+  - It opens on the current week, scrolled to today, which is highlighted. Arrows move a week at a time, and "هذا الأسبوع" comes back.
+  - An empty slot shows only a small "+".
+  - Dates are local calendar dates (DATE-1).
+- **PLAN-2** An entry is a recipe or a short note (1–60 characters, like "مطعم" or "بقايا الأمس"). A slot holds up to 10 entries, in the order added.
+  - A recipe entry has its own servings, 1–100, starting at the recipe's (REC-7). A recipe without servings takes a multiplier instead: ×½, ×1, ×2 or ×3 (SCALE-2).
+  - The entry's servings scale what goes to groceries (PLAN-5); the recipe itself doesn't change.
+- **PLAN-3** Adding:
+  - On a recipe page, "أضف إلى الخطة" opens a sheet with today and the last meal used (lunch at first) already picked. Adding takes three taps: the button, a day, Save.
+  - In the plan, a slot's "+" opens a picker with the library's search (ORG-3) and "Write a note".
+  - Adding never changes the recipe and never marks it as cooked (REC-9).
+- **PLAN-4** A long press on an entry offers: move or copy to another day or meal, change servings, or remove, with Undo (DEL-2). "Clear week" removes every entry in the week shown, with Undo. Removing an entry never deletes the recipe and never touches the grocery list, since the shopping may be done.
+- **PLAN-5** "Add to groceries" in the plan lists the recipe entries of the days shown, from today on, each ticked, so the user can untick what's already at home.
+  - Each entry's lines are scaled by its servings (PLAN-2) and shown in the recipe's remembered view (SCALE-5, SCALE-6), then merged into the list (GRO-3).
+  - An entry already added shows "أُضيفت" and starts unticked, so adding the same week twice doesn't double the list.
+- **PLAN-6** An entry whose recipe is in the trash (DEL-1) is hidden from the plan and from "Add to groceries". Restoring the recipe brings it back; purging it (DEL-2) deletes the entry. A recipe's page shows its next planned meal ("في الخطة: الثلاثاء، غداء").
+
+## 15. Ramadan mode
+
+**They do:** nothing for Ramadan or Hijri dates (weak spot 8).
+
+**Learn:**
+- Ramadan is the busiest month for cooking and recipe searches in the Arab world, and Wasfati's launch hook (`docs/ROADMAP.md`).
+- The day has two main meals, suhoor before dawn and iftar at sunset, with sweets and visits in the evening. Iftar gatherings cook for many more people.
+- The first day depends on the moon sighting, which can differ by a day between countries, so the app's date must be easy to correct.
+
+- **RAM-1** Ramadan mode is off by default. When on, it changes only the days inside Ramadan: their slots become السحور، الإفطار، وجبة خفيفة (suhoor, iftar, snack), in that order.
+  - An entry already in breakfast, lunch or dinner on one of those days stays, under its own slot, so nothing is hidden.
+  - Days outside Ramadan don't change, so the mode can stay on all year and apply itself each Ramadan.
+- **RAM-2** Ramadan's dates come from the Umm al-Qura calendar, built into the app (no network).
+  - With the mode on, each Ramadan day shows its Hijri date beside the usual one ("٥ رمضان"), and the day after the last one shows "عيد الفطر".
+  - Settings can move the first day one day earlier or later, for the local moon sighting. That moves the whole month, and it resets for the next Ramadan.
+- **RAM-3** From 7 days before Ramadan until its last day, while the mode is off, the plan shows one card: "رمضان بعد ٣ أيام. نحوّل الخطة إلى سحور وإفطار؟" with "تفعيل" and "ليس الآن". "ليس الآن" hides it until the next Ramadan, and the switch stays in Settings. The mode never turns itself on.
+- **RAM-4** With the mode on, from 7 days before Ramadan until its end, the plan offers a "رمضان" view beside "الأسبوع": the whole month, day 1 to 29 or 30, with the same slots, entries and actions (PLAN-3, PLAN-4). There, "Add to groceries" (PLAN-5) lists the month's remaining entries. A gathering is an iftar entry with more servings (PLAN-2).
+- **RAM-5** Ramadan mode shows no prayer or iftar times. They would need the user's location, a permission the app doesn't ask for (RUN-2), and prayer apps already do this well.
+
+## 16. Groceries
+
+**They do:**
+- A grocery list filled from a recipe (with a picker of its ingredients) or from the whole week's plan, sortable by aisle.
+- All 22 Arabic items in our test landed in "Uncategorized", and "1 كيلو جرام لحم ضأن" became "جرام لحم ضأن" × 1 (weak spots 2 and 4).
+- "Order online" offers only US stores in the UAE.
+- Not verified: how the same item merges across recipes, and sharing the list.
+
+**Learn:**
+- One shopping trip wants one short list: the onions from three recipes are one line with the right total.
+- Aisles only help if they know Arabic names; an "Uncategorized" pile is no help.
+- In the Gulf the list often goes to someone else, family or a driver, on WhatsApp.
+
+- **GRO-1** There's one grocery list. An item has a name, an aisle (GRO-4), one or more amounts (each an exact number with a unit ID, QTY-4, or none), a done state, and the recipes its amounts came from.
+  - Typing in "أضف غرضًا" parses the line (QTY-1): "2 كيلو طماطم" becomes 2 kg of طماطم, in vegetables and fruit.
+- **GRO-2** "أضف إلى المشتريات" on a recipe page lists its lines as the page shows them, with the current scale and view (SCALE-6), each ticked.
+  - To-taste lines (QTY-2) start unticked. Water and ice aren't listed.
+  - One tap adds the ticked lines and says how many ("أُضيفت ٩ مكونات").
+- **GRO-3** Merging: a new line joins an item that isn't done when their names match after ORG-4's normalization, with a leading "ال" dropped from each word.
+  - The same unit adds up: 1 كوب + 2 كوب = 3 أكواب.
+  - Mass with mass, or volume with volume, in different units, adds up in metric (g or ml, stepping up to kg or l from 1,000, SCALE-5): 1 كغ + 500 غ = 1.5 كغ.
+  - A count with no unit and a count in حبة are the same: 2 بصل + حبة بصل = 3 بصل.
+  - A range adds its upper end, so there's enough: 2–3 + 1 = 4.
+  - A to-taste line adds no amount.
+  - Anything else, like a can and a count, or cups and grams, stays as a second amount on the same item: "طماطم: 2 حبة + علبة".
+  - The total is rounded once (SCALE-3).
+  - A done item is never merged into: a line added after shopping makes a new item.
+  - Names in different languages don't merge (no dictionary, like ORG-4).
+- **GRO-4** Aisles are fixed, with translatable names (DATA-1), in the order of a walk through a store:
+  1. خضار وفواكه (vegetables and fruit)
+  2. لحوم ودواجن (meat and poultry)
+  3. أسماك (fish and seafood)
+  4. ألبان وأجبان وبيض (dairy, cheese and eggs)
+  5. خبز ومخبوزات (bread and bakery)
+  6. أرز ومعكرونة وبقوليات (rice, pasta, grains and pulses)
+  7. بهارات (spices)
+  8. زيوت وصلصات ومعلبات (oils, sauces and cans)
+  9. مستلزمات الحلويات (baking and sweets: flour, sugar, yeast)
+  10. مجمدات (frozen)
+  11. مشروبات (drinks)
+  12. أخرى (other)
+
+  - A built-in table of Arabic and English ingredient names places each item, matching the normalized name (ORG-4) by its longest known phrase: "صدر دجاج مسحب" goes to meat and poultry.
+  - **At least 95% of the ingredient names in the S1 and S2 fixtures land in a named aisle, not "أخرى"** (the answer to weak spot 4). A test checks it.
+  - Moving an item to another aisle is remembered for that name, so the next "كزبرة" goes there too.
+- **GRO-5** The list:
+  - Aisles in GRO-4's order; items by name within an aisle (Arabic alphabetical order, ORG-5).
+  - Amounts in the user's digits, with units agreeing with the number (QTY-5, QTY-6), and the recipes an item came from on a second line.
+  - Ticking an item moves it into a collapsed "تم" section at the end; unticking moves it back.
+  - "Clear done" and "Clear all" remove with Undo (DEL-2).
+  - A "By recipe" view groups the amounts under each recipe, with hand-added items under "أضفتها بنفسك". Each recipe there has "Remove", which takes out only its own amounts. The view choice is remembered.
+- **GRO-6** "Share" sends the items not yet done as plain text through the share sheet (WhatsApp first): a title line, the aisle headings, and one line per item ("• 2 كغ طماطم"), in the user's digits, with QTY-5's isolates so amounts read the right way. No link, no app name and no ad (ADS-9). An empty list can't be shared.
+- **GRO-7** Deleting a recipe (DEL-1) leaves the list alone; its items just stop naming it. Cleared items follow DEL-1 and DEL-2 but never show in the recipe trash. The list is free (PAY-7), works offline, and is in backups (BAK-6).
+
+## 17. Sharing a recipe
+
+**They do:** PDF export is Plus-only. Sending a recipe to someone else: not verified.
+
+**Learn:**
+- Arab families pass recipes around on WhatsApp, as text or pictures, and the person receiving one may not have Wasfati.
+- A shared recipe is the app's best advert, but only if it reads well in Arabic and doesn't feel like an ad.
+- WhatsApp shrinks pictures to about 1,600 px on the long side, so one long picture of a recipe becomes unreadable.
+
+- **SHARE-1** "مشاركة" on the recipe page offers "كنص" (as text) and "كصورة" (as images). Both go through the Android share sheet: nothing is uploaded and no web page is made (principle 2).
+  - What's shared is what the page shows: the current scale and view (SCALE-6), in the user's digits (QTY-5).
+  - Never shared: notes, the kept original caption (IMP-6), rating, tags, cookbooks and the cooked count.
+- **SHARE-2** As text: the title; one line with whichever of servings and times are set (REC-3); the ingredients under "المقادير", with group headings (REC-4); the steps, numbered, under "الطريقة"; the source link, if any; and a last line, "من تطبيق وصفاتي", with the app's Play link.
+  - Headings follow the app's language (LANG-2); the recipe itself stays as written.
+  - Arabic lines carry QTY-5's isolates, so WhatsApp shows "1½ كوب" the right way.
+- **SHARE-3** As images: portrait pages of 1,080 × 1,350 px, below WhatsApp's resize limit, shared together.
+  - Page 1 has the photo (if any), the title, servings and times, then the ingredients; the steps follow on the next pages.
+  - Body text is at least 32 px, and a page breaks between lines, never inside one.
+  - Each page's footer shows "وصفاتي" and the page count ("٢/٣").
+  - At most 6 pages; a longer recipe offers text instead.
+  - Each line reads in its own direction, as on the recipe page (LANG-5), and pages always use the light theme.
+- **SHARE-4** Images are drawn on the device into the app's cache and deleted at the next start. No permission is needed (RUN-2), and a page carries no ad, QR code or tracking link (ADS-9).
 
 ## Decisions
 <!-- Numbered and dated answers to open questions, citing the rules they settle. -->
@@ -347,7 +532,17 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 6. (19 September 2026) Cook-mode timers alert in the background with a notification; permission is asked at the first timer (COOK-4, COOK-5). The import server runs on Cloudflare Workers, with its code in a private repo, Oasis-Forge/wasfati-import (SRV-1).
 7. (19 September 2026) Starter rule MONEY-1 doesn't apply: Wasfati handles no money. Prices come only from the store (PAY-2).
 8. (19 September 2026) Instagram: users share the post link as usual. Because Instagram blocks logged-out reading, Wasfati then asks for the caption, pasted as text, or a screenshot, read by photo import (IMP-12, SRV-10). Faking a crawler is ruled out. Applying for Meta's official oEmbed API is a later item; if it's approved and returns captions, a shared link alone will be enough.
-9. (pending, for Phase 2b) "Translate to Arabic" for a recipe in another language: a button on the recipe page that sends the recipe to the import server and saves an Arabic copy, keeping the original. It costs one AI import (IMP-7). The open questions are whether the copy replaces the original or sits beside it, and how units and quantities are protected, since they must not change. Until this is decided, recipes are never translated (IMP-6).
+9. (19 September 2026; decided 20 September 2026) "Translate to Arabic": a recipe in another language gets a button, on its page and in the import preview, that saves a translated **copy** beside the original, linked both ways; the original never changes. It costs one AI import, except inside an AI import's own preview. The app sends only the words and keeps every amount and unit itself (IMP-14–IMP-16, SRV-11). An English app offers "Translate to English" the same way. The principles now say recipes also leave the device when the user shares or translates one.
+10. (20 September 2026) Prices, as Play Console base prices: Pro AED 14.99 one-time; Premium AED 9.99 a month or AED 59.99 a year, about half of ReciMe's AED 18.99 and AED 114.99. The app shows the store's own price (PAY-2, PAY-7, PAY-8).
+11. (20 September 2026) No free trial for Premium: the 10 free AI imports a month let everyone try it, and nothing can charge by surprise (PAY-9).
+12. (20 September 2026) Banners go on four screens, the library, the recipe page, the meal plan and groceries, all from the one banner unit created that day; never in cook mode, the editor or the import preview (ADS-9). The recipe page has one because that's where most reading time goes; cooking itself stays ad-free in cook mode.
+13. (20 September 2026) Round 2 calls taken without a question:
+    - Ramadan mode is offered by a card and never switches itself on; once on, it stays on for later years (RAM-1, RAM-3).
+    - One grocery list (GRO-1).
+    - Android's device backup carries the database, not photos (BAK-9).
+    - Shared recipe text ends with one line naming the app, with its Play link. Shared grocery lists and recipe images carry no link (SHARE-2, SHARE-4, GRO-6).
+    - The "By region" week start uses CLDR's data for the phone's region, falling back to Saturday in Arabic and Sunday in English (PLAN-1).
+    - The store's review prompt comes only after an import and a cooked recipe (RUN-5).
 
 ## Roadmap impact
 <!-- Rules that change the data model or the build order, and where they land in docs/ROADMAP.md. Schema changes go in Phase 1. -->
@@ -359,11 +554,20 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
   - The quantity parser and formatter with the unit table (QTY-1–QTY-7), built before any screen reads amounts.
   - Arabic search normalization (ORG-4).
 - **Phase 2a order:** recipes and cookbooks → find → scaling and conversion (SCALE-1–SCALE-6) → cook mode (COOK-1–COOK-6) → website import on the device (IMP-2, IMP-5, IMP-6, IMP-9).
-- **Phase 2b order:** the server (SRV-1–SRV-9) before share and photo import (IMP-1, IMP-3, IMP-4, IMP-7, IMP-8, IMP-10).
+- **Phase 2b order:** the server (SRV-1–SRV-11) before share and photo import (IMP-1, IMP-3, IMP-4, IMP-7, IMP-8, IMP-10).
+- **Phase 2b schema (step 3):** `translated_from` on recipes, the original's ID, for IMP-14's link. Translation (IMP-14–IMP-16, SRV-11) comes after the server.
+- **Phase 2c schema (step 4), before the plan and groceries:**
+  - Plan entries: date, meal slot, a recipe or a note, servings or multiplier, order, and when it was added to groceries (PLAN-2, PLAN-5).
+  - Grocery items, each with its amounts, and each amount with the recipe and plan entry it came from (GRO-1, GRO-5).
+  - Aisle choices by name (GRO-4).
+  - New settings: Ramadan mode, this year's start shift and the card's "not now" (RAM-2, RAM-3), and the last backup date and reminder switch (BAK-8).
+- **Phase 2c order:** schema step 4 → meal plan → groceries (they read the plan) → Ramadan mode → sharing → backup, restore and export last (BAK-6 needs every table).
 - **Permissions (RUN-2):**
   - `INTERNET` arrives with website import (IMP-2).
   - `POST_NOTIFICATIONS` arrives with cook-mode timers (COOK-5).
   - No `CAMERA`: photos come through the system camera and picker (IMP-1).
   - No exact alarms.
   - Keeping the screen on (COOK-3) uses the window flag, not a wake-lock permission.
-- **Privacy policy:** website import (a page fetched directly from its site), the import server (SRV-9) and notifications, each updated in the PR that ships it.
+  - Ads add `ACCESS_NETWORK_STATE` and `com.google.android.gms.permission.AD_ID`; purchases add `com.android.vending.BILLING`. Each joins the release workflow's allowed list in the PR that brings it, checked against a real build (Phase 3).
+  - Backup, restore and sharing need none: they use the system's save and open dialogs and the share sheet.
+- **Privacy policy:** website import (a page fetched directly from its site), the import server and translation (SRV-9), notifications, Android's device backup and backup files (BAK-9), and ads (ADS-6), each updated in the PR that ships it.

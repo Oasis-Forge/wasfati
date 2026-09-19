@@ -15,7 +15,7 @@ Save recipes from TikTok, Instagram, YouTube and any website as clean Arabic rec
 <!-- Fill in as Phase 1 lands: one line per folder or key file, plus the data flow (screen → state → storage). Update it in the PR that changes the structure. -->
 
 ## Conventions
-- Product principles: Arabic first (right-to-left, Arabic units and numerals); no account in v1, and recipes leave the device only through a backup the user chooses to make; only what the user sends for an AI import (a post link, caption or photo) goes to our import server, which neither keeps it nor sells it; ads never appear in cook mode, the recipe editor or the import review; honest paying: store prices, two-tap cancel, a reminder before any trial charges, and nothing that already works moves behind a payment. Every feature keeps them.
+- Product principles: Arabic first (right-to-left, Arabic units and numerals); no account in v1, and recipes leave the device only when the user sends them: a backup, a share, or a translation; only what the user sends for an AI import (a post link, caption, photo, or a recipe to translate) goes to our import server, which neither keeps it nor sells it; ads never appear in cook mode, the recipe editor or the import review; honest paying: store prices, two-tap cancel, a reminder before any trial charges, and nothing that already works moves behind a payment. Every feature keeps them.
 - Behavior is defined in `docs/PRODUCT_RULES.md` with stable rule IDs (`ADD-3`). Code comments, tests, PRs, and roadmap items cite them. No rule yet? `/spec <area>` before coding.
 - State lives in the state layer; screens stay presentational. Don't add a second state library.
 - Schema change = append a migration step and test the upgrade; never edit a merged step.

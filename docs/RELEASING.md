@@ -56,6 +56,12 @@ Both mobile stores require a public privacy policy URL.
 
 Every file in `docs/` gets published.
 
+## Ads (AdMob)
+
+Created 20 September 2026. The IDs aren't secrets: they ship inside the app, so they live in the repo (ADS-8). Only release builds use them; every other build uses Google's test units.
+- App ID: `ca-app-pub-8287765177319119~8706163515`
+- Banner unit, used by every slot (ADS-9): `ca-app-pub-8287765177319119/9667891390`
+
 ## One-time setup: Android
 
 1. Create the upload keystore and back it up with its passwords. Losing it means asking Google for an upload-key reset.
