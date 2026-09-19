@@ -197,4 +197,143 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themeDark => 'Dark';
+
+  @override
+  String get tabAllRecipes => 'All recipes';
+
+  @override
+  String get tabCookbooks => 'Cookbooks';
+
+  @override
+  String get searchHint => 'Search recipes or ingredients';
+
+  @override
+  String get searchClear => 'Clear search';
+
+  @override
+  String containsIngredient(String name) {
+    return 'Contains: $name';
+  }
+
+  @override
+  String get noResults => 'No recipes match';
+
+  @override
+  String get clearFilters => 'Clear filters';
+
+  @override
+  String get sortBy => 'Sort';
+
+  @override
+  String get sortRecent => 'Recently added';
+
+  @override
+  String get sortAz => 'A–Z';
+
+  @override
+  String get sortRecentlyCooked => 'Recently cooked';
+
+  @override
+  String get sortMostCooked => 'Most cooked';
+
+  @override
+  String get filterCookbook => 'Cookbook';
+
+  @override
+  String get filterTag => 'Tag';
+
+  @override
+  String get filterSource => 'Source';
+
+  @override
+  String get filterTime => 'Time';
+
+  @override
+  String get filterPhoto => 'Has photo';
+
+  @override
+  String get sourceWritten => 'Written by me';
+
+  @override
+  String get sourceWebsite => 'Website';
+
+  @override
+  String get sourceSocial => 'Social media';
+
+  @override
+  String get sourcePhoto => 'Photo';
+
+  @override
+  String get timeUnder30 => 'Under 30 min';
+
+  @override
+  String get time30to60 => '30–60 min';
+
+  @override
+  String get timeOver60 => 'Over 1 hour';
+
+  @override
+  String get any => 'Any';
+
+  @override
+  String get viewGrid => 'Grid view';
+
+  @override
+  String get viewList => 'List view';
+
+  @override
+  String get cookbookNew => 'New cookbook';
+
+  @override
+  String get cookbookName => 'Name';
+
+  @override
+  String get cookbookNameInvalid => '1 to 60 characters';
+
+  @override
+  String get cookbookRename => 'Rename';
+
+  @override
+  String get cookbookDelete => 'Delete cookbook';
+
+  @override
+  String get cookbookDeleteBody => 'The recipes stay in your library.';
+
+  @override
+  String cookbookRecipes(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown recipes',
+      one: '1 recipe',
+      zero: 'No recipes',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cookbooksEmpty =>
+      'Group recipes your way: Ramadan, quick dinners, family favourites.';
+
+  @override
+  String get cookbookEmpty =>
+      'No recipes in this cookbook yet. Add them from a recipe\'s edit screen.';
+
+  @override
+  String get fieldTags => 'Tags';
+
+  @override
+  String get fieldTagsHint => 'Separate with commas, e.g. spicy, Ramadan';
+
+  @override
+  String get tagsInvalid => 'Up to 20 tags, 30 characters each';
+
+  @override
+  String get fieldCookbooks => 'Cookbooks';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get create => 'Create';
 }

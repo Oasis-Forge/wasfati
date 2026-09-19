@@ -1,3 +1,4 @@
+import 'cookbook.dart';
 import 'quantity/parser.dart';
 import 'quantity/rational.dart';
 
@@ -26,6 +27,8 @@ class Recipe {
     this.lastCookedAt,
     this.ingredients = const [],
     this.steps = const [],
+    this.cookbookIds = const [],
+    this.tags = const [],
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -53,6 +56,12 @@ class Recipe {
   /// Step groups in order (REC-6).
   final List<Section<RecipeStep>> steps;
 
+  /// The cookbooks this recipe is in, any number (ORG-1).
+  final List<String> cookbookIds;
+
+  /// Tag names, up to 20 of 1–30 characters each (ORG-2).
+  final List<String> tags;
+
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -71,6 +80,10 @@ class Recipe {
       return 'servings';
     }
     if (rating != null && (rating! < 1 || rating! > 5)) return 'rating';
+    if (tags.length > Tag.maxPerRecipe) return 'tags';
+    for (final t in tags) {
+      if (t.trim().isEmpty || t.trim().length > Tag.maxName) return 'tags';
+    }
     for (final s in steps) {
       for (final step in s.items) {
         if (step.text.length > RecipeStep.maxLength) return 'step';
@@ -93,6 +106,8 @@ class Recipe {
     Object? lastCookedAt = _keep,
     List<Section<IngredientLine>>? ingredients,
     List<Section<RecipeStep>>? steps,
+    List<String>? cookbookIds,
+    List<String>? tags,
     DateTime? updatedAt,
     Object? deletedAt = _keep,
   }) => Recipe(
@@ -112,6 +127,8 @@ class Recipe {
         : lastCookedAt as DateTime?,
     ingredients: ingredients ?? this.ingredients,
     steps: steps ?? this.steps,
+    cookbookIds: cookbookIds ?? this.cookbookIds,
+    tags: tags ?? this.tags,
     createdAt: createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt == _keep ? this.deletedAt : deletedAt as DateTime?,
@@ -140,6 +157,8 @@ class Recipe {
     Map<String, Object?> m, {
     List<Section<IngredientLine>> ingredients = const [],
     List<Section<RecipeStep>> steps = const [],
+    List<String> cookbookIds = const [],
+    List<String> tags = const [],
   }) => Recipe(
     id: m['id']! as String,
     title: m['title']! as String,
@@ -155,6 +174,8 @@ class Recipe {
     lastCookedAt: _date(m['last_cooked_at']),
     ingredients: ingredients,
     steps: steps,
+    cookbookIds: cookbookIds,
+    tags: tags,
     createdAt: _date(m['created_at'])!,
     updatedAt: _date(m['updated_at'])!,
     deletedAt: _date(m['deleted_at']),

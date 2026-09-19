@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'library.dart';
 import 'quantity/format.dart';
 
 enum LanguagePref { system, ar, en }
@@ -20,6 +21,8 @@ class AppSettings {
     this.units = UnitSystem.metric,
     this.weekStart = WeekStart.auto,
     this.theme = ThemePref.system,
+    this.sort = LibrarySort.recent,
+    this.grid = false,
   });
 
   final LanguagePref language;
@@ -28,18 +31,26 @@ class AppSettings {
   final WeekStart weekStart;
   final ThemePref theme;
 
+  /// The library order and view, remembered (ORG-5).
+  final LibrarySort sort;
+  final bool grid;
+
   AppSettings copyWith({
     LanguagePref? language,
     DigitStyle? digits,
     UnitSystem? units,
     WeekStart? weekStart,
     ThemePref? theme,
+    LibrarySort? sort,
+    bool? grid,
   }) => AppSettings(
     language: language ?? this.language,
     digits: digits ?? this.digits,
     units: units ?? this.units,
     weekStart: weekStart ?? this.weekStart,
     theme: theme ?? this.theme,
+    sort: sort ?? this.sort,
+    grid: grid ?? this.grid,
   );
 
   String toJson() => jsonEncode({
@@ -48,6 +59,8 @@ class AppSettings {
     'units': units.name,
     'weekStart': weekStart.name,
     'theme': theme.name,
+    'sort': sort.name,
+    'grid': grid,
   });
 
   /// Unknown or missing values fall back to the defaults, so a backup from a
@@ -63,6 +76,8 @@ class AppSettings {
       units: pick(UnitSystem.values, m['units'], UnitSystem.metric),
       weekStart: pick(WeekStart.values, m['weekStart'], WeekStart.auto),
       theme: pick(ThemePref.values, m['theme'], ThemePref.system),
+      sort: pick(LibrarySort.values, m['sort'], LibrarySort.recent),
+      grid: m['grid'] == true,
     );
   }
 

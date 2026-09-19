@@ -1,5 +1,8 @@
 import 'package:sqflite/sqflite.dart';
 
+import '../models/cookbook.dart';
+import '../models/library.dart';
+import '../models/quantity/arabic_text.dart';
 import '../models/recipe.dart';
 import '../services/ids.dart';
 
@@ -98,6 +101,22 @@ class RecipeRepository {
       await _softDeleteOthers(tx, 'ingredient_lines', saved.id, keepLines, now);
       await _softDeleteOthers(tx, 'steps', saved.id, keepSteps, now);
       await _softDeleteOthers(tx, 'sections', saved.id, keepSections, now);
+      await _syncLinks(
+        tx,
+        'cookbook_recipes',
+        'cookbook_id',
+        saved.id,
+        saved.cookbookIds.toSet(),
+        now,
+      );
+      await _syncLinks(
+        tx,
+        'recipe_tags',
+        'tag_id',
+        saved.id,
+        await _tagIds(tx, saved.tags, now),
+        now,
+      );
     });
     return saved;
   }
@@ -131,8 +150,24 @@ class RecipeRepository {
     List<Map<String, Object?>> of(List<Map<String, Object?>> rows, Object s) =>
         rows.where((r) => r['section_id'] == s).toList();
 
+    final cookbooks = await _db.rawQuery(
+      'SELECT cr.cookbook_id FROM cookbook_recipes cr '
+      'JOIN cookbooks c ON c.id = cr.cookbook_id '
+      'WHERE cr.recipe_id = ? AND cr.deleted_at IS NULL '
+      'AND c.deleted_at IS NULL ORDER BY c.position, c.name',
+      [id],
+    );
+    final tags = await _db.rawQuery(
+      'SELECT t.name FROM recipe_tags rt JOIN tags t ON t.id = rt.tag_id '
+      'WHERE rt.recipe_id = ? AND rt.deleted_at IS NULL '
+      'AND t.deleted_at IS NULL ORDER BY rt.created_at, t.name',
+      [id],
+    );
+
     return Recipe.fromMap(
       rows.single,
+      cookbookIds: [for (final r in cookbooks) r['cookbook_id']! as String],
+      tags: [for (final r in tags) r['name']! as String],
       ingredients: [
         for (final s in sections.where((s) => s['kind'] == 'ingredients'))
           Section(
@@ -192,6 +227,148 @@ class RecipeRepository {
         ),
     ];
   }
+
+  /// Every live recipe as a search index entry (ORG-3–ORG-7): its title,
+  /// ingredient names, tags, notes and cookbooks, in four queries.
+  Future<List<LibraryEntry>> library() async {
+    final recipes = await _db.query(
+      'recipes',
+      columns: [
+        'id',
+        'title',
+        'photo_path',
+        'source_type',
+        'prep_minutes',
+        'cook_minutes',
+        'cooked_count',
+        'last_cooked_at',
+        'created_at',
+        'notes',
+      ],
+      where: 'deleted_at IS NULL',
+    );
+    final names = <String, List<String>>{};
+    for (final r in await _db.rawQuery(
+      'SELECT recipe_id, name FROM ingredient_lines '
+      'WHERE deleted_at IS NULL ORDER BY position',
+    )) {
+      (names[r['recipe_id']! as String] ??= []).add(r['name']! as String);
+    }
+    final tags = <String, List<String>>{};
+    for (final r in await _db.rawQuery(
+      'SELECT rt.recipe_id, t.name FROM recipe_tags rt '
+      'JOIN tags t ON t.id = rt.tag_id '
+      'WHERE rt.deleted_at IS NULL AND t.deleted_at IS NULL',
+    )) {
+      (tags[r['recipe_id']! as String] ??= []).add(r['name']! as String);
+    }
+    final books = <String, Set<String>>{};
+    for (final r in await _db.rawQuery(
+      'SELECT cr.recipe_id, cr.cookbook_id FROM cookbook_recipes cr '
+      'JOIN cookbooks c ON c.id = cr.cookbook_id '
+      'WHERE cr.deleted_at IS NULL AND c.deleted_at IS NULL',
+    )) {
+      (books[r['recipe_id']! as String] ??= {}).add(
+        r['cookbook_id']! as String,
+      );
+    }
+    DateTime? date(Object? ms) => ms == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(ms as int, isUtc: true);
+    return [
+      for (final r in recipes)
+        LibraryEntry(
+          id: r['id']! as String,
+          title: r['title']! as String,
+          photoPath: r['photo_path'] as String?,
+          sourceType: SourceType.values.byName(r['source_type']! as String),
+          totalMinutes: r['prep_minutes'] == null && r['cook_minutes'] == null
+              ? null
+              : ((r['prep_minutes'] as int?) ?? 0) +
+                    ((r['cook_minutes'] as int?) ?? 0),
+          cookedCount: r['cooked_count']! as int,
+          lastCookedAt: date(r['last_cooked_at']),
+          createdAt: date(r['created_at'])!,
+          notes: r['notes'] as String?,
+          ingredientNames: names[r['id']] ?? const [],
+          tags: tags[r['id']] ?? const [],
+          cookbookIds: books[r['id']] ?? const {},
+        ),
+    ];
+  }
+
+  /// Live cookbooks in their order (ORG-1).
+  Future<List<Cookbook>> cookbooks() async => [
+    for (final r in await _db.query(
+      'cookbooks',
+      where: 'deleted_at IS NULL',
+      orderBy: 'position, name',
+    ))
+      Cookbook.fromMap(r),
+  ];
+
+  /// Creates a cookbook, or renames it when [id] is given (ORG-1: 1–60
+  /// characters). Returns its ID.
+  Future<String> saveCookbook(String name, {String? id}) async {
+    final n = name.trim();
+    if (n.isEmpty || n.length > Cookbook.maxName) {
+      throw ArgumentError.value(name, 'name', 'must be 1–60 characters');
+    }
+    final now = _clock().millisecondsSinceEpoch;
+    if (id != null) {
+      final c = await _db.update(
+        'cookbooks',
+        {'name': n, 'updated_at': now},
+        where: 'id = ? AND deleted_at IS NULL',
+        whereArgs: [id],
+      );
+      if (c != 1) throw StateError('No cookbook $id');
+      return id;
+    }
+    final newId = _ids();
+    final last = await _db.rawQuery(
+      'SELECT MAX(position) AS p FROM cookbooks WHERE deleted_at IS NULL',
+    );
+    await _db.insert('cookbooks', {
+      'id': newId,
+      'name': n,
+      'position': ((last.single['p'] as int?) ?? -1) + 1,
+      'created_at': now,
+      'updated_at': now,
+    });
+    return newId;
+  }
+
+  /// Deletes a cookbook and its links; its recipes stay (ORG-1, DEL-1).
+  Future<void> deleteCookbook(String id) async {
+    final now = _clock().millisecondsSinceEpoch;
+    await _db.transaction((tx) async {
+      await tx.update(
+        'cookbooks',
+        {'deleted_at': now, 'updated_at': now},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      await tx.update(
+        'cookbook_recipes',
+        {'deleted_at': now, 'updated_at': now},
+        where: 'cookbook_id = ? AND deleted_at IS NULL',
+        whereArgs: [id],
+      );
+    });
+  }
+
+  /// Tags in use by live recipes, most used first, for suggestions (ORG-2).
+  Future<List<String>> tagsInUse() async => [
+    for (final r in await _db.rawQuery(
+      'SELECT t.name, COUNT(*) AS n FROM recipe_tags rt '
+      'JOIN tags t ON t.id = rt.tag_id '
+      'JOIN recipes r ON r.id = rt.recipe_id '
+      'WHERE rt.deleted_at IS NULL AND t.deleted_at IS NULL '
+      'AND r.deleted_at IS NULL GROUP BY t.id ORDER BY n DESC, t.name',
+    ))
+      r['name']! as String,
+  ];
 
   /// Moves a recipe to the trash (DEL-1). Its children stay as they are, so
   /// [restore] brings the whole recipe back.
@@ -258,6 +435,81 @@ class RecipeRepository {
     final id = _ids();
     await _db.insert('meta', {'key': 'install_id', 'value': id});
     return id;
+  }
+
+  /// The IDs of tags named [names], creating the missing ones. Names match
+  /// after Arabic normalization, so "حار" and "حارّ" are one tag (ORG-4).
+  Future<Set<String>> _tagIds(
+    Transaction tx,
+    List<String> names,
+    DateTime now,
+  ) async {
+    if (names.isEmpty) return {};
+    final existing = <String, String>{
+      for (final r in await tx.query(
+        'tags',
+        columns: ['id', 'name'],
+        where: 'deleted_at IS NULL',
+      ))
+        normalizeArabic(r['name']! as String): r['id']! as String,
+    };
+    final ids = <String>{};
+    for (final raw in names) {
+      final name = raw.trim();
+      final key = normalizeArabic(name);
+      var id = existing[key];
+      if (id == null) {
+        id = _ids();
+        existing[key] = id;
+        await tx.insert('tags', {
+          'id': id,
+          'name': name,
+          'created_at': now.millisecondsSinceEpoch,
+          'updated_at': now.millisecondsSinceEpoch,
+        });
+      }
+      ids.add(id);
+    }
+    return ids;
+  }
+
+  /// Makes [recipeId]'s live links in [table] exactly [targets]: missing
+  /// ones are added, extra ones soft-deleted (DEL-1, BAK-3).
+  Future<void> _syncLinks(
+    Transaction tx,
+    String table,
+    String column,
+    String recipeId,
+    Set<String> targets,
+    DateTime now,
+  ) async {
+    final ms = now.millisecondsSinceEpoch;
+    final live = await tx.query(
+      table,
+      columns: ['id', column],
+      where: 'recipe_id = ? AND deleted_at IS NULL',
+      whereArgs: [recipeId],
+    );
+    final have = <String>{};
+    for (final r in live) {
+      final target = r[column]! as String;
+      if (targets.contains(target) && have.add(target)) continue;
+      await tx.update(
+        table,
+        {'deleted_at': ms, 'updated_at': ms},
+        where: 'id = ?',
+        whereArgs: [r['id']],
+      );
+    }
+    for (final target in targets.difference(have)) {
+      await tx.insert(table, {
+        'id': _ids(),
+        'recipe_id': recipeId,
+        column: target,
+        'created_at': ms,
+        'updated_at': ms,
+      });
+    }
   }
 
   Future<void> _upsert(

@@ -240,5 +240,186 @@
   "themeDark": "Dark",
   "@themeDark": {
     "description": "Dark theme."
+  },
+  "tabAllRecipes": "All recipes",
+  "@tabAllRecipes": {
+    "description": "ORG-1. Library tab."
+  },
+  "tabCookbooks": "Cookbooks",
+  "@tabCookbooks": {
+    "description": "ORG-1. Library tab."
+  },
+  "searchHint": "Search recipes or ingredients",
+  "@searchHint": {
+    "description": "ORG-3. Search box hint."
+  },
+  "searchClear": "Clear search",
+  "@searchClear": {
+    "description": "Tooltip for clearing the search box."
+  },
+  "containsIngredient": "Contains: {name}",
+  "@containsIngredient": {
+    "description": "ORG-3. Shown under a recipe that matched only by an ingredient.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noResults": "No recipes match",
+  "@noResults": {
+    "description": "Search or filters found nothing."
+  },
+  "clearFilters": "Clear filters",
+  "@clearFilters": {
+    "description": "ORG-6. Button."
+  },
+  "sortBy": "Sort",
+  "@sortBy": {
+    "description": "ORG-5. Sort chip and sheet title."
+  },
+  "sortRecent": "Recently added",
+  "@sortRecent": {
+    "description": "ORG-5."
+  },
+  "sortAz": "A–Z",
+  "@sortAz": {
+    "description": "ORG-5. Alphabetical."
+  },
+  "sortRecentlyCooked": "Recently cooked",
+  "@sortRecentlyCooked": {
+    "description": "ORG-5."
+  },
+  "sortMostCooked": "Most cooked",
+  "@sortMostCooked": {
+    "description": "ORG-5."
+  },
+  "filterCookbook": "Cookbook",
+  "@filterCookbook": {
+    "description": "ORG-6. Filter chip."
+  },
+  "filterTag": "Tag",
+  "@filterTag": {
+    "description": "ORG-6. Filter chip."
+  },
+  "filterSource": "Source",
+  "@filterSource": {
+    "description": "ORG-6. Filter chip."
+  },
+  "filterTime": "Time",
+  "@filterTime": {
+    "description": "ORG-6. Filter chip."
+  },
+  "filterPhoto": "Has photo",
+  "@filterPhoto": {
+    "description": "ORG-6. Filter chip."
+  },
+  "sourceWritten": "Written by me",
+  "@sourceWritten": {
+    "description": "REC-3 source type."
+  },
+  "sourceWebsite": "Website",
+  "@sourceWebsite": {
+    "description": "REC-3 source type."
+  },
+  "sourceSocial": "Social media",
+  "@sourceSocial": {
+    "description": "REC-3 source type."
+  },
+  "sourcePhoto": "Photo",
+  "@sourcePhoto": {
+    "description": "REC-3 source type."
+  },
+  "timeUnder30": "Under 30 min",
+  "@timeUnder30": {
+    "description": "ORG-6 time filter."
+  },
+  "time30to60": "30–60 min",
+  "@time30to60": {
+    "description": "ORG-6 time filter."
+  },
+  "timeOver60": "Over 1 hour",
+  "@timeOver60": {
+    "description": "ORG-6 time filter."
+  },
+  "any": "Any",
+  "@any": {
+    "description": "Filter option: no filter."
+  },
+  "viewGrid": "Grid view",
+  "@viewGrid": {
+    "description": "Tooltip."
+  },
+  "viewList": "List view",
+  "@viewList": {
+    "description": "Tooltip."
+  },
+  "cookbookNew": "New cookbook",
+  "@cookbookNew": {
+    "description": "ORG-1. Button and dialog title."
+  },
+  "cookbookName": "Name",
+  "@cookbookName": {
+    "description": "ORG-1. Dialog field."
+  },
+  "cookbookNameInvalid": "1 to 60 characters",
+  "@cookbookNameInvalid": {
+    "description": "ORG-1. Validation."
+  },
+  "cookbookRename": "Rename",
+  "@cookbookRename": {
+    "description": "ORG-1. Menu item."
+  },
+  "cookbookDelete": "Delete cookbook",
+  "@cookbookDelete": {
+    "description": "ORG-1. Menu item."
+  },
+  "cookbookDeleteBody": "The recipes stay in your library.",
+  "@cookbookDeleteBody": {
+    "description": "ORG-1. Confirmation text."
+  },
+  "cookbookRecipes": "{count, plural, =0{No recipes} =1{1 recipe} other{{shown} recipes}}",
+  "@cookbookRecipes": {
+    "description": "ORG-1. Recipes in a cookbook.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
+  },
+  "cookbooksEmpty": "Group recipes your way: Ramadan, quick dinners, family favourites.",
+  "@cookbooksEmpty": {
+    "description": "RUN-1. Empty cookbooks tab."
+  },
+  "cookbookEmpty": "No recipes in this cookbook yet. Add them from a recipe's edit screen.",
+  "@cookbookEmpty": {
+    "description": "RUN-1. Empty cookbook."
+  },
+  "fieldTags": "Tags",
+  "@fieldTags": {
+    "description": "ORG-2. Editor field."
+  },
+  "fieldTagsHint": "Separate with commas, e.g. spicy, Ramadan",
+  "@fieldTagsHint": {
+    "description": "ORG-2. Editor hint."
+  },
+  "tagsInvalid": "Up to 20 tags, 30 characters each",
+  "@tagsInvalid": {
+    "description": "ORG-2. Validation."
+  },
+  "fieldCookbooks": "Cookbooks",
+  "@fieldCookbooks": {
+    "description": "ORG-1. Editor section."
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Dialog button."
+  },
+  "create": "Create",
+  "@create": {
+    "description": "Dialog button."
   }
 }

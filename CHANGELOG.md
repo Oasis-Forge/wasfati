@@ -4,6 +4,14 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-19
+
+### Added
+- Search your recipes by name or ingredient. Search forgives Arabic spelling differences (أ/ا، ة/ه، diacritics), and a recipe found by one of its ingredients says so ("يحتوي: كزبرة").
+- Sort by newest, A–Z, recently cooked or most cooked, and filter by cookbook, tag, source, time or photo. Your sort and your list or grid view are remembered.
+- Cookbooks: group recipes your way (a recipe can be in several), rename them or delete them without losing any recipes.
+- Tags on recipes, with your most-used tags suggested as you type.
+
 ## [0.3.0] - 2026-09-19
 
 ### Added
