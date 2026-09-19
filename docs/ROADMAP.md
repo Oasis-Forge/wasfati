@@ -35,7 +35,7 @@ Set up before the first feature, while it's cheap.
 - [ ] The release workflow runs once by hand without secrets (unsigned artifacts, nothing published)
 - [x] Privacy policy draft served by GitHub Pages
 - [x] Competitor research, hands-on (`docs/research/competitor-analysis.md`, PR #1)
-- [ ] **`/spec` round 1** (W0), before any feature code:
+- [x] **`/spec` round 1** (19 September 2026): §7–§13 of `docs/PRODUCT_RULES.md`, Decisions 4–7. Areas:
   - **REC** recipe model
   - **QTY** quantities, units and the parser
   - **SCALE** scaling and conversion
@@ -53,7 +53,7 @@ Set up before the first feature, while it's cheap.
     - Measure the latency.
     - Check how to fetch a caption for TikTok, Instagram and YouTube.
   - **S4 Share target:** receiving shared text or URLs and images from TikTok, Instagram and YouTube on Android, in Flutter only (no hand-written Kotlin).
-- [ ] **Decision: where the server code lives** (W0).
+- [x] **Decision: where the server code lives** (19 September 2026, Decision 6): Cloudflare Workers, code in the private repo `Oasis-Forge/wasfati-import`.
   - Recommended: a separate private repo, `Oasis-Forge/wasfati-import`, holding the worker code and deploy config. Keys live only in the provider's secret store.
   - This keeps the public app repo free of anything secret.
 
@@ -65,13 +65,13 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
 - [ ] Reliable writes: write first, then change state; on failure roll back and show an error.
 - [ ] Localization scaffolding with **Arabic as the first language and English second**. Every UI string lives in the ARB files, and right-to-left is the default layout (LANG-1–LANG-6).
 - [ ] Schema step: record rules on every table: UUIDs, timestamps, soft delete (REC-1, REC-2, DEL-1).
-- [ ] Schema step, recipes (REC-*):
+- [ ] Schema step, recipes (REC-3–REC-9, ORG-1, ORG-2, and the install ID from SRV-4):
   - A recipe: title, photo, source URL and type, prep and cook time, servings.
   - Ingredient **groups** ("for the sauce").
   - Ingredient lines, each with an amount (a number or a range), a unit ID, a name, a note and the **original text**.
   - Steps as an ordered list.
   - Cookbooks, tags, notes, and a "cooked" count.
-- [ ] **Quantity parser and formatter** (QTY-*), as pure Dart with a test table built from the S1 fixtures:
+- [ ] **Quantity parser and formatter** (QTY-1–QTY-7) and Arabic search normalization (ORG-4), as pure Dart with a test table built from the S1 fixtures:
   - Parses Western and Eastern Arabic digits, fractions, ranges, and Arabic and metric/US units.
   - Displays in the user's digit style.
   - Rounds countable items (حبة، فص، بيضة) sensibly.
@@ -80,31 +80,31 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
 - [x] Platform decision: Android on Google Play in v1, iOS after, no desktop (19 September 2026, PRODUCT_RULES Decision 3).
 
 ## Phase 2a: Offline core (W3–W5)
-- [ ] **Settings:** language (system / العربية / English), digit style (Arabic ١٢٣ / Western 123), units (metric / cups and spoons), week start (default by locale: Saturday in the Gulf), theme.
-- [ ] **Recipes and cookbooks** (REC-*, ORG-*):
+- [ ] **Settings:** language (system / العربية / English), digit style (Western 123 by default, Arabic ١٢٣; QTY-5, Decision 5), units (metric / cups and spoons), week start (default by locale: Saturday in the Gulf), theme.
+- [ ] **Recipes and cookbooks** (REC-3–REC-11, ORG-1, ORG-2, ORG-7):
   - Write a recipe by hand, edit it, add a photo from the picker.
   - Cookbooks and tags.
   - Grid or list view.
-- [ ] **Find** (ORG-*): search by title **and ingredient** (it ignores Arabic diacritics and hamza/taa-marbuta variants, LANG-4); sort by recently added, A–Z, most cooked; filter by cookbook, tag and time.
-- [ ] **Cook mode, free** (COOK-*): screen stays on, one step at a time in large text, step timers found in the text ("لمدة 15 دقيقة"), ingredient checklist, swipe between steps in right-to-left.
-- [ ] **Scaling and conversion, free** (SCALE-*):
+- [ ] **Find** (ORG-3–ORG-6): search by title **and ingredient** (it ignores Arabic diacritics and hamza/taa-marbuta variants, LANG-4); sort by recently added, A–Z, most cooked; filter by cookbook, tag and time.
+- [ ] **Cook mode, free** (COOK-1–COOK-6; timers notify in the background, Decision 6): screen stays on, one step at a time in large text, step timers found in the text ("لمدة 15 دقيقة"), ingredient checklist, swipe between steps in right-to-left.
+- [ ] **Scaling and conversion, free** (SCALE-1–SCALE-6):
   - Servings −/+ and ×½ / ×2.
   - Conversion between cups and spoons and grams/ml, where a density is known.
   - Scaling never silently skips a line: a line it can't scale is flagged.
-- [ ] **Website import on the device** (IMP-*): paste or share a link → read the schema.org recipe → preview → save. Free and unlimited. A site without recipe data offers AI import instead (Phase 2b).
+- [ ] **Website import on the device** (IMP-2, IMP-5, IMP-6, IMP-9): paste or share a link → read the schema.org recipe → preview → save. Free and unlimited. A site without recipe data offers AI import instead (Phase 2b).
 - [ ] **Delete, undo, trash** (DEL-1, DEL-2)
 - [ ] **First run:** empty states with one clear first action, and one built-in sample recipe (RUN-1)
 
 ## Phase 2b: AI import (W6–W7)
-- [ ] **Import server** (SRV-*):
+- [ ] **Import server** (SRV-1–SRV-9):
   - Deploy the proxy from S3.
   - It turns a link, caption or image into the REC structure (structured output).
   - It keeps nothing it receives, and caches results by public post URL.
   - Rate limit per device, Play Integrity check, a monthly spending cap and alerts.
   - A test suite with the S1 and S3 fixtures that fails on regressions.
-- [ ] **Share-sheet import** (IMP-*): TikTok, Instagram, YouTube and Facebook share into Wasfati → progress → **preview to edit before saving** → save. "Report a mistake" sends only the source link and the user's note, and only when they tap it.
-- [ ] **Photo import** (IMP-*): a cookbook page or handwritten recipe, from the camera or picker → server vision → preview.
-- [ ] **Free AI-import quota** (PAY-1, SRV-*): a counter visible in the header, the reset date shown, and an import only counts when saved.
+- [ ] **Share-sheet import** (IMP-1, IMP-3–IMP-9): TikTok, Instagram, YouTube and Facebook share into Wasfati → progress → **preview to edit before saving** → save. "Report a mistake" sends only the source link and the user's note, and only when they tap it.
+- [ ] **Photo import** (IMP-1, IMP-10): a cookbook page or handwritten recipe, from the camera or picker → server vision → preview.
+- [ ] **Free AI-import quota** (IMP-7, SRV-4; 10 a month, Decision 4): a counter visible in the header, the reset date shown, and an import only counts when saved.
 - [ ] **Network permission and privacy:** the first release with the server rewrites the privacy policy and the data-safety form in the same PR.
 
 ## Phase 2c: Plan and shop (W8–W10, shipped as updates during the closed test)

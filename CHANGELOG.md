@@ -4,6 +4,11 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-09-19
+
+### Changed
+- The rules for recipes, Arabic quantities and units, scaling, cook mode, organizing, import and the import server. No app changes yet.
+
 ## [0.1.2] - 2026-09-19
 
 ### Changed
