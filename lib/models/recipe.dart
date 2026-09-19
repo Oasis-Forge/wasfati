@@ -1,4 +1,5 @@
 import 'cookbook.dart';
+import 'quantity/convert.dart';
 import 'quantity/parser.dart';
 import 'quantity/rational.dart';
 
@@ -29,6 +30,7 @@ class Recipe {
     this.steps = const [],
     this.cookbookIds = const [],
     this.tags = const [],
+    this.unitView = UnitView.asWritten,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -61,6 +63,9 @@ class Recipe {
 
   /// Tag names, up to 20 of 1–30 characters each (ORG-2).
   final List<String> tags;
+
+  /// How amounts are shown, remembered per recipe (SCALE-5).
+  final UnitView unitView;
 
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -108,6 +113,7 @@ class Recipe {
     List<Section<RecipeStep>>? steps,
     List<String>? cookbookIds,
     List<String>? tags,
+    UnitView? unitView,
     DateTime? updatedAt,
     Object? deletedAt = _keep,
   }) => Recipe(
@@ -129,6 +135,7 @@ class Recipe {
     steps: steps ?? this.steps,
     cookbookIds: cookbookIds ?? this.cookbookIds,
     tags: tags ?? this.tags,
+    unitView: unitView ?? this.unitView,
     createdAt: createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt == _keep ? this.deletedAt : deletedAt as DateTime?,
@@ -147,6 +154,7 @@ class Recipe {
     'rating': rating,
     'cooked_count': cookedCount,
     'last_cooked_at': lastCookedAt?.millisecondsSinceEpoch,
+    'unit_view': unitView == UnitView.asWritten ? null : unitView.name,
     'created_at': createdAt.millisecondsSinceEpoch,
     'updated_at': updatedAt.millisecondsSinceEpoch,
     'deleted_at': deletedAt?.millisecondsSinceEpoch,
@@ -176,6 +184,9 @@ class Recipe {
     steps: steps,
     cookbookIds: cookbookIds,
     tags: tags,
+    unitView:
+        UnitView.values.where((v) => v.name == m['unit_view']).firstOrNull ??
+        UnitView.asWritten,
     createdAt: _date(m['created_at'])!,
     updatedAt: _date(m['updated_at'])!,
     deletedAt: _date(m['deleted_at']),

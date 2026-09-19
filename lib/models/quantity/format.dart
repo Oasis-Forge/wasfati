@@ -11,12 +11,7 @@ ScaledLine scaleLine(ParsedLine line, Rational factor) {
   if (line.min == null || factor == Rational.one) {
     return ScaledLine(line, scaled: line.min != null);
   }
-  final step = _stepFor(line.unit);
-  Rational round(Rational v) {
-    final s = step(v);
-    final r = v.roundTo(s);
-    return r == Rational.zero ? s : r; // never scale down to nothing
-  }
+  Rational round(Rational v) => roundForUnit(v, line.unit);
 
   return ScaledLine(
     ParsedLine(
@@ -38,6 +33,14 @@ class ScaledLine {
   /// False for a to-taste or unreadable line, which the screen marks
   /// "not scaled" when the factor isn't ×1 (SCALE-4).
   final bool scaled;
+}
+
+/// Rounds a scaled or converted amount the SCALE-3 way for [unit]; never
+/// down to nothing.
+Rational roundForUnit(Rational v, Unit? unit) {
+  final s = _stepFor(unit)(v);
+  final r = v.roundTo(s);
+  return r == Rational.zero ? s : r;
 }
 
 Rational Function(Rational) _stepFor(Unit? unit) {

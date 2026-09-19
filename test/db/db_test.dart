@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:wasfati/db/db_helper.dart';
+import 'package:wasfati/db/recipe_repository.dart';
+import 'package:wasfati/models/quantity/convert.dart';
 import 'package:wasfati/models/quantity/rational.dart';
 import 'package:wasfati/models/recipe.dart';
 
@@ -20,6 +24,36 @@ void main() {
       final db = await memoryDb();
       expect(await _version(db), DBHelper.version);
     });
+
+    test(
+      'step 2 upgrades a version-1 database and keeps its recipes',
+      () async {
+        sqfliteFfiInit();
+        final path = '${Directory.systemTemp.path}/wasfati_upgrade_test.db';
+        await databaseFactoryFfi.deleteDatabase(path);
+        final old = await DBHelper.open(databaseFactoryFfi, path, upTo: 1);
+        final ids = CountingIds();
+        final clock = FakeClock();
+        final v1 = RecipeRepository(old, clock: clock.call, ids: ids.call);
+        // Written the way version 1 wrote rows: no unit_view column yet.
+        final r = kabsa(v1);
+        final row = r.toMap()..remove('unit_view');
+        await old.insert('recipes', row);
+        await old.close();
+
+        final db = await DBHelper.open(databaseFactoryFfi, path);
+        expect(await _version(db), 2);
+        final repo = RecipeRepository(db, clock: clock.call, ids: ids.call);
+        final back = (await repo.get(r.id))!;
+        expect(back.title, r.title);
+        expect(back.unitView, UnitView.asWritten); // null → as written
+
+        await repo.setUnitView(r.id, UnitView.metric); // SCALE-5 remembered
+        expect((await repo.get(r.id))!.unitView, UnitView.metric);
+        await db.close();
+        await databaseFactoryFfi.deleteDatabase(path);
+      },
+    );
 
     test(
       'REC-1, REC-2, DEL-1: every record table has id, times, deleted_at',

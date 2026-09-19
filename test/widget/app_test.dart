@@ -227,6 +227,58 @@ void main() {
     expect(find.byType(GridView), findsOneWidget);
   });
 
+  testWidgets('scale ×2 and by servings; to-taste marked (SCALE-2–4)', (
+    tester,
+  ) async {
+    await pumpApp(tester, withRecipe: true);
+    await tester.tap(find.text('كبسة لحم'));
+    await settle(tester);
+    expect(find.text('6 حصص'), findsWidgets);
+
+    await tester.tap(find.text('×2'));
+    await tester.pumpAndSettle();
+    // "×" stays before the number in right-to-left (seen as "2×" on the
+    // emulator before this was fixed).
+    expect(
+      tester.widget<Text>(find.text('×2')).textDirection,
+      TextDirection.ltr,
+    );
+    expect(find.text('12 حصة'), findsOneWidget); // the stepper shows servings
+    expect(shown('2 كيلو لحم ضأن'), findsOneWidget);
+    expect(shown('6 أكواب ارز بسمتي'), findsOneWidget); // Eastern digits scaled
+    expect(find.text('لم يُعدَّل'), findsOneWidget); // "ملح حسب الذوق"
+    expect(find.text('مكوّن واحد لم يُعدَّل'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('حصص أقل'));
+    await tester.pumpAndSettle();
+    expect(find.text('11 حصة'), findsOneWidget);
+    expect(shown('1.83 كيلو لحم ضأن'), findsOneWidget); // 11/6 kg
+
+    await tester.tap(find.text('إعادة'));
+    await tester.pumpAndSettle();
+    expect(shown('1 كيلو لحم ضأن'), findsOneWidget);
+    expect(find.text('لم يُعدَّل'), findsNothing);
+  });
+
+  testWidgets('conversion view is remembered per recipe (SCALE-5)', (
+    tester,
+  ) async {
+    final (recipes, _) = await pumpApp(tester, withRecipe: true);
+    await tester.tap(find.text('كبسة لحم'));
+    await settle(tester);
+    await tester.tap(find.text('غ / مل'));
+    await settle(tester);
+    expect(shown('555 غرامًا ارز بسمتي'), findsOneWidget); // 3 cups × 185 g
+    expect(shown('1 كيلو لحم ضأن'), findsOneWidget); // already metric
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('كبسة لحم'));
+    await settle(tester);
+    expect(shown('555 غرامًا ارز بسمتي'), findsOneWidget);
+    expect(recipes.lastError, isNull);
+  });
+
   testWidgets('the title is required (REC-3)', (tester) async {
     await pumpApp(tester);
     await tester.tap(find.text('أضف وصفة'));

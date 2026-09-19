@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../db/recipe_repository.dart';
 import '../models/cookbook.dart';
 import '../models/library.dart';
+import '../models/quantity/convert.dart';
 import '../models/recipe.dart';
 
 /// The library: recipes as search entries, cookbooks and tags in use.
@@ -80,6 +81,14 @@ class RecipesState extends ChangeNotifier {
       await _write(() async {
         await _repo.restore(id);
         await _reload();
+        return true;
+      }) ??
+      false;
+
+  /// Remembers a recipe's conversion view (SCALE-5).
+  Future<bool> setUnitView(String id, UnitView view) async =>
+      await _write(() async {
+        await _repo.setUnitView(id, view);
         return true;
       }) ??
       false;

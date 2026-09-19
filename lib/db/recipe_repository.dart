@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 import '../models/cookbook.dart';
 import '../models/library.dart';
 import '../models/quantity/arabic_text.dart';
+import '../models/quantity/convert.dart';
 import '../models/recipe.dart';
 import '../services/ids.dart';
 
@@ -369,6 +370,20 @@ class RecipeRepository {
     ))
       r['name']! as String,
   ];
+
+  /// Remembers how a recipe's amounts are shown (SCALE-5).
+  Future<void> setUnitView(String id, UnitView view) async {
+    final c = await _db.update(
+      'recipes',
+      {
+        'unit_view': view == UnitView.asWritten ? null : view.name,
+        'updated_at': _clock().millisecondsSinceEpoch,
+      },
+      where: 'id = ? AND deleted_at IS NULL',
+      whereArgs: [id],
+    );
+    if (c != 1) throw StateError('No recipe $id');
+  }
 
   /// Moves a recipe to the trash (DEL-1). Its children stay as they are, so
   /// [restore] brings the whole recipe back.
