@@ -612,5 +612,145 @@
   "importedRecipe": "Check and save",
   "@importedRecipe": {
     "description": "IMP-5. Title of the preview (the editor, prefilled)."
+  },
+  "planTitle": "Plan",
+  "@planTitle": {
+    "description": "The meal plan screen and its navigation destination (PLAN-1)"
+  },
+  "tabRecipes": "Recipes",
+  "@tabRecipes": {
+    "description": "The library destination in the bottom navigation bar"
+  },
+  "planThisWeek": "This week",
+  "@planThisWeek": {
+    "description": "Returns the plan to the current week (PLAN-1)"
+  },
+  "planPreviousWeek": "Previous week",
+  "@planPreviousWeek": {
+    "description": "Tooltip on the arrow that moves a week back"
+  },
+  "planNextWeek": "Next week",
+  "@planNextWeek": {
+    "description": "Tooltip on the arrow that moves a week forward"
+  },
+  "planToday": "Today",
+  "@planToday": {
+    "description": "Marks today's day in the plan"
+  },
+  "mealBreakfast": "Breakfast",
+  "@mealBreakfast": {
+    "description": "Meal slot (PLAN-1)"
+  },
+  "mealLunch": "Lunch",
+  "@mealLunch": {
+    "description": "Meal slot (PLAN-1)"
+  },
+  "mealDinner": "Dinner",
+  "@mealDinner": {
+    "description": "Meal slot (PLAN-1)"
+  },
+  "mealSnack": "Snack",
+  "@mealSnack": {
+    "description": "Meal slot (PLAN-1)"
+  },
+  "planAdd": "Add",
+  "@planAdd": {
+    "description": "Tooltip on the + of an empty meal slot (PLAN-3)"
+  },
+  "planAddRecipe": "Choose a recipe",
+  "@planAddRecipe": {
+    "description": "Opens the recipe picker for a meal (PLAN-3)"
+  },
+  "planAddNote": "Write a note",
+  "@planAddNote": {
+    "description": "Plans a meal without a recipe (PLAN-2)"
+  },
+  "planNoteLabel": "Note",
+  "@planNoteLabel": {
+    "description": "Label of the note field (PLAN-2)"
+  },
+  "planNoteHint": "Eating out, leftovers…",
+  "@planNoteHint": {
+    "description": "Hint in the note field (PLAN-2)"
+  },
+  "planNoteInvalid": "1–60 characters",
+  "@planNoteInvalid": {
+    "description": "The note is empty or too long (PLAN-2)"
+  },
+  "planAddToPlan": "Add to plan",
+  "@planAddToPlan": {
+    "description": "Button on a recipe page, and the title of its sheet (PLAN-3)"
+  },
+  "planAdded": "Added to the plan",
+  "@planAdded": {
+    "description": "Snackbar after planning a recipe (PLAN-3)"
+  },
+  "planChooseDay": "Day",
+  "@planChooseDay": {
+    "description": "Label above the day chips in the add sheet (PLAN-3)"
+  },
+  "planChooseMeal": "Meal",
+  "@planChooseMeal": {
+    "description": "Label above the meal chips in the add sheet (PLAN-3)"
+  },
+  "planAmount": "Amount",
+  "@planAmount": {
+    "description": "The multiplier for a recipe with no servings (PLAN-2, SCALE-2)"
+  },
+  "planMove": "Move",
+  "@planMove": {
+    "description": "Moves an entry to another day or meal (PLAN-4)"
+  },
+  "planCopy": "Copy",
+  "@planCopy": {
+    "description": "Copies an entry to another day or meal (PLAN-4)"
+  },
+  "planRemove": "Remove",
+  "@planRemove": {
+    "description": "Takes an entry out of the plan (PLAN-4)"
+  },
+  "planRemoved": "Removed from the plan",
+  "@planRemoved": {
+    "description": "Snackbar with Undo after removing an entry (PLAN-4, DEL-2)"
+  },
+  "planClearWeek": "Clear week",
+  "@planClearWeek": {
+    "description": "Removes every entry of the week shown (PLAN-4)"
+  },
+  "planClearedCount": "{count, plural, =0{Nothing to clear} =1{1 meal removed} other{{shown} meals removed}}",
+  "@planClearedCount": {
+    "description": "Snackbar after clearing a week (PLAN-4)",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
+  },
+  "planSlotFull": "A meal holds up to 10 entries",
+  "@planSlotFull": {
+    "description": "The slot already has PlanEntry.maxPerSlot entries (PLAN-2)"
+  },
+  "planEmptyTitle": "Plan your week",
+  "@planEmptyTitle": {
+    "description": "Empty plan heading (PLAN-1, RUN-1)"
+  },
+  "planEmptyBody": "Add a recipe to any meal, or write a note like “eating out”.",
+  "@planEmptyBody": {
+    "description": "Empty plan explanation (PLAN-1, RUN-1)"
+  },
+  "planNextMeal": "In the plan: {day}, {meal}",
+  "@planNextMeal": {
+    "description": "On a recipe page, its next planned meal (PLAN-6)",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "meal": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -42,6 +42,7 @@ Save recipes from TikTok, Instagram, YouTube and any website as clean Arabic rec
 - Don't open generated or platform folders unless the task is platform-specific (list in `docs/STACK_NOTES.md`).
 - Grep with a `path`, then read line ranges. Never read lockfiles or generated project files whole; grep them.
 - Don't spawn subagents for tasks touching fewer than ~5 files, except routine work (next rule). Use the `build-doctor` agent for long build logs.
+- Model per job (20 September 2026): Haiku or Sonnet does the work — mechanical edits, per-screen implementation, translations, docs, roadmap and changelog edits, releases, sweeps. Opus is for validation and judgement only: reviews, adversarial checks, judging designs, and the decisions taken in the main session. Never spend Opus on basic work.
 - Routine work goes to a Sonnet subagent whatever its size — translations, doc, roadmap and changelog edits, releases. Decide the change in the main session and hand over the exact files and wording, then check the result with `git diff --stat` rather than by re-reading. A subagent's context never comes back; only its result does.
 - Don't summarize diffs back; state the result in 1–3 lines.
 

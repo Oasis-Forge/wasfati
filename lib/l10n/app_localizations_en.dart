@@ -476,4 +476,109 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get importedRecipe => 'Check and save';
+
+  @override
+  String get planTitle => 'Plan';
+
+  @override
+  String get tabRecipes => 'Recipes';
+
+  @override
+  String get planThisWeek => 'This week';
+
+  @override
+  String get planPreviousWeek => 'Previous week';
+
+  @override
+  String get planNextWeek => 'Next week';
+
+  @override
+  String get planToday => 'Today';
+
+  @override
+  String get mealBreakfast => 'Breakfast';
+
+  @override
+  String get mealLunch => 'Lunch';
+
+  @override
+  String get mealDinner => 'Dinner';
+
+  @override
+  String get mealSnack => 'Snack';
+
+  @override
+  String get planAdd => 'Add';
+
+  @override
+  String get planAddRecipe => 'Choose a recipe';
+
+  @override
+  String get planAddNote => 'Write a note';
+
+  @override
+  String get planNoteLabel => 'Note';
+
+  @override
+  String get planNoteHint => 'Eating out, leftovers…';
+
+  @override
+  String get planNoteInvalid => '1–60 characters';
+
+  @override
+  String get planAddToPlan => 'Add to plan';
+
+  @override
+  String get planAdded => 'Added to the plan';
+
+  @override
+  String get planChooseDay => 'Day';
+
+  @override
+  String get planChooseMeal => 'Meal';
+
+  @override
+  String get planAmount => 'Amount';
+
+  @override
+  String get planMove => 'Move';
+
+  @override
+  String get planCopy => 'Copy';
+
+  @override
+  String get planRemove => 'Remove';
+
+  @override
+  String get planRemoved => 'Removed from the plan';
+
+  @override
+  String get planClearWeek => 'Clear week';
+
+  @override
+  String planClearedCount(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown meals removed',
+      one: '1 meal removed',
+      zero: 'Nothing to clear',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get planSlotFull => 'A meal holds up to 10 entries';
+
+  @override
+  String get planEmptyTitle => 'Plan your week';
+
+  @override
+  String get planEmptyBody =>
+      'Add a recipe to any meal, or write a note like “eating out”.';
+
+  @override
+  String planNextMeal(String day, String meal) {
+    return 'In the plan: $day, $meal';
+  }
 }

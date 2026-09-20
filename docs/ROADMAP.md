@@ -113,20 +113,20 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
 - [ ] **Share-sheet import** (IMP-1, IMP-3–IMP-9): TikTok, Instagram, YouTube and Facebook share into Wasfati → progress → **preview to edit before saving** → save. "Report a mistake" sends only the source link and the user's note, and only when they tap it.
 - [ ] **Instagram fallback** (IMP-12, Decision 8): when a caption can't be read, offer paste or screenshot.
 - [ ] **Emulator check of real share payloads** (S4 follow-up): what TikTok, Instagram, YouTube and Facebook put in a share (link only, or caption too). The user logs in to each app on the emulator. If Instagram includes the caption, IMP-12 becomes a rare path.
-- [ ] **Translate** (IMP-14–IMP-16, SRV-11, Decision 9): "ترجم إلى العربية" on a recipe in another language, and in the import preview, saves a linked copy and leaves the original alone. Amounts and units never go through the model. Schema step 3 stores the link to the original.
+- [ ] **Translate** (IMP-14–IMP-16, SRV-11, Decision 9): "ترجم إلى العربية" on a recipe in another language, and in the import preview, saves a linked copy and leaves the original alone. Amounts and units never go through the model. A schema step stores the link to the original.
 - [ ] **Photo import** (IMP-1, IMP-10): a cookbook page or handwritten recipe, from the camera or picker → server vision → preview.
 - [ ] **Free AI-import quota** (IMP-7, SRV-4; 10 a month, Decision 4): a counter visible in the header, the reset date shown, and an import only counts when saved.
 - [ ] **Network permission and privacy:** the first release with the server rewrites the privacy policy and the data-safety form in the same PR.
 
 ## Phase 2c: Plan and shop (W8–W10, shipped as updates during the closed test)
-- [ ] **Meal plan** (PLAN-1–PLAN-6; schema step 4 comes first, with the grocery tables): a week view starting on the day from Settings; recipes or notes by day and meal (breakfast, lunch, dinner, snack), each with its own servings; add the week to groceries.
+- [x] **Meal plan** (PLAN-1–PLAN-4, PLAN-6; schema step 3; v0.8.0): a week view starting on the day from Settings; recipes or notes by day and meal (breakfast, lunch, dinner, snack), each with its own servings; move, copy, clear a week, and undo. "Add the week to groceries" (PLAN-5) ships with the grocery list.
 - [ ] **Ramadan mode** (RAM-1–RAM-5):
   - Suhoor, iftar and snack slots on Ramadan days, with Hijri dates (Umm al-Qura, movable by a day).
   - A whole-month view for planning Ramadan; gatherings use each entry's servings.
   - Offered by a card 7 days before Ramadan, never switched on by itself.
   - No prayer or iftar times (they would need location).
-- [ ] **Groceries** (GRO-1–GRO-7):
-  - Built from recipes and the plan, scaled as shown.
+- [ ] **Groceries** (GRO-1–GRO-7, PLAN-5; schema step 4):
+  - Built from recipes and the plan, scaled as shown, with "add the week to groceries" (PLAN-5).
   - Merges the same item across recipes with unit maths.
   - 12 aisles that know Arabic ingredient names (at least 95% of the test fixtures placed).
   - Share the list as text on WhatsApp.

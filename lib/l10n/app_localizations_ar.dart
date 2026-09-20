@@ -489,4 +489,112 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get importedRecipe => 'راجع واحفظ';
+
+  @override
+  String get planTitle => 'الخطة';
+
+  @override
+  String get tabRecipes => 'الوصفات';
+
+  @override
+  String get planThisWeek => 'هذا الأسبوع';
+
+  @override
+  String get planPreviousWeek => 'الأسبوع السابق';
+
+  @override
+  String get planNextWeek => 'الأسبوع التالي';
+
+  @override
+  String get planToday => 'اليوم';
+
+  @override
+  String get mealBreakfast => 'فطور';
+
+  @override
+  String get mealLunch => 'غداء';
+
+  @override
+  String get mealDinner => 'عشاء';
+
+  @override
+  String get mealSnack => 'وجبة خفيفة';
+
+  @override
+  String get planAdd => 'إضافة';
+
+  @override
+  String get planAddRecipe => 'اختر وصفة';
+
+  @override
+  String get planAddNote => 'اكتب ملاحظة';
+
+  @override
+  String get planNoteLabel => 'ملاحظة';
+
+  @override
+  String get planNoteHint => 'مطعم، بقايا الأمس…';
+
+  @override
+  String get planNoteInvalid => 'من ١ إلى ٦٠ حرفًا';
+
+  @override
+  String get planAddToPlan => 'أضف إلى الخطة';
+
+  @override
+  String get planAdded => 'أُضيفت إلى الخطة';
+
+  @override
+  String get planChooseDay => 'اختر اليوم';
+
+  @override
+  String get planChooseMeal => 'اختر الوجبة';
+
+  @override
+  String get planAmount => 'المقدار';
+
+  @override
+  String get planMove => 'نقل';
+
+  @override
+  String get planCopy => 'نسخ';
+
+  @override
+  String get planRemove => 'إزالة';
+
+  @override
+  String get planRemoved => 'أُزيلت من الخطة';
+
+  @override
+  String get planClearWeek => 'مسح الأسبوع';
+
+  @override
+  String planClearedCount(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'أُزيلت $shown وجبة',
+      many: 'أُزيلت $shown وجبة',
+      few: 'أُزيلت $shown وجبات',
+      two: 'أُزيلت وجبتان',
+      one: 'أُزيلت وجبة واحدة',
+      zero: 'لا شيء لمسحه',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get planSlotFull => 'الوجبة تتسع حتى ١٠ عناصر';
+
+  @override
+  String get planEmptyTitle => 'خطط أسبوعك';
+
+  @override
+  String get planEmptyBody =>
+      'أضف وصفة إلى أي وجبة، أو اكتب ملاحظة مثل «مطعم».';
+
+  @override
+  String planNextMeal(String day, String meal) {
+    return 'في الخطة: $day، $meal';
+  }
 }

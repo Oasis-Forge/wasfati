@@ -42,7 +42,7 @@ void main() {
         await old.close();
 
         final db = await DBHelper.open(databaseFactoryFfi, path);
-        expect(await _version(db), 2);
+        expect(await _version(db), DBHelper.version);
         final repo = RecipeRepository(db, clock: clock.call, ids: ids.call);
         final back = (await repo.get(r.id))!;
         expect(back.title, r.title);

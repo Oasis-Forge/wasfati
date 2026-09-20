@@ -387,6 +387,18 @@ class RecipeRepository {
     if (c != 1) throw StateError('No recipe $id');
   }
 
+  /// How many people a recipe is written for (REC-7), or null. A planned
+  /// meal starts from it (PLAN-2).
+  Future<int?> servingsOf(String id) async {
+    final rows = await _db.query(
+      'recipes',
+      columns: ['servings'],
+      where: 'id = ? AND deleted_at IS NULL',
+      whereArgs: [id],
+    );
+    return rows.isEmpty ? null : rows.single['servings'] as int?;
+  }
+
   /// The live recipe imported from [normalizedUrl], if any (IMP-9).
   Future<String?> findBySourceUrl(String normalizedUrl) async {
     final rows = await _db.query(
@@ -504,6 +516,7 @@ class RecipeRepository {
           'sections',
           'cookbook_recipes',
           'recipe_tags',
+          'plan_entries', // a purged recipe takes its planned meals (PLAN-6)
         ]) {
           await tx.delete(t, where: 'recipe_id = ?', whereArgs: [id]);
         }

@@ -5,6 +5,8 @@ import 'package:wasfati/models/quantity/format.dart';
 import 'package:wasfati/models/library.dart';
 import 'package:wasfati/models/recipe.dart';
 import 'package:wasfati/models/settings.dart';
+import 'package:wasfati/db/plan_repository.dart';
+import 'package:wasfati/providers/plan_state.dart';
 import 'package:wasfati/providers/recipes_state.dart';
 import 'package:wasfati/providers/settings_state.dart';
 import 'package:wasfati/providers/timers_state.dart';
@@ -41,6 +43,9 @@ Future<void> settle(WidgetTester tester) async {
 late TimersState timers;
 late NoopTimerAlerts alerts;
 
+/// The meal plan from the last [pumpApp] (PLAN-1).
+late PlanState plan;
+
 /// Shares sent into the app during a test (IMP-1).
 late StreamController<String> shares;
 
@@ -67,7 +72,8 @@ Future<(RecipesState, SettingsState)> pumpApp(
   late SettingsState settings;
   late Importer importer;
   await tester.runAsync(() async {
-    final (repo, _, _) = await testRepo();
+    final (repo, clock, ids) = await testRepo();
+    plan = PlanState(PlanRepository(repo.db, clock: clock.call, ids: ids.call));
     settings = SettingsState(repo.db);
     await settings.update(AppSettings(language: language, digits: digits));
     recipes = RecipesState(repo);
@@ -92,6 +98,7 @@ Future<(RecipesState, SettingsState)> pumpApp(
       data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
       child: WasfatiApp(
         recipes: recipes,
+        plan: plan,
         settings: settings,
         timers: timers,
         importer: importer,
@@ -99,7 +106,8 @@ Future<(RecipesState, SettingsState)> pumpApp(
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  // Not pumpAndSettle: the plan's loading spinner never settles.
+  await settle(tester);
   return (recipes, settings);
 }
 
@@ -137,7 +145,7 @@ void main() {
   ) async {
     await pumpApp(tester);
     await tester.tap(find.text('أضف وصفة'));
-    await tester.pumpAndSettle();
+    await settle(tester);
 
     final fields = find.byType(TextFormField);
     await tester.enterText(fields.at(0), 'كبسة دجاج');
@@ -160,7 +168,7 @@ void main() {
     expect(find.text('2'), findsWidgets); // step 2's number
 
     await tester.binding.handlePopRoute(); // system Back
-    await tester.pumpAndSettle();
+    await settle(tester);
     expect(find.text('كبسة دجاج'), findsOneWidget); // in the list
   });
 
@@ -189,7 +197,7 @@ void main() {
         ),
       );
     });
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(find.text('Mixed'));
     await settle(tester);
 
@@ -207,15 +215,15 @@ void main() {
   ) async {
     await pumpApp(tester, withRecipe: true);
     await tester.enterText(find.byType(SearchBar), 'طماطم');
-    await tester.pumpAndSettle();
+    await settle(tester);
     expect(find.text('كبسة لحم'), findsOneWidget);
     expect(find.textContaining('يحتوي: طماطم'), findsOneWidget);
 
     await tester.enterText(find.byType(SearchBar), 'بيتزا');
-    await tester.pumpAndSettle();
+    await settle(tester);
     expect(find.text('لا توجد وصفات مطابقة'), findsOneWidget);
     await tester.tap(find.text('مسح عوامل التصفية'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     expect(find.text('كبسة لحم'), findsOneWidget);
   });
 
@@ -224,9 +232,9 @@ void main() {
   ) async {
     await pumpApp(tester, withRecipe: true);
     await tester.tap(find.text('كتب الطبخ'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(find.text('كتاب طبخ جديد'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.enterText(find.byType(TextFormField), 'رمضان');
     await tester.tap(find.text('إنشاء'));
     await settle(tester);
@@ -235,11 +243,11 @@ void main() {
 
     // Put the recipe in it from the editor.
     await tester.tap(find.text('كل الوصفات'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(find.text('كبسة لحم'));
     await settle(tester);
     await tester.tap(find.byTooltip('تعديل'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.scrollUntilVisible(
       scrollable: find.byType(Scrollable).first, // the form, not a text box
       find.widgetWithText(FilterChip, 'رمضان'),
@@ -252,16 +260,16 @@ void main() {
     expect(find.widgetWithText(Chip, 'رمضان'), findsOneWidget); // on the page
 
     await tester.binding.handlePopRoute();
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(find.text('كتب الطبخ'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     expect(find.text('وصفة واحدة'), findsOneWidget);
   });
 
   testWidgets('sort and grid view are remembered (ORG-5)', (tester) async {
     final (_, settings) = await pumpApp(tester, withRecipe: true);
     await tester.tap(find.text('الأحدث إضافة'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(find.text('أ–ي'));
     await settle(tester);
     expect(settings.settings.sort, LibrarySort.az);
@@ -281,7 +289,7 @@ void main() {
     expect(find.text('6 حصص'), findsWidgets);
 
     await tester.tap(find.text('×2'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     // "×" stays before the number in right-to-left (seen as "2×" on the
     // emulator before this was fixed).
     expect(
@@ -295,12 +303,12 @@ void main() {
     expect(find.text('مكوّن واحد لم يُعدَّل'), findsOneWidget);
 
     await tester.tap(find.byTooltip('حصص أقل'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     expect(find.text('11 حصة'), findsOneWidget);
     expect(shown('1.83 كيلو لحم ضأن'), findsOneWidget); // 11/6 kg
 
     await tester.tap(find.text('إعادة'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     expect(shown('1 كيلو لحم ضأن'), findsOneWidget);
     expect(find.text('لم يُعدَّل'), findsNothing);
   });
@@ -317,7 +325,7 @@ void main() {
     expect(shown('1 كيلو لحم ضأن'), findsOneWidget); // already metric
 
     await tester.binding.handlePopRoute();
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(find.text('كبسة لحم'));
     await settle(tester);
     expect(shown('555 غرامًا ارز بسمتي'), findsOneWidget);
@@ -331,7 +339,7 @@ void main() {
     await tester.tap(find.text('كبسة لحم'));
     await settle(tester);
     await tester.tap(find.text('×2')); // SCALE-6: the scale goes along
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.scrollUntilVisible(find.text('ابدأ الطبخ'), 200);
     await tester.tap(find.text('ابدأ الطبخ'));
     await settle(tester);
@@ -341,15 +349,15 @@ void main() {
 
     // The ingredients sheet shows the ×2 amounts, with checkboxes.
     await tester.tap(find.byTooltip('المكونات'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     expect(shown('2 كيلو لحم ضأن'), findsOneWidget);
     await tester.tap(find.byType(Checkbox).first);
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tapAt(const Offset(20, 20)); // close the sheet
-    await tester.pumpAndSettle();
+    await settle(tester);
 
     await tester.tap(find.text('التالي'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     expect(find.text('يضاف الأرز ويترك 15 دقيقة.'), findsOneWidget);
     await tester.tap(find.text('15:00')); // COOK-4: found in the text
     await settle(tester);
@@ -358,7 +366,7 @@ void main() {
     expect(alerts.scheduled, hasLength(1));
 
     await tester.tap(find.text('التالي'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(find.text('تم طبخها'));
     await settle(tester);
     expect(find.text('سُجّلت كوصفة مطبوخة'), findsOneWidget);
@@ -391,7 +399,7 @@ void main() {
         ),
       );
     });
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(find.text('Mixed'));
     await settle(tester);
     expect(shown('2 cups flour'), findsOneWidget); // never "٢ cups flour"
@@ -404,7 +412,7 @@ void main() {
   ) async {
     final (recipes, _) = await pumpApp(tester);
     await tester.tap(find.text('استيراد من رابط'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.enterText(find.byType(TextField), 'https://site.com/kabsa');
     await tester.tap(find.text('استيراد'));
     await settle(tester);
@@ -420,9 +428,9 @@ void main() {
 
     // The same page again offers the saved one (IMP-9).
     await tester.binding.handlePopRoute();
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(find.byTooltip('استيراد من رابط'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.enterText(find.byType(TextField), 'https://site.com/kabsa/');
     await tester.tap(find.text('استيراد'));
     await settle(tester);
@@ -438,7 +446,7 @@ void main() {
   ) async {
     await pumpApp(tester);
     await tester.tap(find.text('استيراد من رابط'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.enterText(find.byType(TextField), 'https://down.com/x');
     await tester.tap(find.text('استيراد'));
     await settle(tester);
@@ -467,23 +475,23 @@ void main() {
   testWidgets('the title is required (REC-3)', (tester) async {
     await pumpApp(tester);
     await tester.tap(find.text('أضف وصفة'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(find.text('حفظ'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     expect(find.text('اكتب اسم الوصفة'), findsOneWidget);
   });
 
   testWidgets('leaving with changes asks first', (tester) async {
     await pumpApp(tester);
     await tester.tap(find.text('أضف وصفة'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.enterText(find.byType(TextFormField).first, 'شوربة');
     await tester.pump(); // the frame that arms the unsaved-changes guard
     await tester.binding.handlePopRoute(); // system Back
-    await tester.pumpAndSettle();
+    await settle(tester);
     expect(find.text('تجاهل التعديلات؟'), findsOneWidget);
     await tester.tap(find.text('تجاهل'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     expect(find.text('لا توجد وصفات بعد'), findsOneWidget);
   });
 
@@ -516,7 +524,7 @@ void main() {
   testWidgets('a language change applies at once (LANG-1)', (tester) async {
     await pumpApp(tester);
     await tester.tap(find.byTooltip('الإعدادات'));
-    await tester.pumpAndSettle();
+    await settle(tester);
     await tester.tap(find.text('English'));
     await settle(tester);
     expect(find.text('Settings'), findsOneWidget);
@@ -533,7 +541,7 @@ void main() {
       await settle(tester);
       expect(tester.takeException(), isNull);
       await tester.tap(find.byIcon(Icons.edit_outlined));
-      await tester.pumpAndSettle();
+      await settle(tester);
       expect(tester.takeException(), isNull);
     });
   }

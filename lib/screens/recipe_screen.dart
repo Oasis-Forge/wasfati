@@ -4,13 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/plan.dart';
 import '../models/recipe.dart';
+import '../providers/plan_state.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../widgets/content_direction.dart';
 import '../models/quantity/rational.dart';
 import 'cook_mode_screen.dart';
 import 'ingredients_section.dart';
+import 'plan_screen.dart';
 import 'recipe_editor_screen.dart';
 
 /// One recipe (REC-3–REC-9). Empty fields are hidden, never shown as 0.
@@ -70,6 +73,11 @@ class _RecipeScreenState extends State<RecipeScreen> {
             actions: [
               if (r != null) ...[
                 IconButton(
+                  tooltip: l10n.planAddToPlan,
+                  icon: const Icon(Icons.calendar_month_outlined),
+                  onPressed: () => openAddToPlan(context, r.id),
+                ),
+                IconButton(
                   tooltip: l10n.edit,
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: () => _edit(r),
@@ -91,6 +99,37 @@ class _RecipeScreenState extends State<RecipeScreen> {
                   factor: _factor,
                   onFactor: (f) => setState(() => _factor = f),
                 ),
+        );
+      },
+    );
+  }
+}
+
+/// The next meal this recipe is planned for, if any (PLAN-6).
+class _NextPlanned extends StatelessWidget {
+  const _NextPlanned(this.recipeId);
+  final String recipeId;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final s = context.watch<SettingsState>();
+    final plan = context.watch<PlanState>();
+    return FutureBuilder<PlanEntry?>(
+      future: plan.nextFor(recipeId),
+      builder: (context, snap) {
+        final e = snap.data;
+        if (e == null) return const SizedBox.shrink();
+        final day = s.inDigits(
+          MaterialLocalizations.of(context).formatMediumDate(e.date),
+        );
+        return Padding(
+          padding: const EdgeInsetsDirectional.only(top: 4),
+          child: Text(
+            l10n.planNextMeal(day, mealName(l10n, e.slot)),
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: Theme.of(context).colorScheme.primary),
+          ),
         );
       },
     );
@@ -141,6 +180,7 @@ class _RecipeBody extends StatelessWidget {
             l10n.sourceFrom(host.replaceFirst('www.', '')),
             style: text.bodySmall,
           ),
+        _NextPlanned(r.id),
         if (facts.isNotEmpty) ...[
           const SizedBox(height: 12),
           Wrap(
