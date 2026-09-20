@@ -51,7 +51,7 @@ Check it with `gh api repos/Oasis-Forge/wasfati/rulesets`. The classic branch-pr
 
 Both mobile stores require a public privacy policy URL.
 1. Settings → Pages → Deploy from a branch → `main` / `/docs`.
-2. The policy is then live at `https://oasis-forge.github.io/wasfati/privacy-policy`. Its contact is the support email, oasisforge.support@gmail.com, and the GitHub Issues page. No personal address is ever published.
+2. The policy is then live at `https://oasis-forge.github.io/wasfati/privacy-policy`: one bilingual page, `docs/privacy-policy.html`, English then Arabic, plain HTML so no theme turns its title into a link. Email is the only support channel named on it, oasisforge.support@gmail.com. No personal address and no issue tracker is ever published.
 3. **Ads:** the ad network reads `app-ads.txt` from the **root** of the domain in the store listing's Website field, not from the repo's path. Serve it from the organization's own Pages repo (`Oasis-Forge/oasis-forge.github.io`): one line per ad account, shared by every app. AdMob can only verify it once the app is public.
 
 Every file in `docs/` gets published.
