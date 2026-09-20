@@ -543,6 +543,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
     - Shared recipe text ends with one line naming the app, with its Play link. Shared grocery lists and recipe images carry no link (SHARE-2, SHARE-4, GRO-6).
     - The "By region" week start uses CLDR's data for the phone's region, falling back to Saturday in Arabic and Sunday in English (PLAN-1).
     - The store's review prompt comes only after an import and a cooked recipe (RUN-5).
+14. (20 September 2026) The app ships **two looks**, picked in Settings, not one: **حبر / Ink** (cream paper, near-black ink, a deep teal that marks every amount, hairlines instead of boxes, no shadows) and **زعفران / Saffron** (quiet cream page, solid saffron action blocks with near-black text on them, one corner cut at 45°). Each has a hand-tuned light and dark theme. Both keep every existing string, add no package, font or bitmap, and must pass AA for text on every surface in both brightnesses. Ink is the default. The full specification — palettes, type scale, components, per-screen plans — is in `docs/research/design-styles.md`; the rules get IDs with `/spec look` before any of it is built (Phase 3).
 
 ## Roadmap impact
 <!-- Rules that change the data model or the build order, and where they land in docs/ROADMAP.md. Schema changes go in Phase 1. -->

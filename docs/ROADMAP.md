@@ -136,6 +136,7 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
 ## Phase 3: Store readiness (alongside 2c)
 - [ ] Display name "وصفاتي" (Arabic) and "Wasfati" (English) on every platform: launcher label, bundle names.
 - [ ] Launcher icons and splash screen, generated from one committed source.
+- [ ] **Two looks** (LOOK-*, Decision 14; `/spec look` first): "حبر / Ink" and "زعفران / Saffron", each with its own light and dark, picked in Settings and carried in backups. Replaces today's stock Material look. Specified in `docs/research/design-styles.md`; about 1,300–2,000 lines per style, no new packages or fonts.
 - [ ] Store IDs, permanent after the first upload and free of personal names: `com.oasisforge.wasfati`.
 - [ ] Privacy policy published, and updated for every feature that touches user data.
 - [ ] The release build declares only the permissions the store listing admits to; the release workflow dumps the built artifact's permissions and fails on any it doesn't expect (RUN-2). Write the list against a real build, not from memory, and check both directions: a permission the app needs and lost is as much a bug as one a plugin added. Today: INTERNET, POST_NOTIFICATIONS and VIBRATE. Ads add ACCESS_NETWORK_STATE and AD_ID, and purchases add BILLING (Roadmap impact in `docs/PRODUCT_RULES.md`). No camera permission: photos come through the system camera and picker.
