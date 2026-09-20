@@ -4,6 +4,11 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-09-20
+
+### Changed
+- The privacy policy is now one page in Arabic and English, and email is the only way to reach support. No app changes yet.
+
 ## [0.7.1] - 2026-09-20
 
 ### Changed
