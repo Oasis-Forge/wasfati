@@ -926,6 +926,18 @@ abstract class AppLocalizations {
   /// **'This week'**
   String get planThisWeek;
 
+  /// RAM-4. The plan's week/Ramadan view toggle: the week side.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get planViewWeek;
+
+  /// RAM-4. The plan's week/Ramadan view toggle: the whole-month side.
+  ///
+  /// In en, this message translates to:
+  /// **'Ramadan'**
+  String get planViewRamadan;
+
   /// Tooltip on the arrow that moves a week back
   ///
   /// In en, this message translates to:
@@ -967,6 +979,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Snack'**
   String get mealSnack;
+
+  /// RAM-1. Meal slot name: the pre-dawn meal in Ramadan.
+  ///
+  /// In en, this message translates to:
+  /// **'Suhoor'**
+  String get mealSuhoor;
+
+  /// RAM-1. Meal slot name: the sunset meal in Ramadan.
+  ///
+  /// In en, this message translates to:
+  /// **'Iftar'**
+  String get mealIftar;
 
   /// Tooltip on the + of an empty meal slot (PLAN-3)
   ///
@@ -1297,6 +1321,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{Nothing to add} =1{1 meal added to groceries} other{{shown} meals added to groceries}}'**
   String planGroceriesAddedCount(int count, String shown);
+
+  /// RAM-3. The plan's card, 7 days before Ramadan through the day before it starts.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Ramadan starts in 1 day. Switch the plan to suhoor and iftar?} other{Ramadan starts in {shown} days. Switch the plan to suhoor and iftar?}}'**
+  String ramadanCardSoon(int count, String shown);
+
+  /// RAM-3. The plan's card, once Ramadan has started.
+  ///
+  /// In en, this message translates to:
+  /// **'Ramadan kareem. Switch the plan to suhoor and iftar?'**
+  String get ramadanCardNow;
+
+  /// RAM-3. The card's button that turns Ramadan mode on.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable'**
+  String get ramadanCardEnable;
+
+  /// RAM-3. The card's button that hides it until the next Ramadan.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get ramadanCardNotNow;
+
+  /// RAM-2. A Ramadan day's Hijri date, shown beside the usual one.
+  ///
+  /// In en, this message translates to:
+  /// **'{day} Ramadan'**
+  String ramadanDayLabel(String day);
+
+  /// RAM-2. Shown on the day after Ramadan's last one.
+  ///
+  /// In en, this message translates to:
+  /// **'Eid al-Fitr'**
+  String get ramadanEidLabel;
+
+  /// RAM-1. Settings section heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Ramadan'**
+  String get settingsRamadanSection;
+
+  /// RAM-1. Settings switch that turns Ramadan mode on or off.
+  ///
+  /// In en, this message translates to:
+  /// **'Ramadan mode'**
+  String get ramadanModeLabel;
+
+  /// RAM-2. Settings row showing the current or next Ramadan's first day.
+  ///
+  /// In en, this message translates to:
+  /// **'Ramadan starts: {date}'**
+  String ramadanStartLabel(String date);
+
+  /// RAM-2. Tooltip: moves Ramadan's first day a day earlier, for the local moon sighting.
+  ///
+  /// In en, this message translates to:
+  /// **'One day earlier'**
+  String get ramadanShiftEarlier;
+
+  /// RAM-2. Tooltip: moves Ramadan's first day a day later, for the local moon sighting.
+  ///
+  /// In en, this message translates to:
+  /// **'One day later'**
+  String get ramadanShiftLater;
 }
 
 class _AppLocalizationsDelegate

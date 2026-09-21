@@ -25,6 +25,10 @@ class AppSettings {
     this.sort = LibrarySort.recent,
     this.grid = false,
     this.groceryView = GroceryView.byAisle,
+    this.ramadanMode = false, // RAM-1: off by default
+    this.ramadanShift = 0, // RAM-2: -1, 0 or +1 days
+    this.ramadanShiftYear, // the Hijri year ramadanShift is for
+    this.ramadanCardDismissedYear, // RAM-3: "ليس الآن", per Hijri year
   });
 
   final LanguagePref language;
@@ -40,6 +44,24 @@ class AppSettings {
   /// The grocery list's "By aisle"/"By recipe" choice, remembered (GRO-5).
   final GroceryView groceryView;
 
+  /// Whether Ramadan mode is on (RAM-1). Never turned on by the app itself.
+  final bool ramadanMode;
+
+  /// The local moon-sighting shift, −1 to +1 days (RAM-2), for the Hijri
+  /// year in [ramadanShiftYear]. A shift for another year reads as 0
+  /// (see [ramadanShiftFor]), so it resets for the next Ramadan.
+  final int ramadanShift;
+  final int? ramadanShiftYear;
+
+  /// The Hijri year RAM-3's card was last dismissed for with "ليس الآن",
+  /// or null if it never was (for the current one).
+  final int? ramadanCardDismissedYear;
+
+  /// The sighting shift that applies to [hijriYear] (RAM-2): [ramadanShift]
+  /// when it was set for that year, else 0.
+  int ramadanShiftFor(int hijriYear) =>
+      hijriYear == ramadanShiftYear ? ramadanShift : 0;
+
   AppSettings copyWith({
     LanguagePref? language,
     DigitStyle? digits,
@@ -49,6 +71,10 @@ class AppSettings {
     LibrarySort? sort,
     bool? grid,
     GroceryView? groceryView,
+    bool? ramadanMode,
+    int? ramadanShift,
+    int? ramadanShiftYear,
+    int? ramadanCardDismissedYear,
   }) => AppSettings(
     language: language ?? this.language,
     digits: digits ?? this.digits,
@@ -58,6 +84,11 @@ class AppSettings {
     sort: sort ?? this.sort,
     grid: grid ?? this.grid,
     groceryView: groceryView ?? this.groceryView,
+    ramadanMode: ramadanMode ?? this.ramadanMode,
+    ramadanShift: ramadanShift ?? this.ramadanShift,
+    ramadanShiftYear: ramadanShiftYear ?? this.ramadanShiftYear,
+    ramadanCardDismissedYear:
+        ramadanCardDismissedYear ?? this.ramadanCardDismissedYear,
   );
 
   String toJson() => jsonEncode({
@@ -69,6 +100,10 @@ class AppSettings {
     'sort': sort.name,
     'grid': grid,
     'groceryView': groceryView.name,
+    'ramadanMode': ramadanMode,
+    'ramadanShift': ramadanShift,
+    'ramadanShiftYear': ramadanShiftYear,
+    'ramadanCardDismissedYear': ramadanCardDismissedYear,
   });
 
   /// Unknown or missing values fall back to the defaults, so a backup from a
@@ -91,6 +126,10 @@ class AppSettings {
         m['groceryView'],
         GroceryView.byAisle,
       ),
+      ramadanMode: m['ramadanMode'] == true,
+      ramadanShift: ((m['ramadanShift'] as int?) ?? 0).clamp(-1, 1),
+      ramadanShiftYear: m['ramadanShiftYear'] as int?,
+      ramadanCardDismissedYear: m['ramadanCardDismissedYear'] as int?,
     );
   }
 

@@ -6,6 +6,8 @@ import '../models/grocery.dart';
 import '../models/library.dart';
 import '../models/plan.dart';
 import '../models/quantity/rational.dart';
+import '../models/ramadan.dart';
+import '../models/settings.dart';
 import '../providers/grocery_state.dart';
 import '../providers/plan_state.dart';
 import '../providers/recipes_state.dart';
@@ -29,24 +31,98 @@ class _PlanScreenState extends State<PlanScreen> {
   final _todayKey = GlobalKey();
   int? _firstWeekday;
 
+  /// RAM-4: "الأسبوع" or "رمضان" — only meaningful while the toggle shows.
+  bool _monthView = false;
+
+  /// The week showing before switching to the Ramadan month, so "الأسبوع"
+  /// comes back to it rather than always jumping to today's week (RAM-4).
+  DateTime? _weekBeforeMonthView;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final first = _weekStartDay(context);
-    if (first == _firstWeekday) return;
-    _firstWeekday = first;
+    final settings = context.watch<SettingsState>().settings;
     final plan = context.read<PlanState>();
+    // RAM-1, RAM-2: kept in step with Settings on every change, so entries
+    // sort and label correctly (slotsFor) even before a week reloads. The
+    // assignment PlanState makes is synchronous, so `plan.ramadanFor(...)`
+    // below already sees it (should-fix: also mirrored in app.dart, so
+    // Settings reads the right dates even when this screen isn't mounted).
+    plan.setRamadanMode(
+      settings.ramadanMode,
+      shift: settings.ramadanShift,
+      shiftYear: settings.ramadanShiftYear,
+    );
+
+    final first = _weekStartDay(context, settings);
+    final weekChanged = first != _firstWeekday;
+    _firstWeekday = first;
+
+    if (_monthView) {
+      final ramadanMonth = plan.ramadanFor(plan.today);
+      final stillValid =
+          settings.ramadanMode &&
+          ramadanMonth != null &&
+          inRamadanWindow(plan.today, ramadanMonth);
+      if (!stillValid) {
+        // must-fix: the "رمضان" toggle only exists in this window: it was
+        // turned off in Settings, or today has moved past the last day
+        // (Eid) or before the window opens. Without this, the screen got
+        // stuck showing a month that no longer applies, with no way back
+        // to a week short of toggling the mode off and on.
+        _monthView = false;
+        plan
+            .showWeek(_weekBeforeMonthView ?? weekStartFor(plan.today, first))
+            .then((_) {
+              if (mounted) _scrollToToday();
+            });
+        return;
+      }
+      if (dateKey(plan.days.firstOrNull ?? DateTime(0)) !=
+              dateKey(ramadanMonth.start) ||
+          dateKey(plan.days.lastOrNull ?? DateTime(0)) !=
+              dateKey(ramadanMonth.last)) {
+        // must-fix: a moon-sighting shift moves the whole month even while
+        // its view is open — reload so it doesn't keep showing yesterday's
+        // range (a day short, or one day into what's no longer Ramadan).
+        plan.showRange(ramadanMonth.start, ramadanMonth.last).then((_) {
+          if (mounted) _scrollToToday();
+        });
+      }
+      return;
+    }
+    if (!weekChanged) return;
     plan.showWeek(weekStartFor(plan.today, first)).then((_) {
       if (mounted) _scrollToToday();
     });
   }
 
   /// The week's first day: the setting, else the phone's region (PLAN-1).
-  int _weekStartDay(BuildContext context) => firstWeekday(
-    context.watch<SettingsState>().settings.weekStart,
+  int _weekStartDay(BuildContext context, AppSettings settings) => firstWeekday(
+    settings.weekStart,
     region: View.of(context).platformDispatcher.locale.countryCode,
     arabic: Localizations.localeOf(context).languageCode == 'ar',
   );
+
+  /// RAM-4: switches between the week and the whole Ramadan month, which
+  /// PlanState loads as an arbitrary range.
+  Future<void> _setMonthView(bool month, RamadanMonth ramadanMonth) async {
+    final plan = context.read<PlanState>();
+    setState(() => _monthView = month);
+    if (month) {
+      _weekBeforeMonthView = plan.weekStart;
+      await plan.showRange(ramadanMonth.start, ramadanMonth.last);
+      // must-fix: switching to the month used to leave the scroll position
+      // wherever it was (usually the top, day 1), so opening it on, say,
+      // day 20 gave no way to see today without scrolling by hand.
+      if (mounted) _scrollToToday();
+    } else {
+      await plan.showWeek(
+        _weekBeforeMonthView ?? weekStartFor(plan.today, _firstWeekday!),
+      );
+      if (mounted) _scrollToToday();
+    }
+  }
 
   void _scrollToToday() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -94,9 +170,29 @@ class _PlanScreenState extends State<PlanScreen> {
     final dates = MaterialLocalizations.of(context);
     final rtl = Directionality.of(context) == TextDirection.rtl;
     final days = plan.days;
-    final range =
-        '${settings.inDigits(dates.formatShortMonthDay(days.first))} – '
-        '${settings.inDigits(dates.formatShortMonthDay(days.last))}';
+    final range = days.isEmpty
+        ? ''
+        : '${settings.inDigits(dates.formatShortMonthDay(days.first))} – '
+              '${settings.inDigits(dates.formatShortMonthDay(days.last))}';
+
+    // RAM-3, RAM-4: both key off the current-or-next Ramadan relative to
+    // today, from the calendar PlanState was given (RAM-2).
+    final ramadanMonth = plan.ramadanFor(plan.today);
+    final card = ramadanCard(
+      ramadanMonth,
+      plan.today,
+      mode: settings.settings.ramadanMode,
+      dismissedYear: settings.settings.ramadanCardDismissedYear,
+    );
+    final showMonthToggle =
+        settings.settings.ramadanMode &&
+        ramadanMonth != null &&
+        inRamadanWindow(plan.today, ramadanMonth);
+    // must-fix: the raw _monthView flag can briefly be stale (the toggle
+    // just disappeared because today left the window, or the mode just
+    // turned off) until didChangeDependencies's post-write catches up —
+    // this is what the screen actually renders as "in the month view".
+    final monthView = _monthView && showMonthToggle;
 
     return Scaffold(
       appBar: AppBar(
@@ -105,71 +201,190 @@ class _PlanScreenState extends State<PlanScreen> {
           IconButton(
             tooltip: l10n.planThisWeek,
             icon: const Icon(Icons.today_outlined),
-            onPressed: () {
-              plan
-                  .showWeek(weekStartFor(plan.today, _firstWeekday!))
-                  .then((_) => _scrollToToday());
-            },
+            // must-fix: kept working in the month view too — it used to
+            // disappear there, with no other way to jump back to today
+            // without scrolling by hand.
+            onPressed: monthView
+                ? _scrollToToday
+                : () {
+                    plan
+                        .showWeek(weekStartFor(plan.today, _firstWeekday!))
+                        .then((_) => _scrollToToday());
+                  },
           ),
           IconButton(
             tooltip: l10n.addToGroceries,
             icon: const Icon(Icons.shopping_basket_outlined),
             onPressed: () => openPlanAddToGroceries(context),
           ),
-          PopupMenuButton<String>(
-            onSelected: (_) => _clearWeek(),
-            itemBuilder: (_) => [
-              PopupMenuItem(value: 'clear', child: Text(l10n.planClearWeek)),
-            ],
-          ),
+          if (!monthView)
+            PopupMenuButton<String>(
+              onSelected: (_) => _clearWeek(),
+              itemBuilder: (_) => [
+                PopupMenuItem(value: 'clear', child: Text(l10n.planClearWeek)),
+              ],
+            ),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                tooltip: l10n.planPreviousWeek,
-                icon: Icon(rtl ? Icons.chevron_right : Icons.chevron_left),
-                onPressed: () => plan.shiftWeeks(-1),
-              ),
-              Flexible(
-                child: Text(
-                  range,
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium,
+          child: monthView
+              ? Center(
+                  child: Text(
+                    range,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      tooltip: l10n.planPreviousWeek,
+                      icon: Icon(
+                        rtl ? Icons.chevron_right : Icons.chevron_left,
+                      ),
+                      onPressed: () => plan.shiftWeeks(-1),
+                    ),
+                    Flexible(
+                      child: Text(
+                        range,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: l10n.planNextWeek,
+                      icon: Icon(
+                        rtl ? Icons.chevron_left : Icons.chevron_right,
+                      ),
+                      onPressed: () => plan.shiftWeeks(1),
+                    ),
+                  ],
                 ),
-              ),
-              IconButton(
-                tooltip: l10n.planNextWeek,
-                icon: Icon(rtl ? Icons.chevron_left : Icons.chevron_right),
-                onPressed: () => plan.shiftWeeks(1),
-              ),
-            ],
-          ),
         ),
       ),
       body: !plan.loaded
           ? const Center(child: CircularProgressIndicator())
-          // Seven cards, built together rather than lazily, so "today" can
-          // be scrolled to even when it's the last day of the week (PLAN-1).
-          : SingleChildScrollView(
-              padding: const EdgeInsetsDirectional.only(bottom: 24),
-              child: Column(
-                children: [
-                  if (plan.entries.isEmpty) _EmptyPlan(l10n: l10n),
-                  for (final day in days)
-                    _DayCard(
-                      key: dateKey(day) == dateKey(plan.today)
-                          ? _todayKey
-                          : null,
-                      day: day,
-                      isToday: dateKey(day) == dateKey(plan.today),
+          // must-fix: the card and the "الأسبوع"/"رمضان" toggle used to be
+          // the first children of the scrolling list below, so opening on
+          // today (never the first day shown, most weeks) scrolled them
+          // off-screen at once — RAM-3's card and RAM-4's toggle were
+          // invisible on open. They're pinned above the scrolling days
+          // now, so nothing can carry them out of view.
+          : Column(
+              children: [
+                if (card != null) _RamadanCard(card: card),
+                if (showMonthToggle)
+                  _RamadanViewToggle(
+                    monthView: _monthView,
+                    onChanged: (v) => _setMonthView(v, ramadanMonth),
+                  ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsetsDirectional.only(bottom: 24),
+                    child: Column(
+                      children: [
+                        if (plan.entries.isEmpty) _EmptyPlan(l10n: l10n),
+                        for (final day in days)
+                          _DayCard(
+                            key: dateKey(day) == dateKey(plan.today)
+                                ? _todayKey
+                                : null,
+                            day: day,
+                            isToday: dateKey(day) == dateKey(plan.today),
+                          ),
+                      ],
                     ),
-                ],
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+/// RAM-3: the countdown or "كريم" card, with "تفعيل" and "ليس الآن". The
+/// mode never turns itself on; only this button does.
+class _RamadanCard extends StatelessWidget {
+  const _RamadanCard({required this.card});
+  final RamadanCard card;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final settings = context.read<SettingsState>();
+    final text = card.started
+        ? l10n.ramadanCardNow
+        : l10n.ramadanCardSoon(card.daysUntil, settings.number(card.daysUntil));
+    return Card(
+      margin: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 0),
+      color: theme.colorScheme.primaryContainer,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              text,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onPrimaryContainer,
               ),
             ),
+            const SizedBox(height: 8),
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              children: [
+                TextButton(
+                  onPressed: () => settings.update(
+                    settings.settings.copyWith(
+                      ramadanCardDismissedYear: card.month.hijriYear,
+                    ),
+                  ),
+                  child: Text(l10n.ramadanCardNotNow),
+                ),
+                FilledButton(
+                  onPressed: () => settings.update(
+                    settings.settings.copyWith(ramadanMode: true),
+                  ),
+                  child: Text(l10n.ramadanCardEnable),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// RAM-4: "الأسبوع" / "رمضان", shown from 7 days before Ramadan through
+/// its end while the mode is on.
+class _RamadanViewToggle extends StatelessWidget {
+  const _RamadanViewToggle({required this.monthView, required this.onChanged});
+
+  final bool monthView;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 0),
+      child: Center(
+        child: SegmentedButton<bool>(
+          segments: [
+            ButtonSegment(value: false, label: Text(l10n.planViewWeek)),
+            ButtonSegment(value: true, label: Text(l10n.planViewRamadan)),
+          ],
+          selected: {monthView},
+          showSelectedIcon: false,
+          onSelectionChanged: (s) => onChanged(s.first),
+        ),
+      ),
     );
   }
 }
@@ -213,8 +428,27 @@ class _DayCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final settings = context.watch<SettingsState>();
+    final plan = context.watch<PlanState>();
     final label = settings.inDigits(
       MaterialLocalizations.of(context).formatMediumDate(day),
+    );
+    // RAM-2: only with the mode on, so it can stay on all year without
+    // marking days outside any Ramadan.
+    final ramadanMonth = plan.ramadanMode ? plan.ramadanMonthOf(day) : null;
+    final hijriLabel = !plan.ramadanMode
+        ? null
+        : plan.isEid(day)
+        ? l10n.ramadanEidLabel
+        : ramadanMonth == null
+        ? null
+        : l10n.ramadanDayLabel(settings.number(ramadanMonth.dayOf(day)!));
+    // RAM-1: suhoor, iftar, snack on a Ramadan day; the usual four
+    // otherwise — either way, plus any slot that already holds an entry.
+    final slots = slotsFor(
+      day,
+      ramadan: plan.ramadanMode,
+      month: ramadanMonth,
+      withEntries: plan.slotsWithEntries(day),
     );
     return Padding(
       padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 0),
@@ -233,11 +467,23 @@ class _DayCard extends StatelessWidget {
                 child: Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        label,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: isToday ? FontWeight.bold : null,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            label,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: isToday ? FontWeight.bold : null,
+                            ),
+                          ),
+                          if (hijriLabel != null)
+                            Text(
+                              hijriLabel,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                     if (isToday)
@@ -250,8 +496,7 @@ class _DayCard extends StatelessWidget {
                   ],
                 ),
               ),
-              for (final slot in MealSlot.values)
-                _SlotRow(day: day, slot: slot),
+              for (final slot in slots) _SlotRow(day: day, slot: slot),
             ],
           ),
         ),
@@ -361,12 +606,15 @@ class _EntryTile extends StatelessWidget {
   }
 }
 
-/// The name of a meal slot (PLAN-1).
+/// The name of a meal slot (PLAN-1); [suhoor] and [iftar] only ever show
+/// on a Ramadan day (RAM-1, decision 9).
 String mealName(AppLocalizations l10n, MealSlot slot) => switch (slot) {
   MealSlot.breakfast => l10n.mealBreakfast,
   MealSlot.lunch => l10n.mealLunch,
   MealSlot.dinner => l10n.mealDinner,
   MealSlot.snack => l10n.mealSnack,
+  MealSlot.suhoor => l10n.mealSuhoor,
+  MealSlot.iftar => l10n.mealIftar,
 };
 
 /// A slot's "+": a recipe, or a written note (PLAN-2, PLAN-3).
@@ -467,11 +715,27 @@ Future<void> _entryMenu(BuildContext context, PlanEntry entry) async {
       await _askAmount(context, entry);
     case 'move':
     case 'copy':
+      // RAM-4, should-fix: from the "رمضان" month view, offer every day
+      // still shown, from today on, not just the usual 7 — otherwise an
+      // entry on day 3 could never move or copy to day 20. The entry's
+      // own day is always included, even if it's already gone by.
+      final monthDays = plan.days.length > 7
+          ? ({
+              for (final d in plan.days)
+                if (!d.isBefore(plan.today)) d,
+              dateOnly(entry.date),
+            }.toList()..sort())
+          : null;
       final where = await _askDayAndMeal(
         context,
         title: action == 'move' ? l10n.planMove : l10n.planCopy,
         day: entry.date,
         slot: entry.slot,
+        dayOptions: monthDays,
+        // RAM-1: the entry's own slot stays offered and selected while
+        // its own day is picked, even if that day would otherwise hide
+        // it (an entry sitting in an ordinary slot on a Ramadan day).
+        homeSlot: entry.slot,
       );
       if (where != null) {
         await plan.moveTo(entry, where.$1, where.$2, copy: action == 'copy');
@@ -664,22 +928,52 @@ Future<String?> pickRecipe(BuildContext context) {
 }
 
 /// Day and meal chips, for "Add to plan" and for moving an entry (PLAN-3).
+/// [dayOptions] overrides the default 7-day-from-today list (RAM-4, so the
+/// month view can offer its own days). [homeSlot], for move/copy only,
+/// keeps that entry's own slot offered and selected while its own day is
+/// picked, even where it wouldn't normally be offered (RAM-1).
 Future<(DateTime, MealSlot)?> _askDayAndMeal(
   BuildContext context, {
   required String title,
   required DateTime day,
   required MealSlot slot,
+  List<DateTime>? dayOptions,
+  MealSlot? homeSlot,
 }) {
   final l10n = AppLocalizations.of(context);
   final settings = context.read<SettingsState>();
   final dates = MaterialLocalizations.of(context);
-  final today = context.read<PlanState>().today;
-  final options = [
-    for (var i = 0; i < 7; i++)
-      DateTime(today.year, today.month, today.day + i),
-  ];
-  var pickedDay = dateOnly(day);
+  final plan = context.read<PlanState>();
+  final today = plan.today;
+  final options =
+      dayOptions ??
+      [
+        for (var i = 0; i < 7; i++)
+          DateTime(today.year, today.month, today.day + i),
+      ];
+  final originalDay = dateOnly(day);
+  var pickedDay = originalDay;
   var pickedSlot = slot;
+
+  // The slots a given day really offers (RAM-1): [homeSlot] is only ever
+  // forced into that list on its own day, so it doesn't leak into every
+  // other day's chips once the day chip changes.
+  List<MealSlot> offeredSlots(DateTime d) => slotsFor(
+    d,
+    ramadan: plan.ramadanMode,
+    month: plan.ramadanMonthOf(d),
+    withEntries: homeSlot != null && dateKey(d) == dateKey(originalDay)
+        ? {...plan.slotsWithEntries(d), homeSlot}
+        : plan.slotsWithEntries(d),
+  );
+  // must-fix: the preselected meal (the add sheet's "last meal used", or
+  // an entry's own slot on a different day than it's being moved to)
+  // isn't always one the opening day actually offers — map it onto that
+  // day's real slots up front, not only once the user touches a day chip.
+  final initialOffered = offeredSlots(pickedDay);
+  if (!initialOffered.contains(pickedSlot)) {
+    pickedSlot = slotOnDay(pickedSlot, initialOffered);
+  }
 
   return showModalBottomSheet<(DateTime, MealSlot)>(
     context: context,
@@ -688,62 +982,76 @@ Future<(DateTime, MealSlot)?> _askDayAndMeal(
     isScrollControlled: true,
     builder: (ctx) => SafeArea(
       child: StatefulBuilder(
-        builder: (ctx, setInner) => SingleChildScrollView(
-          padding: const EdgeInsetsDirectional.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: Theme.of(ctx).textTheme.titleMedium),
-              const SizedBox(height: 12),
-              Text(
-                l10n.planChooseDay,
-                style: Theme.of(ctx).textTheme.labelLarge,
-              ),
-              const SizedBox(height: 4),
-              Wrap(
-                spacing: 8,
-                children: [
-                  for (final d in options)
-                    ChoiceChip(
-                      label: Text(
-                        dateKey(d) == dateKey(today)
-                            ? l10n.planToday
-                            : settings.inDigits(dates.formatShortMonthDay(d)),
-                      ),
-                      selected: dateKey(d) == dateKey(pickedDay),
-                      onSelected: (_) => setInner(() => pickedDay = d),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                l10n.planChooseMeal,
-                style: Theme.of(ctx).textTheme.labelLarge,
-              ),
-              const SizedBox(height: 4),
-              Wrap(
-                spacing: 8,
-                children: [
-                  for (final m in MealSlot.values)
-                    ChoiceChip(
-                      label: Text(mealName(l10n, m)),
-                      selected: m == pickedSlot,
-                      onSelected: (_) => setInner(() => pickedSlot = m),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Align(
-                alignment: AlignmentDirectional.centerEnd,
-                child: FilledButton(
-                  onPressed: () => Navigator.pop(ctx, (pickedDay, pickedSlot)),
-                  child: Text(l10n.save),
+        builder: (ctx, setInner) {
+          final slots = offeredSlots(pickedDay);
+          return SingleChildScrollView(
+            padding: const EdgeInsetsDirectional.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: Theme.of(ctx).textTheme.titleMedium),
+                const SizedBox(height: 12),
+                Text(
+                  l10n.planChooseDay,
+                  style: Theme.of(ctx).textTheme.labelLarge,
                 ),
-              ),
-            ],
-          ),
-        ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final d in options)
+                      ChoiceChip(
+                        label: Text(
+                          dateKey(d) == dateKey(today)
+                              ? l10n.planToday
+                              : settings.inDigits(dates.formatShortMonthDay(d)),
+                        ),
+                        selected: dateKey(d) == dateKey(pickedDay),
+                        onSelected: (_) => setInner(() {
+                          pickedDay = d;
+                          // RAM-1: repeat the mapping every time the day
+                          // changes, so a slot the new day doesn't offer
+                          // (suhoor picked, then a non-Ramadan day chosen)
+                          // doesn't stay silently selected off-screen.
+                          final offered = offeredSlots(pickedDay);
+                          if (!offered.contains(pickedSlot)) {
+                            pickedSlot = slotOnDay(pickedSlot, offered);
+                          }
+                        }),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  l10n.planChooseMeal,
+                  style: Theme.of(ctx).textTheme.labelLarge,
+                ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final m in slots)
+                      ChoiceChip(
+                        label: Text(mealName(l10n, m)),
+                        selected: m == pickedSlot,
+                        onSelected: (_) => setInner(() => pickedSlot = m),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: FilledButton(
+                    onPressed: () =>
+                        Navigator.pop(ctx, (pickedDay, pickedSlot)),
+                    child: Text(l10n.save),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     ),
   );
