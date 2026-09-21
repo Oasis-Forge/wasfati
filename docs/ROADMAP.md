@@ -125,7 +125,7 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
   - A whole-month view for planning Ramadan; gatherings use each entry's servings.
   - Offered by a card 7 days before Ramadan, never switched on by itself.
   - No prayer or iftar times (they would need location).
-- [ ] **Groceries** (GRO-1–GRO-7, PLAN-5; schema step 4):
+- [x] **Groceries** (GRO-1–GRO-7, PLAN-5; schema step 4; v0.9.0):
   - Built from recipes and the plan, scaled as shown, with "add the week to groceries" (PLAN-5).
   - Merges the same item across recipes with unit maths.
   - 12 aisles that know Arabic ingredient names (at least 95% of the test fixtures placed).

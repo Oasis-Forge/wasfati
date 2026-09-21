@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'grocery.dart';
 import 'library.dart';
 import 'quantity/format.dart';
 
@@ -23,6 +24,7 @@ class AppSettings {
     this.theme = ThemePref.system,
     this.sort = LibrarySort.recent,
     this.grid = false,
+    this.groceryView = GroceryView.byAisle,
   });
 
   final LanguagePref language;
@@ -35,6 +37,9 @@ class AppSettings {
   final LibrarySort sort;
   final bool grid;
 
+  /// The grocery list's "By aisle"/"By recipe" choice, remembered (GRO-5).
+  final GroceryView groceryView;
+
   AppSettings copyWith({
     LanguagePref? language,
     DigitStyle? digits,
@@ -43,6 +48,7 @@ class AppSettings {
     ThemePref? theme,
     LibrarySort? sort,
     bool? grid,
+    GroceryView? groceryView,
   }) => AppSettings(
     language: language ?? this.language,
     digits: digits ?? this.digits,
@@ -51,6 +57,7 @@ class AppSettings {
     theme: theme ?? this.theme,
     sort: sort ?? this.sort,
     grid: grid ?? this.grid,
+    groceryView: groceryView ?? this.groceryView,
   );
 
   String toJson() => jsonEncode({
@@ -61,6 +68,7 @@ class AppSettings {
     'theme': theme.name,
     'sort': sort.name,
     'grid': grid,
+    'groceryView': groceryView.name,
   });
 
   /// Unknown or missing values fall back to the defaults, so a backup from a
@@ -78,6 +86,11 @@ class AppSettings {
       theme: pick(ThemePref.values, m['theme'], ThemePref.system),
       sort: pick(LibrarySort.values, m['sort'], LibrarySort.recent),
       grid: m['grid'] == true,
+      groceryView: pick(
+        GroceryView.values,
+        m['groceryView'],
+        GroceryView.byAisle,
+      ),
     );
   }
 

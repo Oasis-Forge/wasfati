@@ -76,13 +76,28 @@ bool isLiquid(String name) => _entry(name)?.$2 ?? false;
 /// A line ready to show: scaled by [factor] and converted to [view], then
 /// rounded once, the SCALE-3 way, for the unit it ends up in.
 class ShownLine {
-  const ShownLine(this.line, {required this.scalable, this.converted = false});
+  ShownLine(
+    this.line, {
+    required this.scalable,
+    this.converted = false,
+    Rational? exactMin,
+    Rational? exactMax,
+  }) : exactMin = exactMin ?? line.min,
+       exactMax = exactMax ?? line.max;
   final ParsedLine line;
 
   /// False for a to-taste or unreadable line; the screen marks it "not
   /// scaled" when the factor isn't ×1 (SCALE-4).
   final bool scalable;
   final bool converted;
+
+  /// [line]'s amount before SCALE-3's display rounding: the exact scaled
+  /// and converted value (QTY-4). Groceries carry this forward instead of
+  /// [line]'s rounded amount, so summing several scaled lines rounds once,
+  /// at the end, not once per line (GRO-3, SCALE-3, "should-fix: double
+  /// rounding").
+  final Rational? exactMin;
+  final Rational? exactMax;
 }
 
 ShownLine showLine(
@@ -137,6 +152,8 @@ ShownLine showLine(
     ),
     scalable: true,
     converted: converted,
+    exactMin: min,
+    exactMax: max,
   );
 }
 

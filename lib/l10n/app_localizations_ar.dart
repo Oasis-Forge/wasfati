@@ -597,4 +597,146 @@ class AppLocalizationsAr extends AppLocalizations {
   String planNextMeal(String day, String meal) {
     return 'في الخطة: $day، $meal';
   }
+
+  @override
+  String get groceriesTitle => 'المشتريات';
+
+  @override
+  String get addToGroceries => 'أضف إلى المشتريات';
+
+  @override
+  String get groceriesAddHint => 'أضف غرضًا';
+
+  @override
+  String get groceriesEmptyTitle => 'قائمة المشتريات فارغة';
+
+  @override
+  String get groceriesEmptyBody =>
+      'اكتب غرضًا بالأعلى، أو أضفه من صفحة وصفة أو من خطة الأسبوع.';
+
+  @override
+  String get aisleProduce => 'خضار وفواكه';
+
+  @override
+  String get aisleMeat => 'لحوم ودواجن';
+
+  @override
+  String get aisleFish => 'أسماك';
+
+  @override
+  String get aisleDairy => 'ألبان وأجبان وبيض';
+
+  @override
+  String get aisleBakery => 'خبز ومخبوزات';
+
+  @override
+  String get aisleGrains => 'أرز ومعكرونة وبقوليات';
+
+  @override
+  String get aisleSpices => 'بهارات';
+
+  @override
+  String get aislePantry => 'زيوت وصلصات ومعلبات';
+
+  @override
+  String get aisleBaking => 'مستلزمات الحلويات';
+
+  @override
+  String get aisleFrozen => 'مجمدات';
+
+  @override
+  String get aisleDrinks => 'مشروبات';
+
+  @override
+  String get aisleOther => 'أخرى';
+
+  @override
+  String get groceriesDoneSection => 'تم';
+
+  @override
+  String get groceriesClearDone => 'مسح ما تم شراؤه';
+
+  @override
+  String get groceriesClearAll => 'مسح الكل';
+
+  @override
+  String groceriesClearedCount(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'مُسح $shown عنصر',
+      many: 'مُسح $shown عنصرًا',
+      few: 'مُسحت $shown عناصر',
+      two: 'مُسح عنصران',
+      one: 'مُسح عنصر واحد',
+      zero: 'لا شيء لمسحه',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get groceriesByAisle => 'حسب الممر';
+
+  @override
+  String get groceriesByRecipe => 'حسب الوصفة';
+
+  @override
+  String get groceriesHandAdded => 'أضفتها بنفسك';
+
+  @override
+  String groceriesRecipeRemoved(String title) {
+    return 'أُزيلت مكوّنات «$title»';
+  }
+
+  @override
+  String get groceriesMoveToAisle => 'نقل إلى ممر آخر';
+
+  @override
+  String get groceriesShareTooltip => 'مشاركة';
+
+  @override
+  String get groceriesShareTitle => 'قائمة المشتريات';
+
+  @override
+  String groceriesFrom(String names) {
+    return 'من: $names';
+  }
+
+  @override
+  String get groceriesNameSeparator => '، ';
+
+  @override
+  String groceriesAddedCount(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'أُضيف $shown مكوّن',
+      many: 'أُضيف $shown مكوّنًا',
+      few: 'أُضيفت $shown مكوّنات',
+      two: 'أُضيف مكوّنان',
+      one: 'أُضيف مكوّن واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get planGroceriesAlreadyAdded => 'أُضيفت';
+
+  @override
+  String get planGroceriesEmpty => 'لا وجبات من اليوم في هذه الأيام';
+
+  @override
+  String planGroceriesAddedCount(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'أُضيفت $shown وجبة إلى المشتريات',
+      many: 'أُضيفت $shown وجبة إلى المشتريات',
+      few: 'أُضيفت $shown وجبات إلى المشتريات',
+      two: 'أُضيفت وجبتان إلى المشتريات',
+      one: 'أُضيفت وجبة واحدة إلى المشتريات',
+      zero: 'لا شيء لإضافته',
+    );
+    return '$_temp0';
+  }
 }

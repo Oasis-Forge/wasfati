@@ -752,5 +752,168 @@
         "type": "String"
       }
     }
+  },
+  "groceriesTitle": "Groceries",
+  "@groceriesTitle": {
+    "description": "GRO-5. The groceries tab label and screen title."
+  },
+  "addToGroceries": "Add to groceries",
+  "@addToGroceries": {
+    "description": "GRO-2, PLAN-5. The recipe page's and the plan's app-bar action that opens the add-to-groceries sheet."
+  },
+  "groceriesAddHint": "Add an item",
+  "@groceriesAddHint": {
+    "description": "GRO-1. Hint text of the typed-add field on the groceries screen."
+  },
+  "groceriesEmptyTitle": "Your grocery list is empty",
+  "@groceriesEmptyTitle": {
+    "description": "RUN-1. Shown with the add field when the list has nothing in it."
+  },
+  "groceriesEmptyBody": "Type an item above, or add one from a recipe's page or the week's plan.",
+  "aisleProduce": "Vegetables and fruit",
+  "@aisleProduce": {
+    "description": "GRO-4. Aisle 1 of 12."
+  },
+  "aisleMeat": "Meat and poultry",
+  "@aisleMeat": {
+    "description": "GRO-4. Aisle 2 of 12."
+  },
+  "aisleFish": "Fish and seafood",
+  "@aisleFish": {
+    "description": "GRO-4. Aisle 3 of 12."
+  },
+  "aisleDairy": "Dairy, cheese and eggs",
+  "@aisleDairy": {
+    "description": "GRO-4. Aisle 4 of 12."
+  },
+  "aisleBakery": "Bread and bakery",
+  "@aisleBakery": {
+    "description": "GRO-4. Aisle 5 of 12."
+  },
+  "aisleGrains": "Rice, pasta and grains",
+  "@aisleGrains": {
+    "description": "GRO-4. Aisle 6 of 12."
+  },
+  "aisleSpices": "Spices",
+  "@aisleSpices": {
+    "description": "GRO-4. Aisle 7 of 12."
+  },
+  "aislePantry": "Oils, sauces and cans",
+  "@aislePantry": {
+    "description": "GRO-4. Aisle 8 of 12."
+  },
+  "aisleBaking": "Baking and sweets",
+  "@aisleBaking": {
+    "description": "GRO-4. Aisle 9 of 12."
+  },
+  "aisleFrozen": "Frozen",
+  "@aisleFrozen": {
+    "description": "GRO-4. Aisle 10 of 12."
+  },
+  "aisleDrinks": "Drinks",
+  "@aisleDrinks": {
+    "description": "GRO-4. Aisle 11 of 12."
+  },
+  "aisleOther": "Other",
+  "@aisleOther": {
+    "description": "GRO-4. Aisle 12 of 12."
+  },
+  "groceriesDoneSection": "Done",
+  "@groceriesDoneSection": {
+    "description": "GRO-5. Heading of the collapsed section a ticked item moves into."
+  },
+  "groceriesClearDone": "Clear done",
+  "@groceriesClearDone": {
+    "description": "GRO-5. Menu action."
+  },
+  "groceriesClearAll": "Clear all",
+  "@groceriesClearAll": {
+    "description": "GRO-5. Menu action."
+  },
+  "groceriesClearedCount": "{count, plural, =0{Nothing to clear} =1{1 item cleared} other{{shown} items cleared}}",
+  "@groceriesClearedCount": {
+    "description": "DEL-2. Snackbar after Clear done or Clear all.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
+  },
+  "groceriesByAisle": "By aisle",
+  "@groceriesByAisle": {
+    "description": "GRO-5. View toggle."
+  },
+  "groceriesByRecipe": "By recipe",
+  "@groceriesByRecipe": {
+    "description": "GRO-5. View toggle."
+  },
+  "groceriesHandAdded": "Added by you",
+  "@groceriesHandAdded": {
+    "description": "GRO-5. Group heading in the By recipe view for typed-in items."
+  },
+  "groceriesRecipeRemoved": "Removed \"{title}\"'s ingredients",
+  "@groceriesRecipeRemoved": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "groceriesMoveToAisle": "Move to aisle",
+  "@groceriesMoveToAisle": {
+    "description": "GRO-4. Title of the sheet opened by a long press on an item."
+  },
+  "groceriesShareTooltip": "Share",
+  "@groceriesShareTooltip": {
+    "description": "GRO-6. App-bar action tooltip."
+  },
+  "groceriesShareTitle": "Grocery list",
+  "@groceriesShareTitle": {
+    "description": "GRO-6. The title line of the shared text."
+  },
+  "groceriesFrom": "From: {names}",
+  "@groceriesFrom": {
+    "description": "GRO-5. The recipes an item's amounts came from, on a second line.",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "groceriesNameSeparator": ", ",
+  "groceriesAddedCount": "{count, plural, =1{1 ingredient added} other{{shown} ingredients added}}",
+  "@groceriesAddedCount": {
+    "description": "GRO-2. Snackbar after adding a recipe's ticked lines to groceries.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
+  },
+  "planGroceriesAlreadyAdded": "Added",
+  "@planGroceriesAlreadyAdded": {
+    "description": "PLAN-5. Marker on an entry already sent to groceries."
+  },
+  "planGroceriesEmpty": "No meals from today in these days",
+  "@planGroceriesEmpty": {
+    "description": "PLAN-5. Shown in the add-to-groceries sheet when the week has no recipe entries."
+  },
+  "planGroceriesAddedCount": "{count, plural, =0{Nothing to add} =1{1 meal added to groceries} other{{shown} meals added to groceries}}",
+  "@planGroceriesAddedCount": {
+    "description": "PLAN-5. Snackbar after adding the week's ticked entries to groceries.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
   }
 }

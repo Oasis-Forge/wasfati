@@ -51,14 +51,16 @@ Rational roundForUnit(Rational v, Unit? unit) {
 
 Rational Function(Rational) _stepFor(Unit? unit) {
   final id = unit?.id;
-  if (id == 'g' || id == 'ml') {
-    return (v) => v > Rational(100) ? Rational(5) : Rational.one;
-  }
   if (id == 'kg' || id == 'l') {
     return (_) => Rational(1, 100); // up to 2 decimals
   }
   if (id == 'cup' || unit?.kind == UnitKind.spoon) {
     return (_) => Rational.eighth; // cups and spoons
+  }
+  // g, ml, and any other mass or volume unit with no more specific rule
+  // above (oz, lb, fl oz, QTY-3, should-fix: adversary review).
+  if (unit?.kind == UnitKind.mass || unit?.kind == UnitKind.volume) {
+    return (v) => v > Rational(100) ? Rational(5) : Rational.one;
   }
   return (_) => Rational.half; // حبة، فص… and lines with no unit
 }

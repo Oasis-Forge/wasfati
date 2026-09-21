@@ -4,8 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/grocery.dart';
 import '../models/plan.dart';
+import '../models/quantity/arabic_text.dart';
+import '../models/quantity/convert.dart';
+import '../models/quantity/format.dart';
 import '../models/recipe.dart';
+import '../providers/grocery_state.dart';
 import '../providers/plan_state.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
@@ -77,6 +82,12 @@ class _RecipeScreenState extends State<RecipeScreen> {
                   icon: const Icon(Icons.calendar_month_outlined),
                   onPressed: () => openAddToPlan(context, r.id),
                 ),
+                if (r.ingredients.any((s) => s.items.isNotEmpty))
+                  IconButton(
+                    tooltip: l10n.addToGroceries,
+                    icon: const Icon(Icons.shopping_basket_outlined),
+                    onPressed: () => openAddToGroceries(context, r, _factor),
+                  ),
                 IconButton(
                   tooltip: l10n.edit,
                   icon: const Icon(Icons.edit_outlined),
@@ -277,4 +288,149 @@ class _Heading extends StatelessWidget {
     padding: const EdgeInsetsDirectional.only(top: 24, bottom: 8),
     child: Text(text, style: Theme.of(context).textTheme.titleLarge),
   );
+}
+
+/// One candidate line for "أضف إلى المشتريات" (GRO-2): the group it's under
+/// and its ticked state, starting unticked for a to-taste line (QTY-2).
+class _GroceryCandidate {
+  _GroceryCandidate(this.group, this.shown) : checked = !shown.line.toTaste;
+  final String? group;
+  final ShownLine shown;
+  bool checked;
+}
+
+/// GRO-2: "أضف إلى المشتريات" lists the recipe's lines exactly as the page
+/// shows them (the current scale [factor] and the recipe's unit view,
+/// SCALE-6), each ticked except to-taste ones; water and ice aren't listed.
+Future<void> openAddToGroceries(
+  BuildContext context,
+  Recipe r,
+  Rational factor,
+) async {
+  final l10n = AppLocalizations.of(context);
+  final settings = context.read<SettingsState>();
+  final groceries = context.read<GroceryState>();
+  final messenger = ScaffoldMessenger.of(context);
+
+  final candidates = [
+    for (final section in r.ingredients)
+      for (final line in section.items)
+        if (!isWaterOrIce(line.name))
+          _GroceryCandidate(
+            section.name,
+            showLine(line.parsed, factor: factor, view: r.unitView),
+          ),
+  ];
+
+  var busy = false;
+  final added = await showModalBottomSheet<int>(
+    context: context,
+    isScrollControlled: true,
+    // A tall list (or 12 aisles at 1.3×) used to grow under the status bar,
+    // since isScrollControlled strips top padding on its own (should-fix,
+    // UI review).
+    useSafeArea: true,
+    showDragHandle: true,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setInner) {
+        String? lastGroup;
+        final anyChecked = candidates.any((c) => c.checked);
+        return SingleChildScrollView(
+          padding: EdgeInsetsDirectional.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
+                child: Text(
+                  l10n.addToGroceries,
+                  style: Theme.of(ctx).textTheme.titleMedium,
+                ),
+              ),
+              for (final c in candidates) ...[
+                if (c.group != lastGroup && (lastGroup = c.group) != null)
+                  Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 0),
+                    child: GroupName(c.group!),
+                  ),
+                CheckboxListTile(
+                  value: c.checked,
+                  onChanged: (v) => setInner(() => c.checked = v ?? false),
+                  title: ContentText(
+                    _lineText(c.shown, settings.digits),
+                    source: c.shown.line.original,
+                  ),
+                ),
+              ],
+              Padding(
+                padding: const EdgeInsetsDirectional.all(16),
+                child: FilledButton(
+                  // Disabled while busy or with nothing ticked, so a double
+                  // tap can't add everything twice and a silent no-op sheet
+                  // can't close on nothing (should-fix, UI review).
+                  onPressed: candidates.isEmpty || busy || !anyChecked
+                      ? null
+                      : () async {
+                          setInner(() => busy = true);
+                          final lines = [
+                            for (final c in candidates)
+                              if (c.checked)
+                                IncomingLine(
+                                  name: c.shown.line.name,
+                                  min: c.shown.exactMin,
+                                  max: c.shown.exactMax,
+                                  unitId: c.shown.line.unitId,
+                                  recipeId: r.id,
+                                ),
+                          ];
+                          final ok = lines.isEmpty
+                              ? true
+                              : await groceries.add(lines);
+                          if (!ctx.mounted) return;
+                          Navigator.pop(ctx, ok ? lines.length : null);
+                        },
+                  child: busy
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(l10n.planAdd),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+
+  if (added != null && added > 0 && context.mounted) {
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n.groceriesAddedCount(added, settings.number(added)),
+          ),
+        ),
+      );
+  }
+}
+
+/// A candidate line's text, as the ingredients section shows it (QTY-5,
+/// QTY-6, LANG-5).
+String _lineText(ShownLine shown, DigitStyle digits) {
+  final line = shown.line;
+  return line.min == null
+      ? line.original
+      : formatLine(
+          line,
+          arabic: hasArabic(line.original),
+          digits: digitsFor(line.original, digits),
+          isolate: true,
+        );
 }

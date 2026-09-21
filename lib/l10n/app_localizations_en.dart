@@ -581,4 +581,137 @@ class AppLocalizationsEn extends AppLocalizations {
   String planNextMeal(String day, String meal) {
     return 'In the plan: $day, $meal';
   }
+
+  @override
+  String get groceriesTitle => 'Groceries';
+
+  @override
+  String get addToGroceries => 'Add to groceries';
+
+  @override
+  String get groceriesAddHint => 'Add an item';
+
+  @override
+  String get groceriesEmptyTitle => 'Your grocery list is empty';
+
+  @override
+  String get groceriesEmptyBody =>
+      'Type an item above, or add one from a recipe\'s page or the week\'s plan.';
+
+  @override
+  String get aisleProduce => 'Vegetables and fruit';
+
+  @override
+  String get aisleMeat => 'Meat and poultry';
+
+  @override
+  String get aisleFish => 'Fish and seafood';
+
+  @override
+  String get aisleDairy => 'Dairy, cheese and eggs';
+
+  @override
+  String get aisleBakery => 'Bread and bakery';
+
+  @override
+  String get aisleGrains => 'Rice, pasta and grains';
+
+  @override
+  String get aisleSpices => 'Spices';
+
+  @override
+  String get aislePantry => 'Oils, sauces and cans';
+
+  @override
+  String get aisleBaking => 'Baking and sweets';
+
+  @override
+  String get aisleFrozen => 'Frozen';
+
+  @override
+  String get aisleDrinks => 'Drinks';
+
+  @override
+  String get aisleOther => 'Other';
+
+  @override
+  String get groceriesDoneSection => 'Done';
+
+  @override
+  String get groceriesClearDone => 'Clear done';
+
+  @override
+  String get groceriesClearAll => 'Clear all';
+
+  @override
+  String groceriesClearedCount(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown items cleared',
+      one: '1 item cleared',
+      zero: 'Nothing to clear',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get groceriesByAisle => 'By aisle';
+
+  @override
+  String get groceriesByRecipe => 'By recipe';
+
+  @override
+  String get groceriesHandAdded => 'Added by you';
+
+  @override
+  String groceriesRecipeRemoved(String title) {
+    return 'Removed \"$title\"\'s ingredients';
+  }
+
+  @override
+  String get groceriesMoveToAisle => 'Move to aisle';
+
+  @override
+  String get groceriesShareTooltip => 'Share';
+
+  @override
+  String get groceriesShareTitle => 'Grocery list';
+
+  @override
+  String groceriesFrom(String names) {
+    return 'From: $names';
+  }
+
+  @override
+  String get groceriesNameSeparator => ', ';
+
+  @override
+  String groceriesAddedCount(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown ingredients added',
+      one: '1 ingredient added',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get planGroceriesAlreadyAdded => 'Added';
+
+  @override
+  String get planGroceriesEmpty => 'No meals from today in these days';
+
+  @override
+  String planGroceriesAddedCount(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown meals added to groceries',
+      one: '1 meal added to groceries',
+      zero: 'Nothing to add',
+    );
+    return '$_temp0';
+  }
 }

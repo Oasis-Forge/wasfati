@@ -47,6 +47,12 @@ class Rational implements Comparable<Rational> {
   static const tbspMl = Rational._(15, 1);
   static const tspMl = Rational._(5, 1);
 
+  // QTY-3's oz, lb and fl oz (should-fix, adversary review), already in
+  // lowest terms so they stay `const` in the unit table.
+  static const ounceGrams = Rational._(45359237, 1600000); // 28.349523125 g
+  static const poundGrams = Rational._(45359237, 100000); // 453.59237 g
+  static const flOunceMl = Rational._(473176473, 16000000); // 29.5735295625 ml
+
   final int numerator;
   final int denominator;
 

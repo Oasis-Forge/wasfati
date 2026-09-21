@@ -5,7 +5,9 @@ import 'package:wasfati/models/quantity/format.dart';
 import 'package:wasfati/models/library.dart';
 import 'package:wasfati/models/recipe.dart';
 import 'package:wasfati/models/settings.dart';
+import 'package:wasfati/db/grocery_repository.dart';
 import 'package:wasfati/db/plan_repository.dart';
+import 'package:wasfati/providers/grocery_state.dart';
 import 'package:wasfati/providers/plan_state.dart';
 import 'package:wasfati/providers/recipes_state.dart';
 import 'package:wasfati/providers/settings_state.dart';
@@ -15,6 +17,7 @@ import 'dart:async';
 
 import 'package:wasfati/services/cook_services.dart';
 import 'package:wasfati/services/importer.dart';
+import 'package:wasfati/services/sharer.dart';
 import 'package:wasfati/services/web_import.dart';
 
 import '../services/importer_test.dart' show FakeFetcher, kabsaPage;
@@ -46,6 +49,12 @@ late NoopTimerAlerts alerts;
 /// The meal plan from the last [pumpApp] (PLAN-1).
 late PlanState plan;
 
+/// The grocery list from the last [pumpApp] (GRO-1).
+late GroceryState groceries;
+
+/// What the last [pumpApp] shared (GRO-6, SHARE-1–SHARE-4).
+late NoopSharer sharer;
+
 /// Shares sent into the app during a test (IMP-1).
 late StreamController<String> shares;
 
@@ -74,6 +83,10 @@ Future<(RecipesState, SettingsState)> pumpApp(
   await tester.runAsync(() async {
     final (repo, clock, ids) = await testRepo();
     plan = PlanState(PlanRepository(repo.db, clock: clock.call, ids: ids.call));
+    groceries = GroceryState(
+      GroceryRepository(repo.db, clock: clock.call, ids: ids.call),
+    );
+    await groceries.load();
     settings = SettingsState(repo.db);
     await settings.update(AppSettings(language: language, digits: digits));
     recipes = RecipesState(repo);
@@ -90,6 +103,7 @@ Future<(RecipesState, SettingsState)> pumpApp(
   addTearDown(shares.close);
   timers = TimersState(alerts, autoTick: false);
   addTearDown(timers.dispose);
+  sharer = NoopSharer();
   tester.view.physicalSize = const Size(1080, 2400); // a phone (LANG-6)
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
@@ -99,10 +113,12 @@ Future<(RecipesState, SettingsState)> pumpApp(
       child: WasfatiApp(
         recipes: recipes,
         plan: plan,
+        groceries: groceries,
         settings: settings,
         timers: timers,
         importer: importer,
         shareInbox: FakeShareInbox(shares.stream),
+        sharer: sharer,
       ),
     ),
   );

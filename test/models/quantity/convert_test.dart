@@ -83,5 +83,29 @@ void main() {
       final p = parseIngredient('1/3 كوب زيت');
       expect(identical(showLine(p).line, p), isTrue);
     });
+
+    test('exactMin/exactMax carry the pre-rounding value, for groceries to sum '
+        'before rounding once (GRO-3, should-fix: double rounding)', () {
+      // 1/3 cup × 1/2 = 1/6 cup exactly; SCALE-3's ⅛ step rounds the
+      // *display* line to ⅛, but the exact value must survive for a
+      // grocery merge to add several scaled lines before rounding.
+      final s = showLine(
+        parseIngredient('1/3 كوب دقيق'),
+        factor: Rational(1, 2),
+      );
+      expect(s.line.min, Rational(1, 8)); // the rounded display value
+      expect(s.exactMin, Rational(1, 6)); // the exact value
+    });
+
+    test('exactMin equals the display value at ×1, as written', () {
+      final s = showLine(parseIngredient('1/3 كوب زيت'));
+      expect(s.exactMin, Rational(1, 3));
+      expect(s.exactMin, s.line.min);
+    });
+
+    test('a to-taste line has no exactMin either', () {
+      final s = showLine(parseIngredient('ملح حسب الذوق'), factor: Rational(2));
+      expect(s.exactMin, isNull);
+    });
   });
 }

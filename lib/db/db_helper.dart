@@ -13,6 +13,7 @@ class DBHelper {
     _v1Recipes,
     _v2UnitView,
     _v3PlanEntries,
+    _v4Groceries,
   ];
 
   static int get version => steps.length;
@@ -173,4 +174,46 @@ $_record,
   await db.execute(
     'CREATE INDEX plan_entries_recipe ON plan_entries(recipe_id)',
   );
+}
+
+/// Step 4: the grocery list (GRO-1–GRO-7). An item is one row; its amounts
+/// are separate rows, so the number shown is computed from them (GRO-3).
+/// [aisle_choices] remembers where a name was moved to (GRO-4).
+Future<void> _v4Groceries(DatabaseExecutor db) async {
+  await db.execute('''
+CREATE TABLE grocery_items (
+$_record,
+  name TEXT NOT NULL,
+  norm_name TEXT NOT NULL,
+  aisle TEXT NOT NULL,
+  done_at INTEGER,
+  hand_added INTEGER NOT NULL DEFAULT 0
+)''');
+  // recipe_id and plan_entry_id carry no foreign key: the list outlives the
+  // recipe or plan entry (GRO-7), and a recipe purge must never fail on it.
+  await db.execute('''
+CREATE TABLE grocery_amounts (
+$_record,
+  item_id TEXT NOT NULL REFERENCES grocery_items(id),
+  num INTEGER,
+  den INTEGER,
+  max_num INTEGER,
+  max_den INTEGER,
+  unit_id TEXT,
+  recipe_id TEXT,
+  plan_entry_id TEXT
+)''');
+  await db.execute('''
+CREATE TABLE aisle_choices (
+$_record,
+  norm_name TEXT NOT NULL UNIQUE,
+  aisle TEXT NOT NULL
+)''');
+  for (final sql in [
+    'CREATE INDEX grocery_items_list ON grocery_items(deleted_at, done_at, aisle)',
+    'CREATE INDEX grocery_amounts_item ON grocery_amounts(item_id)',
+    'CREATE INDEX grocery_amounts_recipe ON grocery_amounts(recipe_id)',
+  ]) {
+    await db.execute(sql);
+  }
 }

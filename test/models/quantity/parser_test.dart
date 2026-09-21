@@ -69,6 +69,10 @@ const _table = <(String, String?, String?, String?, String)>[
   ('2 cups rice', '2', null, 'cup', 'rice'),
   ('1 tbsp olive oil', '1', null, 'tbsp', 'olive oil'),
   ('salt to taste', null, null, null, 'salt'),
+  // QTY-3's oz, lb and fl oz (should-fix, adversary review: merging).
+  ('8 oz cheese', '8', null, 'oz', 'cheese'),
+  ('1 lb beef', '1', null, 'lb', 'beef'),
+  ('4 fl oz milk', '4', null, 'floz', 'milk'),
   // S2: real lines from Arabic recipe websites (cookpad, sayidaty,
   // atyabtabkha, supermama; docs/research/technical-constraints.md).
   ('1/4 كوب كزبرة خضراء', '1/4', null, 'cup', 'كزبرة خضراء'),
@@ -182,6 +186,16 @@ void main() {
       expect(scale('500 غرام لحم', Rational(1, 3)), Rational(165));
       expect(scale('10 غرام ملح', Rational(1, 3)), Rational(3));
     });
+    test(
+      'oz and fl oz round like grams, not to the nearest ½ (should-fix, '
+      'adversary review: a new metric unit fell through to the count step)',
+      () {
+        // 8.3 oz × 2 = 16.6, rounds to the nearest whole number (17), not
+        // the nearest ½ a count unit would use.
+        expect(scale('8.3 oz cheese', Rational(2)), Rational(17));
+        expect(scale('4.2 fl oz milk', Rational(2)), Rational(8));
+      },
+    );
     test('ranges scale both ends', () {
       final s = scaleLine(parseIngredient('٢-٣ فصوص ثوم'), Rational(2)).line;
       expect((s.min, s.max), (Rational(4), Rational(6)));
