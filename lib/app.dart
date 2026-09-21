@@ -12,11 +12,15 @@ import 'providers/timers_state.dart';
 import 'services/cook_services.dart';
 import 'services/importer.dart';
 import 'services/photo_store.dart';
+import 'services/recipe_pages.dart' show ShareStorage;
 import 'services/sharer.dart';
 import 'services/web_import.dart';
 import 'widgets/share_router.dart';
 
-const _seed = Color(0xFFB5542B); // saffron / terracotta
+// Also the fixed light scheme for the share images (SHARE-3,
+// services/recipe_pages.dart), so a shared picture always matches the app's
+// own colours whatever the device's theme.
+const seedColor = Color(0xFFB5542B); // saffron / terracotta
 const fontFamily = 'IBMPlexSansArabic';
 
 /// The app shell. State and services are built by the caller (the entry
@@ -34,6 +38,7 @@ class WasfatiApp extends StatelessWidget {
     required this.importer,
     this.shareInbox = const NoopShareInbox(),
     required this.sharer,
+    required this.shareStorage,
   });
 
   final RecipesState recipes;
@@ -52,6 +57,11 @@ class WasfatiApp extends StatelessWidget {
   /// records calls and can't be a compile-time constant.
   final Sharer sharer;
 
+  /// Where the share-as-images pages are rendered to (SHARE-3, SHARE-4). No
+  /// default, for the same reason as [sharer]: a test that forgot to pass a
+  /// fake should fail loudly, never quietly write into the real cache.
+  final ShareStorage shareStorage;
+
   static final navigatorKey = GlobalKey<NavigatorState>();
 
   @override
@@ -68,6 +78,7 @@ class WasfatiApp extends StatelessWidget {
         Provider<Importer>.value(value: importer),
         Provider<ShareInbox>.value(value: shareInbox),
         Provider<Sharer>.value(value: sharer),
+        Provider<ShareStorage>.value(value: shareStorage),
       ],
       child: _RamadanSync(
         settings: settings,
@@ -98,7 +109,7 @@ class WasfatiApp extends StatelessWidget {
 
   static ThemeData _theme(Brightness b) => ThemeData(
     fontFamily: fontFamily,
-    colorScheme: ColorScheme.fromSeed(seedColor: _seed, brightness: b),
+    colorScheme: ColorScheme.fromSeed(seedColor: seedColor, brightness: b),
   );
 }
 

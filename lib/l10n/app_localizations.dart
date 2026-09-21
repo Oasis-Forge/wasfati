@@ -206,6 +206,72 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get delete;
 
+  /// SHARE-1. Recipe page app-bar action, opening the share sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get shareTooltip;
+
+  /// SHARE-1. Share-sheet option: plain text.
+  ///
+  /// In en, this message translates to:
+  /// **'As text'**
+  String get shareAsText;
+
+  /// SHARE-1. Share-sheet option: portrait picture pages.
+  ///
+  /// In en, this message translates to:
+  /// **'As images'**
+  String get shareAsImages;
+
+  /// SHARE-2. Ingredients heading in the shared recipe text and images, distinct from the on-screen heading ("ingredients").
+  ///
+  /// In en, this message translates to:
+  /// **'Ingredients'**
+  String get shareHeadingIngredients;
+
+  /// SHARE-2. Steps heading in the shared recipe text and images, distinct from the on-screen heading ("steps").
+  ///
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get shareHeadingSteps;
+
+  /// SHARE-2. The shared recipe's source line, when it has one.
+  ///
+  /// In en, this message translates to:
+  /// **'Source: {url}'**
+  String shareSource(String url);
+
+  /// SHARE-2. The last line of a shared recipe text, right before the Play Store link.
+  ///
+  /// In en, this message translates to:
+  /// **'From the Wasfati app'**
+  String get shareFooterLine;
+
+  /// SHARE-1. Progress label while the share-as-images pages render.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating images…'**
+  String get shareRendering;
+
+  /// SHARE-3. Shown when a recipe would need more than 6 image pages.
+  ///
+  /// In en, this message translates to:
+  /// **'This recipe is too long to share as images. Share it as text instead.'**
+  String get shareTooLong;
+
+  /// SHARE-3. Shown when share-as-images fails unexpectedly (not the too-long case).
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create the images. Try again.'**
+  String get shareFailed;
+
+  /// SHARE-1, SCALE-6. Marks a shared line (text or image) the scaler couldn't change, matching the recipe page's own "not scaled" mark.
+  ///
+  /// In en, this message translates to:
+  /// **'{line} ({mark})'**
+  String shareUnscaledLine(String line, String mark);
+
   /// Editor button.
   ///
   /// In en, this message translates to:

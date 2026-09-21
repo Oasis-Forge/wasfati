@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -6,14 +7,15 @@ import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../models/grocery.dart';
 import '../models/plan.dart';
-import '../models/quantity/arabic_text.dart';
 import '../models/quantity/convert.dart';
-import '../models/quantity/format.dart';
 import '../models/recipe.dart';
+import '../models/recipe_share.dart';
 import '../providers/grocery_state.dart';
 import '../providers/plan_state.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
+import '../services/recipe_pages.dart';
+import '../services/sharer.dart';
 import '../widgets/content_direction.dart';
 import '../models/quantity/rational.dart';
 import 'cook_mode_screen.dart';
@@ -88,6 +90,11 @@ class _RecipeScreenState extends State<RecipeScreen> {
                     icon: const Icon(Icons.shopping_basket_outlined),
                     onPressed: () => openAddToGroceries(context, r, _factor),
                   ),
+                IconButton(
+                  tooltip: l10n.shareTooltip,
+                  icon: const Icon(Icons.share_outlined),
+                  onPressed: () => openShareRecipe(context, r, _factor),
+                ),
                 IconButton(
                   tooltip: l10n.edit,
                   icon: const Icon(Icons.edit_outlined),
@@ -360,7 +367,7 @@ Future<void> openAddToGroceries(
                   value: c.checked,
                   onChanged: (v) => setInner(() => c.checked = v ?? false),
                   title: ContentText(
-                    _lineText(c.shown, settings.digits),
+                    shownLineText(c.shown, settings.digits),
                     source: c.shown.line.original,
                   ),
                 ),
@@ -421,16 +428,157 @@ Future<void> openAddToGroceries(
   }
 }
 
-/// A candidate line's text, as the ingredients section shows it (QTY-5,
-/// QTY-6, LANG-5).
-String _lineText(ShownLine shown, DigitStyle digits) {
-  final line = shown.line;
-  return line.min == null
-      ? line.original
-      : formatLine(
-          line,
-          arabic: hasArabic(line.original),
-          digits: digitsFor(line.original, digits),
-          isolate: true,
-        );
+/// SHARE-1: "مشاركة" offers "كنص" and "كصورة". Both go through the share
+/// sheet only — nothing is uploaded and no web page is made (principle 2,
+/// CLAUDE.md). What's shared is exactly what the page shows: [factor] and
+/// the recipe's unit view (SCALE-6), in the user's digits (QTY-5).
+Future<void> openShareRecipe(
+  BuildContext context,
+  Recipe r,
+  Rational factor,
+) async {
+  final l10n = AppLocalizations.of(context);
+  final settings = context.read<SettingsState>();
+  final sharer = context.read<Sharer>();
+  final storage = context.read<ShareStorage>();
+  final messenger = ScaffoldMessenger.of(context);
+  // LANG-5, must-fix (adversarial review): captured before any `await`, so
+  // the images align to the app's own reading edge whatever the recipe's
+  // own language is.
+  final uiDirection = Directionality.of(context);
+
+  String servingsLabel(int n) => l10n.servings(n, settings.number(n));
+  String prepTimeLabel(int m) =>
+      '${l10n.prepTime} ${l10n.minutes(m, settings.number(m))}';
+  String cookTimeLabel(int m) =>
+      '${l10n.cookTime} ${l10n.minutes(m, settings.number(m))}';
+  String unscaledLineText(String line, String mark) =>
+      l10n.shareUnscaledLine(line, mark);
+
+  // Factored out so a longer recipe's "too long" notice can offer this same
+  // path as its action (should-fix, adversarial review), instead of just
+  // telling the user to reopen the sheet and pick كنص by hand.
+  Future<void> shareAsText() async {
+    final text = recipeShareText(
+      r,
+      factor: factor,
+      view: r.unitView,
+      digits: settings.digits,
+      ingredientsHeading: l10n.shareHeadingIngredients,
+      stepsHeading: l10n.shareHeadingSteps,
+      footerLine: l10n.shareFooterLine,
+      notScaledMark: l10n.notScaled,
+      unscaledLineText: unscaledLineText,
+      servingsLabel: servingsLabel,
+      prepTimeLabel: prepTimeLabel,
+      cookTimeLabel: cookTimeLabel,
+      sourceLabel: l10n.shareSource,
+    );
+    await sharer.shareText(text, subject: r.title);
+  }
+
+  final choice = await showModalBottomSheet<String>(
+    context: context,
+    builder: (ctx) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.short_text),
+            title: Text(l10n.shareAsText),
+            onTap: () => Navigator.pop(ctx, 'text'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.image_outlined),
+            title: Text(l10n.shareAsImages),
+            onTap: () => Navigator.pop(ctx, 'images'),
+          ),
+        ],
+      ),
+    ),
+  );
+  if (choice == null || !context.mounted) return;
+
+  if (choice == 'text') {
+    await shareAsText();
+    return;
+  }
+
+  // Not awaited: it stays open (dismissed below) while the pages render.
+  // PopScope(canPop: false) — must-fix, adversarial review — also blocks
+  // the system Back button: barrierDismissible only stops a barrier tap,
+  // so Back used to close this dialog while rendering carried on, and the
+  // unconditional pop below then closed the recipe page instead (or, on a
+  // second Back, fired a second share).
+  unawaited(
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Row(
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(width: 16),
+              Expanded(child: Text(l10n.shareRendering)),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+
+  List<String>? paths;
+  var failed = false;
+  try {
+    paths = await renderSharePages(
+      r,
+      factor: factor,
+      view: r.unitView,
+      digits: settings.digits,
+      uiDirection: uiDirection,
+      ingredientsHeading: l10n.shareHeadingIngredients,
+      stepsHeading: l10n.shareHeadingSteps,
+      notScaledMark: l10n.notScaled,
+      unscaledLineText: unscaledLineText,
+      servingsLabel: servingsLabel,
+      prepTimeLabel: prepTimeLabel,
+      cookTimeLabel: cookTimeLabel,
+      brand: l10n.appTitle,
+      storage: storage,
+    );
+  } catch (_) {
+    // must-fix (adversarial review): never leave the progress dialog
+    // stuck open on an unexpected failure.
+    failed = true;
+  } finally {
+    if (context.mounted) {
+      Navigator.of(context, rootNavigator: true).pop(); // close the dialog
+    }
+  }
+  if (!context.mounted) return;
+
+  if (failed) {
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(l10n.shareFailed)));
+    return;
+  }
+
+  if (paths == null) {
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(l10n.shareTooLong),
+          action: SnackBarAction(
+            label: l10n.shareAsText,
+            onPressed: () => unawaited(shareAsText()),
+          ),
+        ),
+      );
+    return;
+  }
+  await sharer.shareFiles(paths, text: r.title);
 }

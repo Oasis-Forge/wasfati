@@ -100,6 +100,23 @@ class ShownLine {
   final Rational? exactMax;
 }
 
+/// A [ShownLine]'s text exactly as the recipe page renders it (QTY-5,
+/// SCALE-6): the original text for an unreadable line, or the formatted
+/// amount, isolated left-to-right, with digits per [digits]. Shared by the
+/// ingredients list, "أضف إلى المشتريات" (GRO-2) and the recipe share text
+/// (SHARE-2), so all three always agree.
+String shownLineText(ShownLine shown, DigitStyle digits) {
+  final line = shown.line;
+  return line.min == null
+      ? line.original
+      : formatLine(
+          line,
+          arabic: hasArabic(line.original),
+          digits: digitsFor(line.original, digits),
+          isolate: true,
+        );
+}
+
 ShownLine showLine(
   ParsedLine line, {
   Rational factor = Rational.one,

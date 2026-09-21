@@ -101,6 +101,63 @@
   "@delete": {
     "description": "Button: move the recipe to the trash (DEL-1)."
   },
+  "shareTooltip": "Share",
+  "@shareTooltip": {
+    "description": "SHARE-1. Recipe page app-bar action, opening the share sheet."
+  },
+  "shareAsText": "As text",
+  "@shareAsText": {
+    "description": "SHARE-1. Share-sheet option: plain text."
+  },
+  "shareAsImages": "As images",
+  "@shareAsImages": {
+    "description": "SHARE-1. Share-sheet option: portrait picture pages."
+  },
+  "shareHeadingIngredients": "Ingredients",
+  "@shareHeadingIngredients": {
+    "description": "SHARE-2. Ingredients heading in the shared recipe text and images, distinct from the on-screen heading (\"ingredients\")."
+  },
+  "shareHeadingSteps": "Method",
+  "@shareHeadingSteps": {
+    "description": "SHARE-2. Steps heading in the shared recipe text and images, distinct from the on-screen heading (\"steps\")."
+  },
+  "shareSource": "Source: {url}",
+  "@shareSource": {
+    "description": "SHARE-2. The shared recipe's source line, when it has one.",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "shareFooterLine": "From the Wasfati app",
+  "@shareFooterLine": {
+    "description": "SHARE-2. The last line of a shared recipe text, right before the Play Store link."
+  },
+  "shareRendering": "Creating images…",
+  "@shareRendering": {
+    "description": "SHARE-1. Progress label while the share-as-images pages render."
+  },
+  "shareTooLong": "This recipe is too long to share as images. Share it as text instead.",
+  "@shareTooLong": {
+    "description": "SHARE-3. Shown when a recipe would need more than 6 image pages."
+  },
+  "shareFailed": "Couldn't create the images. Try again.",
+  "@shareFailed": {
+    "description": "SHARE-3. Shown when share-as-images fails unexpectedly (not the too-long case)."
+  },
+  "shareUnscaledLine": "{line} ({mark})",
+  "@shareUnscaledLine": {
+    "description": "SHARE-1, SCALE-6. Marks a shared line (text or image) the scaler couldn't change, matching the recipe page's own \"not scaled\" mark.",
+    "placeholders": {
+      "line": {
+        "type": "String"
+      },
+      "mark": {
+        "type": "String"
+      }
+    }
+  },
   "save": "Save",
   "@save": {
     "description": "Editor button."

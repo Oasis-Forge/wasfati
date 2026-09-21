@@ -14,6 +14,7 @@ import 'providers/settings_state.dart';
 import 'providers/timers_state.dart';
 import 'services/cook_services.dart';
 import 'services/importer.dart';
+import 'services/recipe_pages.dart';
 import 'services/sharer.dart';
 import 'services/web_import.dart';
 import 'services/photo_store.dart';
@@ -35,6 +36,14 @@ Future<void> main() async {
   }
   await planRepo.purgeTrash();
   await groceryRepo.purgeTrash();
+  const shareStorage = DeviceShareStorage();
+  try {
+    await clearShareCache(shareStorage); // SHARE-4: never outlive this run
+  } on Exception {
+    // should-fix, adversarial review: best-effort housekeeping — a folder
+    // that can't be deleted today is retried at the next start, but must
+    // never stop the app from opening at all.
+  }
   await repo.installId(); // SRV-4: created once, on first launch
   final settings = SettingsState(db);
   await settings.load();
@@ -61,6 +70,7 @@ Future<void> main() async {
       importer: Importer(DeviceFetcher(), repo),
       shareInbox: const DeviceShareInbox(),
       sharer: const DeviceSharer(),
+      shareStorage: shareStorage,
     ),
   );
 }
