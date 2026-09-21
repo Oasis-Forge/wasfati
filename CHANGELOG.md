@@ -4,6 +4,14 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-09-22
+
+### Added
+- Ramadan mode. On Ramadan days the plan shows السحور، الإفطار and وجبة خفيفة, with the Hijri date beside each day and عيد الفطر after the last. Anything already planned for lunch or dinner stays where you put it.
+- A week before Ramadan the plan offers to switch; it never switches by itself. Turn it on or off any time in Settings.
+- A whole-month view for planning Ramadan, and "add to groceries" for the rest of the month.
+- If your country starts Ramadan a day earlier or later than the Umm al-Qura calendar, move it in Settings; it resets for the next year.
+
 ## [0.9.0] - 2026-09-21
 
 ### Added
