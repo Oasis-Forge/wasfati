@@ -4,6 +4,14 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-20
+
+### Added
+- A meal plan: one week at a time, with فطور، غداء، عشاء and وجبة خفيفة every day. The week starts on the day your region uses (Saturday in Egypt, the Emirates and Kuwait; Sunday in Saudi Arabia), or on the day you choose in Settings.
+- Plan a recipe in three taps from its page, or write a note like "مطعم" straight into a meal. Each planned meal keeps its own number of servings.
+- Move or copy a meal to another day, clear a whole week, and undo any of it.
+- A recipe's page tells you the next meal it's planned for.
+
 ## [0.7.2] - 2026-09-20
 
 ### Changed

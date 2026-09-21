@@ -9,7 +9,11 @@ class DBHelper {
   DBHelper._();
 
   /// The ordered steps; the schema version is their count.
-  static final List<SchemaStep> steps = [_v1Recipes, _v2UnitView];
+  static final List<SchemaStep> steps = [
+    _v1Recipes,
+    _v2UnitView,
+    _v3PlanEntries,
+  ];
 
   static int get version => steps.length;
 
@@ -144,3 +148,29 @@ CREATE TABLE meta (
 /// "as written".
 Future<void> _v2UnitView(DatabaseExecutor db) =>
     db.execute('ALTER TABLE recipes ADD COLUMN unit_view TEXT');
+
+/// Step 3: the meal plan (PLAN-1–PLAN-6). One row per planned meal: a
+/// recipe or a short note, on one local calendar date (DATE-1), with the
+/// servings that meal is for (PLAN-2).
+Future<void> _v3PlanEntries(DatabaseExecutor db) async {
+  await db.execute('''
+CREATE TABLE plan_entries (
+$_record,
+  date TEXT NOT NULL,
+  slot TEXT NOT NULL,
+  recipe_id TEXT REFERENCES recipes(id),
+  note TEXT,
+  servings INTEGER,
+  mult_num INTEGER,
+  mult_den INTEGER,
+  position INTEGER NOT NULL DEFAULT 0,
+  added_to_groceries_at INTEGER,
+  CHECK ((recipe_id IS NULL) <> (note IS NULL))
+)''');
+  await db.execute(
+    'CREATE INDEX plan_entries_day ON plan_entries(date, slot, position)',
+  );
+  await db.execute(
+    'CREATE INDEX plan_entries_recipe ON plan_entries(recipe_id)',
+  );
+}

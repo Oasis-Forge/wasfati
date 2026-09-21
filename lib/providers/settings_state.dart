@@ -51,4 +51,9 @@ class SettingsState extends ChangeNotifier {
   /// A whole number in the chosen digit style (QTY-5, Decision 5).
   String number(int n) =>
       digits == DigitStyle.arabic ? easternDigits('$n') : '$n';
+
+  /// Text the platform formatted, with its digits put into the chosen style
+  /// (QTY-5): dates read in 123 by default, even in Arabic.
+  String inDigits(String text) =>
+      digits == DigitStyle.arabic ? easternDigits(text) : westernDigits(text);
 }

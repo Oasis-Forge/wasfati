@@ -907,6 +907,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check and save'**
   String get importedRecipe;
+
+  /// The meal plan screen and its navigation destination (PLAN-1)
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get planTitle;
+
+  /// The library destination in the bottom navigation bar
+  ///
+  /// In en, this message translates to:
+  /// **'Recipes'**
+  String get tabRecipes;
+
+  /// Returns the plan to the current week (PLAN-1)
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get planThisWeek;
+
+  /// Tooltip on the arrow that moves a week back
+  ///
+  /// In en, this message translates to:
+  /// **'Previous week'**
+  String get planPreviousWeek;
+
+  /// Tooltip on the arrow that moves a week forward
+  ///
+  /// In en, this message translates to:
+  /// **'Next week'**
+  String get planNextWeek;
+
+  /// Marks today's day in the plan
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get planToday;
+
+  /// Meal slot (PLAN-1)
+  ///
+  /// In en, this message translates to:
+  /// **'Breakfast'**
+  String get mealBreakfast;
+
+  /// Meal slot (PLAN-1)
+  ///
+  /// In en, this message translates to:
+  /// **'Lunch'**
+  String get mealLunch;
+
+  /// Meal slot (PLAN-1)
+  ///
+  /// In en, this message translates to:
+  /// **'Dinner'**
+  String get mealDinner;
+
+  /// Meal slot (PLAN-1)
+  ///
+  /// In en, this message translates to:
+  /// **'Snack'**
+  String get mealSnack;
+
+  /// Tooltip on the + of an empty meal slot (PLAN-3)
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get planAdd;
+
+  /// Opens the recipe picker for a meal (PLAN-3)
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a recipe'**
+  String get planAddRecipe;
+
+  /// Plans a meal without a recipe (PLAN-2)
+  ///
+  /// In en, this message translates to:
+  /// **'Write a note'**
+  String get planAddNote;
+
+  /// Label of the note field (PLAN-2)
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get planNoteLabel;
+
+  /// Hint in the note field (PLAN-2)
+  ///
+  /// In en, this message translates to:
+  /// **'Eating out, leftovers…'**
+  String get planNoteHint;
+
+  /// The note is empty or too long (PLAN-2)
+  ///
+  /// In en, this message translates to:
+  /// **'1–60 characters'**
+  String get planNoteInvalid;
+
+  /// Button on a recipe page, and the title of its sheet (PLAN-3)
+  ///
+  /// In en, this message translates to:
+  /// **'Add to plan'**
+  String get planAddToPlan;
+
+  /// Snackbar after planning a recipe (PLAN-3)
+  ///
+  /// In en, this message translates to:
+  /// **'Added to the plan'**
+  String get planAdded;
+
+  /// Label above the day chips in the add sheet (PLAN-3)
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get planChooseDay;
+
+  /// Label above the meal chips in the add sheet (PLAN-3)
+  ///
+  /// In en, this message translates to:
+  /// **'Meal'**
+  String get planChooseMeal;
+
+  /// The multiplier for a recipe with no servings (PLAN-2, SCALE-2)
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get planAmount;
+
+  /// Moves an entry to another day or meal (PLAN-4)
+  ///
+  /// In en, this message translates to:
+  /// **'Move'**
+  String get planMove;
+
+  /// Copies an entry to another day or meal (PLAN-4)
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get planCopy;
+
+  /// Takes an entry out of the plan (PLAN-4)
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get planRemove;
+
+  /// Snackbar with Undo after removing an entry (PLAN-4, DEL-2)
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from the plan'**
+  String get planRemoved;
+
+  /// Removes every entry of the week shown (PLAN-4)
+  ///
+  /// In en, this message translates to:
+  /// **'Clear week'**
+  String get planClearWeek;
+
+  /// Snackbar after clearing a week (PLAN-4)
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Nothing to clear} =1{1 meal removed} other{{shown} meals removed}}'**
+  String planClearedCount(int count, String shown);
+
+  /// The slot already has PlanEntry.maxPerSlot entries (PLAN-2)
+  ///
+  /// In en, this message translates to:
+  /// **'A meal holds up to 10 entries'**
+  String get planSlotFull;
+
+  /// Empty plan heading (PLAN-1, RUN-1)
+  ///
+  /// In en, this message translates to:
+  /// **'Plan your week'**
+  String get planEmptyTitle;
+
+  /// Empty plan explanation (PLAN-1, RUN-1)
+  ///
+  /// In en, this message translates to:
+  /// **'Add a recipe to any meal, or write a note like “eating out”.'**
+  String get planEmptyBody;
+
+  /// On a recipe page, its next planned meal (PLAN-6)
+  ///
+  /// In en, this message translates to:
+  /// **'In the plan: {day}, {meal}'**
+  String planNextMeal(String day, String meal);
 }
 
 class _AppLocalizationsDelegate

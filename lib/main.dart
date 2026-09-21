@@ -4,7 +4,9 @@ import 'package:sqflite/sqflite.dart';
 
 import 'app.dart';
 import 'db/db_helper.dart';
+import 'db/plan_repository.dart';
 import 'db/recipe_repository.dart';
+import 'providers/plan_state.dart';
 import 'providers/recipes_state.dart';
 import 'providers/settings_state.dart';
 import 'providers/timers_state.dart';
@@ -21,11 +23,13 @@ Future<void> main() async {
     p.join(await getDatabasesPath(), 'wasfati.db'),
   );
   final repo = RecipeRepository(db);
+  final planRepo = PlanRepository(db);
   final photos = DevicePhotoStore();
   // DEL-2: purge the trash on app start, and the purged photos (REC-8).
   for (final path in await repo.purgeTrash()) {
     await photos.delete(path);
   }
+  await planRepo.purgeTrash();
   await repo.installId(); // SRV-4: created once, on first launch
   final settings = SettingsState(db);
   await settings.load();
@@ -41,6 +45,7 @@ Future<void> main() async {
   runApp(
     WasfatiApp(
       recipes: recipes,
+      plan: PlanState(planRepo),
       settings: settings,
       photos: photos,
       timers: timers,

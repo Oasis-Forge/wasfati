@@ -8,14 +8,58 @@ import '../providers/settings_state.dart';
 import '../widgets/content_direction.dart';
 import 'import_screen.dart';
 import 'library_view.dart';
+import 'plan_screen.dart';
 import 'recipe_editor_screen.dart';
 import 'recipe_screen.dart';
 import 'settings_screen.dart';
 
+/// The app's two places: the library and the meal plan (PLAN-1). An empty
+/// library keeps the first run to one screen and one action (RUN-1), so the
+/// navigation bar appears only once there's a recipe.
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _index = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final state = context.watch<RecipesState>();
+    if (!state.loaded || state.recipes.isEmpty) return const LibraryHome();
+    return Scaffold(
+      body: IndexedStack(
+        index: _index,
+        children: const [LibraryHome(), PlanScreen()],
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _index,
+        onDestinationSelected: (i) => setState(() => _index = i),
+        destinations: [
+          NavigationDestination(
+            icon: const Icon(Icons.menu_book_outlined),
+            selectedIcon: const Icon(Icons.menu_book),
+            label: l10n.tabRecipes,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.calendar_month_outlined),
+            selectedIcon: const Icon(Icons.calendar_month),
+            label: l10n.planTitle,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// The library: "All recipes" and "Cookbooks" (ORG-1). An empty library
 /// explains itself with one action (RUN-1).
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+class LibraryHome extends StatelessWidget {
+  const LibraryHome({super.key});
 
   @override
   Widget build(BuildContext context) {

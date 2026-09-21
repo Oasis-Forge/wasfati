@@ -543,6 +543,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
     - Shared recipe text ends with one line naming the app, with its Play link. Shared grocery lists and recipe images carry no link (SHARE-2, SHARE-4, GRO-6).
     - The "By region" week start uses CLDR's data for the phone's region, falling back to Saturday in Arabic and Sunday in English (PLAN-1).
     - The store's review prompt comes only after an import and a cooked recipe (RUN-5).
+14. (20 September 2026) The app ships **two looks**, picked in Settings, not one: **حبر / Ink** (cream paper, near-black ink, a deep teal that marks every amount, hairlines instead of boxes, no shadows) and **زعفران / Saffron** (quiet cream page, solid saffron action blocks with near-black text on them, one corner cut at 45°). Each has a hand-tuned light and dark theme. Both keep every existing string, add no package, font or bitmap, and must pass AA for text on every surface in both brightnesses. Ink is the default. The full specification — palettes, type scale, components, per-screen plans — is in `docs/research/design-styles.md`; the rules get IDs with `/spec look` before any of it is built (Phase 3).
 
 ## Roadmap impact
 <!-- Rules that change the data model or the build order, and where they land in docs/ROADMAP.md. Schema changes go in Phase 1. -->
@@ -555,13 +556,13 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
   - Arabic search normalization (ORG-4).
 - **Phase 2a order:** recipes and cookbooks → find → scaling and conversion (SCALE-1–SCALE-6) → cook mode (COOK-1–COOK-6) → website import on the device (IMP-2, IMP-5, IMP-6, IMP-9).
 - **Phase 2b order:** the server (SRV-1–SRV-11) before share and photo import (IMP-1, IMP-3, IMP-4, IMP-7, IMP-8, IMP-10).
-- **Phase 2b schema (step 3):** `translated_from` on recipes, the original's ID, for IMP-14's link. Translation (IMP-14–IMP-16, SRV-11) comes after the server.
-- **Phase 2c schema (step 4), before the plan and groceries:**
+- **Phase 2b schema:** a step adding `translated_from` on recipes, the original's ID, for IMP-14's link. Translation (IMP-14–IMP-16, SRV-11) comes after the server.
+- **Phase 2c schema, each step before the feature that reads it. Step 3 shipped on 20 September 2026 with the plan; the grocery tables are step 4:**
   - Plan entries: date, meal slot, a recipe or a note, servings or multiplier, order, and when it was added to groceries (PLAN-2, PLAN-5).
   - Grocery items, each with its amounts, and each amount with the recipe and plan entry it came from (GRO-1, GRO-5).
   - Aisle choices by name (GRO-4).
   - New settings: Ramadan mode, this year's start shift and the card's "not now" (RAM-2, RAM-3), and the last backup date and reminder switch (BAK-8).
-- **Phase 2c order:** schema step 4 → meal plan → groceries (they read the plan) → Ramadan mode → sharing → backup, restore and export last (BAK-6 needs every table).
+- **Phase 2c order:** the plan's schema step → meal plan → the grocery tables → groceries (they read the plan) → Ramadan mode → sharing → backup, restore and export last (BAK-6 needs every table).
 - **Permissions (RUN-2):**
   - `INTERNET` arrives with website import (IMP-2).
   - `POST_NOTIFICATIONS` arrives with cook-mode timers (COOK-5).

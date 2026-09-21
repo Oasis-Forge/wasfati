@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'l10n/app_localizations.dart';
+import 'providers/plan_state.dart';
 import 'providers/recipes_state.dart';
 import 'providers/settings_state.dart';
 import 'screens/home_screen.dart';
@@ -22,6 +23,7 @@ class WasfatiApp extends StatelessWidget {
   const WasfatiApp({
     super.key,
     required this.recipes,
+    required this.plan,
     required this.settings,
     this.photos = const NoopPhotoStore(),
     required this.timers,
@@ -31,6 +33,7 @@ class WasfatiApp extends StatelessWidget {
   });
 
   final RecipesState recipes;
+  final PlanState plan;
   final SettingsState settings;
   final PhotoStore photos;
   final TimersState timers;
@@ -45,6 +48,7 @@ class WasfatiApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: recipes),
+        ChangeNotifierProvider.value(value: plan),
         ChangeNotifierProvider.value(value: settings),
         Provider<PhotoStore>.value(value: photos),
         ChangeNotifierProvider.value(value: timers),
