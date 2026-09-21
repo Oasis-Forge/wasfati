@@ -4,6 +4,13 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-09-22
+
+### Added
+- Share a recipe from its page, as text or as pictures. Both show the recipe exactly as you're looking at it: scaled, converted, and in your digits.
+- As text: the ingredients and numbered steps, the source link, and a line with where to get Wasfati. Your notes, tags and rating stay private.
+- As pictures: portrait pages sized so WhatsApp keeps them sharp, with the photo on the first page. Each line reads in its own direction, and a page never breaks in the middle of a line.
+
 ## [0.10.0] - 2026-09-22
 
 ### Added
