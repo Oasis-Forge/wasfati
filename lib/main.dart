@@ -11,6 +11,7 @@ import 'db/db_helper.dart';
 import 'db/grocery_repository.dart';
 import 'db/plan_repository.dart';
 import 'db/recipe_repository.dart';
+import 'models/settings.dart';
 import 'providers/grocery_state.dart';
 import 'providers/plan_state.dart';
 import 'providers/recipes_state.dart';
@@ -36,6 +37,23 @@ Future<void> main() async {
   final planRepo = PlanRepository(db);
   final groceryRepo = GroceryRepository(db);
   final photos = DevicePhotoStore();
+  final settings = SettingsState(db);
+  await settings.load();
+  // RUN-6: offered once, before the trash is ever purged (must-fix,
+  // review) — otherwise an upgrade whose only recipes sat in the trash for
+  // over 30 days would lose them to the purge below and then read as an
+  // empty, never-offered library. Schema step 5 (db_helper.dart) already
+  // marks such a database as offered, but the ordering here matters too:
+  // a fresh install's purge is always a no-op, so this never delays it.
+  // The language matches what the app actually starts in (LANG-1),
+  // through the same resolver MaterialApp uses (app.dart).
+  final arabic =
+      appLanguage(
+        settings.settings.language,
+        WidgetsBinding.instance.platformDispatcher.locales,
+      ).languageCode ==
+      'ar';
+  await repo.addSampleOnFirstRun(arabic: arabic);
   // DEL-2: purge the trash on app start, and the purged photos (REC-8).
   for (final path in await repo.purgeTrash()) {
     await photos.delete(path);
@@ -61,8 +79,6 @@ Future<void> main() async {
     appVersion: packageInfo.version,
   );
   const backupFiles = DeviceBackupFiles();
-  final settings = SettingsState(db);
-  await settings.load();
   final recipes = RecipesState(repo);
   await recipes.load();
   final groceries = GroceryState(groceryRepo);

@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart' show Locale;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wasfati/models/quantity/format.dart';
 import 'package:wasfati/models/settings.dart';
@@ -81,6 +82,50 @@ void main() {
     test('no shift ever set reads as 0 for any year', () {
       const s = AppSettings();
       expect(s.ramadanShiftFor(1448), 0);
+    });
+  });
+
+  // should-fix, review: main.dart used to read only platformDispatcher's
+  // *first* preferred locale, and MaterialApp resolved the full list
+  // itself (falling back to supportedLocales.first, "ar", for anything it
+  // didn't recognize) — so the two disagreed, and RUN-6's sample recipe
+  // could pick a different language than the app actually opened in. One
+  // resolver, shared by both, fixes it (LANG-1).
+  group('appLanguage (LANG-1, RUN-6): what the app actually starts in', () {
+    test('an explicit preference always wins over the device', () {
+      expect(
+        appLanguage(LanguagePref.ar, const [Locale('en')]),
+        const Locale('ar'),
+      );
+      expect(
+        appLanguage(LanguagePref.en, const [Locale('ar')]),
+        const Locale('en'),
+      );
+    });
+
+    test('system: the first device locale Wasfati ships wins, wherever it '
+        'sits in the list', () {
+      expect(
+        appLanguage(LanguagePref.system, const [Locale('ar', 'SA')]),
+        const Locale('ar'),
+      );
+      expect(
+        appLanguage(LanguagePref.system, const [Locale('fr'), Locale('ar')]),
+        const Locale('ar'),
+      );
+      expect(
+        appLanguage(LanguagePref.system, const [Locale('fr'), Locale('en')]),
+        const Locale('en'),
+      );
+    });
+
+    test('system: falls back to English when nothing on the device matches '
+        '(LANG-1)', () {
+      expect(
+        appLanguage(LanguagePref.system, const [Locale('fr')]),
+        const Locale('en'),
+      );
+      expect(appLanguage(LanguagePref.system, const []), const Locale('en'));
     });
   });
 }

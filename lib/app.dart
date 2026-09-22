@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'l10n/app_localizations.dart';
+import 'models/settings.dart' show appLanguage;
 import 'providers/grocery_state.dart';
 import 'providers/plan_state.dart';
 import 'providers/recipes_state.dart';
@@ -103,7 +104,18 @@ class WasfatiApp extends StatelessWidget {
         child: Consumer<SettingsState>(
           builder: (context, s, _) => MaterialApp(
             onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-            locale: s.locale, // LANG-1: null follows the device
+            // LANG-1, RUN-6 (should-fix, review): resolved by the same
+            // appLanguage main.dart uses for the sample recipe, so the two
+            // never disagree on what language the app actually starts in.
+            // A concrete `locale:` (never null), not
+            // localeListResolutionCallback, so a language change in
+            // Settings still applies at once: WidgetsApp only re-resolves
+            // through the callback path when supportedLocales itself
+            // changes, but re-resolves a non-null `locale` on every build.
+            locale: appLanguage(
+              s.settings.language,
+              WidgetsBinding.instance.platformDispatcher.locales,
+            ),
             supportedLocales: AppLocalizations.supportedLocales,
             localizationsDelegates: const [
               AppLocalizations.delegate,

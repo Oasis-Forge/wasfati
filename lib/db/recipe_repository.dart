@@ -7,6 +7,7 @@ import '../models/library.dart';
 import '../models/quantity/arabic_text.dart';
 import '../models/quantity/convert.dart';
 import '../models/recipe.dart';
+import '../models/sample_recipe.dart';
 import '../services/ids.dart';
 
 /// A recipe row for lists and search, without its sections.
@@ -538,6 +539,35 @@ class RecipeRepository {
     final id = _ids();
     await _db.insert('meta', {'key': 'install_id', 'value': id});
     return id;
+  }
+
+  static const _sampleOfferedKey = 'sample_offered';
+
+  /// The built-in sample recipe (RUN-6), offered once: only on a phone
+  /// with no recipes at all (deleted ones count too), and never again once
+  /// this has run, whether or not it added anything. Returns whether it
+  /// added the sample.
+  Future<bool> addSampleOnFirstRun({required bool arabic}) async {
+    final offered = await _db.query(
+      'meta',
+      where: 'key = ?',
+      whereArgs: [_sampleOfferedKey],
+    );
+    var added = false;
+    if (offered.isEmpty) {
+      final count = Sqflite.firstIntValue(
+        await _db.rawQuery('SELECT COUNT(*) FROM recipes'),
+      );
+      if (count == 0) {
+        await save(sampleRecipe(arabic: arabic, now: _clock()));
+        added = true;
+      }
+    }
+    await _db.insert('meta', {
+      'key': _sampleOfferedKey,
+      'value': '1',
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+    return added;
   }
 
   /// The IDs of tags named [names], creating the missing ones. Names match
