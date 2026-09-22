@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/grocery.dart';
 import '../models/library.dart';
 import '../models/plan.dart';
 import '../models/quantity/rational.dart';
+import '../providers/grocery_state.dart';
 import '../providers/plan_state.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
@@ -108,6 +110,11 @@ class _PlanScreenState extends State<PlanScreen> {
                   .showWeek(weekStartFor(plan.today, _firstWeekday!))
                   .then((_) => _scrollToToday());
             },
+          ),
+          IconButton(
+            tooltip: l10n.addToGroceries,
+            icon: const Icon(Icons.shopping_basket_outlined),
+            onPressed: () => openPlanAddToGroceries(context),
           ),
           PopupMenuButton<String>(
             onSelected: (_) => _clearWeek(),
@@ -767,5 +774,181 @@ Future<void> openAddToPlan(BuildContext context, String recipeId) async {
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(l10n.planAdded)));
+  }
+}
+
+/// One plan entry as a candidate for "أضف إلى المشتريات" (PLAN-5): ticked
+/// unless it was already sent, which also shows "أُضيفت".
+class _GroceryEntryCandidate {
+  _GroceryEntryCandidate(this.entry, this.title)
+    : checked = entry.addedToGroceriesAt == null;
+  final PlanEntry entry;
+  final String title;
+  bool checked;
+}
+
+/// A candidate's day, meal and servings ("21 Sep 2026 · Lunch · 6 servings"),
+/// so the same recipe planned twice in the week doesn't look identical
+/// (should-fix, UI review), with "أُضيفت" appended when it was already sent.
+String _candidateSubtitle(
+  BuildContext ctx,
+  AppLocalizations l10n,
+  SettingsState settings,
+  PlanEntry entry,
+) {
+  final date = settings.inDigits(
+    MaterialLocalizations.of(ctx).formatMediumDate(entry.date),
+  );
+  final amount = entry.servings != null
+      ? l10n.servings(entry.servings!, settings.number(entry.servings!))
+      : entry.multiplier != null && entry.multiplier != Rational.one
+      ? '×${entry.multiplier}'
+      : null;
+  return [
+    date,
+    mealName(l10n, entry.slot),
+    ?amount,
+    if (entry.addedToGroceriesAt != null) l10n.planGroceriesAlreadyAdded,
+  ].join(' · ');
+}
+
+/// PLAN-5: "أضف إلى المشتريات" lists the recipe entries of the shown week
+/// from today on, each ticked unless already added. Adding scales each
+/// entry's lines by its servings over the recipe's, or by its multiplier
+/// (PLAN-2, SCALE-2), in the recipe's remembered view (SCALE-5, SCALE-6),
+/// merges them into the list (GRO-3) and marks the entries added.
+Future<void> openPlanAddToGroceries(BuildContext context) async {
+  final l10n = AppLocalizations.of(context);
+  final plan = context.read<PlanState>();
+  final recipes = context.read<RecipesState>();
+  final groceries = context.read<GroceryState>();
+  final settings = context.read<SettingsState>();
+  final messenger = ScaffoldMessenger.of(context);
+
+  final candidates = [
+    for (final e in plan.entries)
+      if (!e.isNote && dateOnly(e.date).compareTo(plan.today) >= 0)
+        _GroceryEntryCandidate(
+          e,
+          recipes.recipes.where((r) => r.id == e.recipeId).firstOrNull?.title ??
+              '',
+        ),
+  ];
+
+  var busy = false;
+  final added = await showModalBottomSheet<int>(
+    context: context,
+    isScrollControlled: true,
+    // A long week (or 12 aisles at 1.3×) used to grow under the status
+    // bar, since isScrollControlled strips top padding on its own
+    // (should-fix, UI review).
+    useSafeArea: true,
+    showDragHandle: true,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setInner) {
+        final anyChecked = candidates.any((c) => c.checked);
+        return SingleChildScrollView(
+          padding: EdgeInsetsDirectional.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
+                child: Text(
+                  l10n.addToGroceries,
+                  style: Theme.of(ctx).textTheme.titleMedium,
+                ),
+              ),
+              if (candidates.isEmpty)
+                Padding(
+                  padding: const EdgeInsetsDirectional.all(24),
+                  child: Text(l10n.planGroceriesEmpty),
+                )
+              else
+                for (final c in candidates)
+                  CheckboxListTile(
+                    value: c.checked,
+                    onChanged: (v) => setInner(() => c.checked = v ?? false),
+                    title: ContentText(c.title),
+                    // Day, meal and servings (should-fix, UI review): the
+                    // same recipe on two days looked identical.
+                    subtitle: Text(
+                      _candidateSubtitle(ctx, l10n, settings, c.entry),
+                    ),
+                  ),
+              Padding(
+                padding: const EdgeInsetsDirectional.all(16),
+                child: FilledButton(
+                  // Disabled while busy or with nothing ticked (should-fix,
+                  // UI review): a double tap used to add everything twice.
+                  onPressed: candidates.isEmpty || busy || !anyChecked
+                      ? null
+                      : () async {
+                          setInner(() => busy = true);
+                          final ids = <String>[];
+                          final lines = <IncomingLine>[];
+                          for (final c in candidates) {
+                            if (!c.checked) continue;
+                            final recipe = await recipes.repository.get(
+                              c.entry.recipeId!,
+                            );
+                            if (recipe == null ||
+                                (recipe.servings == null &&
+                                    c.entry.servings != null)) {
+                              continue;
+                            }
+                            final factor = c.entry.servings != null
+                                ? Rational(c.entry.servings!, recipe.servings!)
+                                : (c.entry.multiplier ?? Rational.one);
+                            lines.addAll(
+                              groceryLinesForRecipe(
+                                recipe,
+                                factor,
+                                planEntryId: c.entry.id,
+                              ),
+                            );
+                            ids.add(c.entry.id);
+                          }
+                          // must-fix, two reviews: groceries.add()'s result
+                          // was ignored, so a failed write still marked the
+                          // week "أُضيفت" and lost it silently.
+                          final ok = lines.isEmpty
+                              ? true
+                              : await groceries.add(lines);
+                          if (ok && ids.isNotEmpty) {
+                            await plan.markAddedToGroceries(ids);
+                          }
+                          if (!ctx.mounted) return;
+                          Navigator.pop(ctx, ok ? ids.length : null);
+                        },
+                  child: busy
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(l10n.planAdd),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+
+  if (added != null && added > 0 && context.mounted) {
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n.planGroceriesAddedCount(added, settings.number(added)),
+          ),
+        ),
+      );
   }
 }

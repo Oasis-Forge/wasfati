@@ -149,6 +149,23 @@ class PlanRepository {
     );
   }
 
+  /// Marks these entries as sent to groceries, so adding the same week
+  /// twice doesn't double the list (PLAN-5).
+  Future<void> markAddedToGroceries(Iterable<String> ids, DateTime at) async {
+    final list = ids.toList();
+    if (list.isEmpty) return;
+    final marks = List.filled(list.length, '?').join(',');
+    await _db.update(
+      'plan_entries',
+      {
+        'added_to_groceries_at': at.millisecondsSinceEpoch,
+        'updated_at': _clock().millisecondsSinceEpoch,
+      },
+      where: 'id IN ($marks)',
+      whereArgs: list,
+    );
+  }
+
   Future<void> _setDeleted(Iterable<String> ids, DateTime? at) async {
     if (ids.isEmpty) return;
     final marks = List.filled(ids.length, '?').join(',');

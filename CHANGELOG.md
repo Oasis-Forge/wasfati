@@ -4,6 +4,16 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-21
+
+### Added
+- A grocery list. Add a recipe's ingredients exactly as the recipe shows them, scaled and converted, or send the whole week's plan in one go. The same ingredient from several recipes becomes one line with the right total: 1 كغ and 500 غ make 1.5 كغ.
+- Twelve aisles that know Arabic ingredient names, from خضار وفواكه to مستلزمات الحلويات. Move an item to another aisle and it remembers.
+- Tick items off as you shop, clear them with Undo, see the list by recipe, and send it to WhatsApp as text.
+
+### Changed
+- English recipes with ounces, pounds and fluid ounces now scale and convert.
+
 ## [0.8.0] - 2026-09-20
 
 ### Added

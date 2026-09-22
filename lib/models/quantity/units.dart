@@ -191,6 +191,37 @@ const units = <Unit>[
     ar: ArabicForms('كوب', 'كوبان', 'أكواب', 'كوبًا'),
     en: ('cup', 'cups'),
   ),
+  // QTY-3's oz, lb and fl oz: English recipes only, so no Arabic forms
+  // (matches QTY-3's table, no dictionary entry needed for ORG-4).
+  Unit(
+    id: 'oz',
+    kind: UnitKind.mass,
+    forms: ['oz', 'ounce', 'ounces'],
+    metricFactor: Rational.ounceGrams,
+    ar: ArabicForms('أونصة', 'أونصتان', 'أونصات', 'أونصة'),
+    en: ('oz', 'oz'),
+  ),
+  Unit(
+    id: 'lb',
+    kind: UnitKind.mass,
+    forms: ['lb', 'lbs', 'pound', 'pounds'],
+    metricFactor: Rational.poundGrams,
+    ar: ArabicForms('رطل', 'رطلان', 'أرطال', 'رطلًا'),
+    en: ('lb', 'lb'),
+  ),
+  Unit(
+    id: 'floz',
+    kind: UnitKind.volume,
+    forms: ['fl oz', 'floz', 'fluid ounce', 'fluid ounces'],
+    metricFactor: Rational.flOunceMl,
+    ar: ArabicForms(
+      'أونصة سائلة',
+      'أونصتان سائلتان',
+      'أونصات سائلة',
+      'أونصة سائلة',
+    ),
+    en: ('fl oz', 'fl oz'),
+  ),
   Unit(
     id: 'piece',
     kind: UnitKind.count,

@@ -1093,6 +1093,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'In the plan: {day}, {meal}'**
   String planNextMeal(String day, String meal);
+
+  /// GRO-5. The groceries tab label and screen title.
+  ///
+  /// In en, this message translates to:
+  /// **'Groceries'**
+  String get groceriesTitle;
+
+  /// GRO-2, PLAN-5. The recipe page's and the plan's app-bar action that opens the add-to-groceries sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to groceries'**
+  String get addToGroceries;
+
+  /// GRO-1. Hint text of the typed-add field on the groceries screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an item'**
+  String get groceriesAddHint;
+
+  /// RUN-1. Shown with the add field when the list has nothing in it.
+  ///
+  /// In en, this message translates to:
+  /// **'Your grocery list is empty'**
+  String get groceriesEmptyTitle;
+
+  /// No description provided for @groceriesEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Type an item above, or add one from a recipe\'s page or the week\'s plan.'**
+  String get groceriesEmptyBody;
+
+  /// GRO-4. Aisle 1 of 12.
+  ///
+  /// In en, this message translates to:
+  /// **'Vegetables and fruit'**
+  String get aisleProduce;
+
+  /// GRO-4. Aisle 2 of 12.
+  ///
+  /// In en, this message translates to:
+  /// **'Meat and poultry'**
+  String get aisleMeat;
+
+  /// GRO-4. Aisle 3 of 12.
+  ///
+  /// In en, this message translates to:
+  /// **'Fish and seafood'**
+  String get aisleFish;
+
+  /// GRO-4. Aisle 4 of 12.
+  ///
+  /// In en, this message translates to:
+  /// **'Dairy, cheese and eggs'**
+  String get aisleDairy;
+
+  /// GRO-4. Aisle 5 of 12.
+  ///
+  /// In en, this message translates to:
+  /// **'Bread and bakery'**
+  String get aisleBakery;
+
+  /// GRO-4. Aisle 6 of 12.
+  ///
+  /// In en, this message translates to:
+  /// **'Rice, pasta and grains'**
+  String get aisleGrains;
+
+  /// GRO-4. Aisle 7 of 12.
+  ///
+  /// In en, this message translates to:
+  /// **'Spices'**
+  String get aisleSpices;
+
+  /// GRO-4. Aisle 8 of 12.
+  ///
+  /// In en, this message translates to:
+  /// **'Oils, sauces and cans'**
+  String get aislePantry;
+
+  /// GRO-4. Aisle 9 of 12.
+  ///
+  /// In en, this message translates to:
+  /// **'Baking and sweets'**
+  String get aisleBaking;
+
+  /// GRO-4. Aisle 10 of 12.
+  ///
+  /// In en, this message translates to:
+  /// **'Frozen'**
+  String get aisleFrozen;
+
+  /// GRO-4. Aisle 11 of 12.
+  ///
+  /// In en, this message translates to:
+  /// **'Drinks'**
+  String get aisleDrinks;
+
+  /// GRO-4. Aisle 12 of 12.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get aisleOther;
+
+  /// GRO-5. Heading of the collapsed section a ticked item moves into.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get groceriesDoneSection;
+
+  /// GRO-5. Menu action.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear done'**
+  String get groceriesClearDone;
+
+  /// GRO-5. Menu action.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get groceriesClearAll;
+
+  /// DEL-2. Snackbar after Clear done or Clear all.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Nothing to clear} =1{1 item cleared} other{{shown} items cleared}}'**
+  String groceriesClearedCount(int count, String shown);
+
+  /// GRO-5. View toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'By aisle'**
+  String get groceriesByAisle;
+
+  /// GRO-5. View toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'By recipe'**
+  String get groceriesByRecipe;
+
+  /// GRO-5. Group heading in the By recipe view for typed-in items.
+  ///
+  /// In en, this message translates to:
+  /// **'Added by you'**
+  String get groceriesHandAdded;
+
+  /// No description provided for @groceriesRecipeRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed \"{title}\"\'s ingredients'**
+  String groceriesRecipeRemoved(String title);
+
+  /// GRO-4. Title of the sheet opened by a long press on an item.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to aisle'**
+  String get groceriesMoveToAisle;
+
+  /// GRO-6. App-bar action tooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get groceriesShareTooltip;
+
+  /// GRO-6. The title line of the shared text.
+  ///
+  /// In en, this message translates to:
+  /// **'Grocery list'**
+  String get groceriesShareTitle;
+
+  /// GRO-5. The recipes an item's amounts came from, on a second line.
+  ///
+  /// In en, this message translates to:
+  /// **'From: {names}'**
+  String groceriesFrom(String names);
+
+  /// No description provided for @groceriesNameSeparator.
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get groceriesNameSeparator;
+
+  /// GRO-2. Snackbar after adding a recipe's ticked lines to groceries.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 ingredient added} other{{shown} ingredients added}}'**
+  String groceriesAddedCount(int count, String shown);
+
+  /// PLAN-5. Marker on an entry already sent to groceries.
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get planGroceriesAlreadyAdded;
+
+  /// PLAN-5. Shown in the add-to-groceries sheet when the week has no recipe entries.
+  ///
+  /// In en, this message translates to:
+  /// **'No meals from today in these days'**
+  String get planGroceriesEmpty;
+
+  /// PLAN-5. Snackbar after adding the week's ticked entries to groceries.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Nothing to add} =1{1 meal added to groceries} other{{shown} meals added to groceries}}'**
+  String planGroceriesAddedCount(int count, String shown);
 }
 
 class _AppLocalizationsDelegate

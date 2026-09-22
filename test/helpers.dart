@@ -1,5 +1,6 @@
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:wasfati/db/db_helper.dart';
+import 'package:wasfati/db/grocery_repository.dart';
 import 'package:wasfati/db/plan_repository.dart';
 import 'package:wasfati/db/recipe_repository.dart';
 import 'package:wasfati/models/recipe.dart';
@@ -47,6 +48,21 @@ testPlanRepo() async {
   final db = await memoryDb();
   return (
     PlanRepository(db, clock: clock.call, ids: ids.call),
+    RecipeRepository(db, clock: clock.call, ids: ids.call),
+    clock,
+    ids,
+  );
+}
+
+/// A grocery repository and a recipe repository on one database, sharing
+/// the same clock and IDs (GRO-1).
+Future<(GroceryRepository, RecipeRepository, FakeClock, CountingIds)>
+testGroceryRepo() async {
+  final clock = FakeClock();
+  final ids = CountingIds();
+  final db = await memoryDb();
+  return (
+    GroceryRepository(db, clock: clock.call, ids: ids.call),
     RecipeRepository(db, clock: clock.call, ids: ids.call),
     clock,
     ids,

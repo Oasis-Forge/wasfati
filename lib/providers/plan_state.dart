@@ -142,6 +142,16 @@ class PlanState extends ChangeNotifier {
   /// The next meal [recipeId] is planned for, from today on (PLAN-6).
   Future<PlanEntry?> nextFor(String recipeId) => _repo.nextFor(recipeId, today);
 
+  /// Marks these entries as sent to groceries, so adding the same week
+  /// twice doesn't double the list (PLAN-5).
+  Future<bool> markAddedToGroceries(Iterable<String> ids) async =>
+      await _write(() async {
+        await _repo.markAddedToGroceries(ids, _repo.now());
+        await _reload();
+        return true;
+      }) ??
+      false;
+
   void clearError() {
     if (_lastError == null) return;
     _lastError = null;

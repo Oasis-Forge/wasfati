@@ -6,6 +6,7 @@ import '../models/cookbook.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../widgets/content_direction.dart';
+import 'groceries_screen.dart';
 import 'import_screen.dart';
 import 'library_view.dart';
 import 'plan_screen.dart';
@@ -13,9 +14,10 @@ import 'recipe_editor_screen.dart';
 import 'recipe_screen.dart';
 import 'settings_screen.dart';
 
-/// The app's two places: the library and the meal plan (PLAN-1). An empty
-/// library keeps the first run to one screen and one action (RUN-1), so the
-/// navigation bar appears only once there's a recipe.
+/// The app's three places: the library, the meal plan (PLAN-1) and
+/// groceries (GRO-5). An empty library keeps the first run to one screen
+/// and one action (RUN-1), so the navigation bar appears only once there's
+/// a recipe.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -34,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: IndexedStack(
         index: _index,
-        children: const [LibraryHome(), PlanScreen()],
+        children: const [LibraryHome(), PlanScreen(), GroceriesScreen()],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
@@ -49,6 +51,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.calendar_month_outlined),
             selectedIcon: const Icon(Icons.calendar_month),
             label: l10n.planTitle,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.shopping_basket_outlined),
+            selectedIcon: const Icon(Icons.shopping_basket),
+            label: l10n.groceriesTitle,
           ),
         ],
       ),
