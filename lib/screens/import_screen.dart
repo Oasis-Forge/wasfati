@@ -167,7 +167,6 @@ class _ImportScreenState extends State<ImportScreen> {
             textDirection: TextDirection.ltr, // links read left to right
             decoration: InputDecoration(
               labelText: l10n.importHint,
-              border: const OutlineInputBorder(),
               suffixIcon: IconButton(
                 tooltip: l10n.paste,
                 icon: const Icon(Icons.content_paste),

@@ -8,7 +8,8 @@ import '../models/quantity/rational.dart';
 import '../models/recipe.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
-import '../widgets/content_direction.dart';
+import '../widgets/amount_line.dart';
+import '../widgets/rail_heading.dart';
 
 /// The ingredients with scaling and conversion (SCALE-1–SCALE-6), both free
 /// (SCALE-1). Scaling is a view: nothing stored changes (SCALE-3).
@@ -193,7 +194,7 @@ class _IngredientRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ContentText(
+                AmountLine(
                   text,
                   source: line.original,
                   style: theme.textTheme.bodyLarge,
@@ -214,7 +215,9 @@ class _IngredientRow extends StatelessWidget {
   }
 }
 
-/// A named group's heading (REC-4, REC-6).
+/// A named group's heading (REC-4, REC-6). LOOK-6: a shelf label — the
+/// rail, not coloured text, carries the emphasis now (design-styles.md
+/// "GroupName becomes a shelf label").
 class GroupName extends StatelessWidget {
   const GroupName(this.text, {super.key});
   final String text;
@@ -222,10 +225,10 @@ class GroupName extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsetsDirectional.only(top: 12, bottom: 4),
-    child: ContentText(
+    child: RailHeading(
       text,
-      style: Theme.of(context).textTheme.titleSmall
-          ?.copyWith(color: Theme.of(context).colorScheme.primary),
+      railHeight: 14,
+      style: Theme.of(context).textTheme.titleSmall,
     ),
   );
 }

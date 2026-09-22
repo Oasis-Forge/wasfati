@@ -13,12 +13,18 @@ void main() {
       expect(s.ramadanCardDismissedYear, isNull);
     });
 
+    test('default look is Ink (LOOK-1)', () {
+      const s = AppSettings();
+      expect(s.style, AppStyle.ink);
+    });
+
     test('every field, including the Ramadan ones, comes back as it went '
         'in (BAK-6: settings travel in backups)', () {
       const s = AppSettings(
         language: LanguagePref.en,
         digits: DigitStyle.arabic,
         weekStart: WeekStart.monday,
+        style: AppStyle.saffron,
         ramadanMode: true,
         ramadanShift: -1,
         ramadanShiftYear: 1448,
@@ -26,6 +32,7 @@ void main() {
       );
       final back = AppSettings.fromJson(s.toJson());
       expect(back, s);
+      expect(back.style, AppStyle.saffron);
       expect(back.ramadanMode, isTrue);
       expect(back.ramadanShift, -1);
       expect(back.ramadanShiftYear, 1448);
@@ -43,6 +50,13 @@ void main() {
       expect(back.ramadanShift, 0);
       expect(back.ramadanShiftYear, isNull);
       expect(back.language, LanguagePref.ar);
+      expect(back.style, AppStyle.ink); // a backup with no LOOK-1 field yet
+    });
+
+    test('an unknown style name falls back to Ink (a backup from an older '
+        'version, LOOK-1, BAK-6)', () {
+      final back = AppSettings.fromJson('{"style": "sunset"}');
+      expect(back.style, AppStyle.ink);
     });
 
     test('a corrupt shift is clamped to -1..1', () {
@@ -69,6 +83,14 @@ void main() {
     test('0 is a real value, not treated as "leave alone"', () {
       const s = AppSettings(ramadanShift: 1);
       expect(s.copyWith(ramadanShift: 0).ramadanShift, 0);
+    });
+
+    test('changes only style, leaving theme (light/dark) untouched '
+        '(LOOK-1: the two are independent)', () {
+      const s = AppSettings(theme: ThemePref.dark);
+      final next = s.copyWith(style: AppStyle.saffron);
+      expect(next.style, AppStyle.saffron);
+      expect(next.theme, ThemePref.dark); // untouched
     });
   });
 

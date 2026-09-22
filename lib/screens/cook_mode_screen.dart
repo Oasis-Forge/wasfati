@@ -12,7 +12,10 @@ import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../providers/timers_state.dart';
 import '../services/cook_services.dart';
+import '../theme/type.dart' show cookStep;
+import '../widgets/amount_line.dart';
 import '../widgets/content_direction.dart';
+import '../widgets/pressable_slab.dart';
 
 /// Cook mode (COOK-1–COOK-6): free, no ads, one step per page in large
 /// text, the screen kept on, timers from the step text, the ingredients one
@@ -151,7 +154,7 @@ class _CookModeScreenState extends State<CookModeScreen>
                         v! ? _checked.add(line.id) : _checked.remove(line.id);
                       });
                     },
-                    title: ContentText(
+                    title: AmountLine(
                       _shownText(line, r.unitView, s.digits),
                       source: line.original,
                       style: _checked.contains(line.id)
@@ -252,18 +255,39 @@ class _CookModeScreenState extends State<CookModeScreen>
             Padding(
               padding: const EdgeInsetsDirectional.all(12),
               child: Row(
+                // Equal Expanded widths, not a Spacer (should-fix, LOOK-8):
+                // at 1.3x text a Spacer-separated Row let "السابق"/"التالي"
+                // overflow the 360dp floor by a few px; splitting the
+                // width between them the way design-styles.md's cook-mode
+                // bottom bar asks for fixes it in both looks and both
+                // languages, not just at this one text scale.
                 children: [
-                  TextButton.icon(
-                    onPressed: _page > 0 ? () => _go(-1) : null,
-                    icon: const Icon(Icons.arrow_back),
-                    label: Text(l10n.previousStep),
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: _page > 0 ? () => _go(-1) : null,
+                      icon: const Icon(Icons.arrow_back),
+                      label: Text(
+                        l10n.previousStep,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ),
-                  // The step count is at the top of each page.
-                  const Spacer(),
-                  FilledButton.icon(
-                    onPressed: _page < _last ? () => _go(1) : null,
-                    icon: const Icon(Icons.arrow_forward),
-                    label: Text(l10n.nextStep),
+                  const SizedBox(width: 12),
+                  // LOOK-7: the third of Saffron's three ledge actions; a
+                  // no-op in Ink (Decor.ledgeDepth 0).
+                  Expanded(
+                    child: PressableSlab(
+                      child: FilledButton.icon(
+                        onPressed: _page < _last ? () => _go(1) : null,
+                        icon: const Icon(Icons.arrow_forward),
+                        label: Text(
+                          l10n.nextStep,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -298,7 +322,6 @@ class _StepPage extends StatelessWidget {
     final s = context.watch<SettingsState>();
     final timers = context.watch<TimersState>();
     final theme = Theme.of(context);
-    final body = theme.textTheme.bodyLarge!;
     return SingleChildScrollView(
       padding: const EdgeInsetsDirectional.fromSTEB(24, 16, 24, 24),
       child: Column(
@@ -313,14 +336,12 @@ class _StepPage extends StatelessWidget {
           if (group != null)
             ContentText(group!, style: theme.textTheme.titleSmall),
           const SizedBox(height: 16),
-          // At least 1.5× the body size (COOK-2).
-          ContentText(
-            step.text,
-            style: body.copyWith(
-              fontSize: (body.fontSize ?? 16) * 1.5,
-              height: 1.5,
-            ),
-          ),
+          // should-fix, platform review: was a bespoke 1.5x/height-1.5
+          // inline style instead of `cookStep` (COOK-2, LOOK-6) — besides
+          // leaving `cookStep` unreferenced outside its own test, its
+          // height:1.5 undercut LOOK-5's own 1.75 floor for text that can
+          // wrap to a second line, which a recipe step routinely does.
+          ContentText(step.text, style: cookStep(theme.textTheme)),
           const SizedBox(height: 24),
           Wrap(
             spacing: 8,

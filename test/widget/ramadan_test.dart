@@ -577,12 +577,17 @@ void main() {
         of: find.byTooltip(earlierTooltip),
         matching: find.byType(IconButton),
       );
-      // Below the fold at 1.3x even more than usual (LANG-6).
+      // Below the fold at 1.3x even more than usual (LANG-6), and further
+      // still now that LOOK-1's "الطراز"/"Look" row sits above this
+      // section too — ensureVisible scrolls it fully into view rather
+      // than stopping as soon as a fixed-delta scroll merely reaches it.
       await tester.scrollUntilVisible(
         earlierButton,
         300,
         scrollable: find.byType(Scrollable).first,
       );
+      await tester.ensureVisible(earlierButton);
+      await settle(tester);
       expect(tester.takeException(), isNull);
       await tester.tap(earlierButton);
       await settle(tester);

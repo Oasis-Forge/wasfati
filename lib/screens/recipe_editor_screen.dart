@@ -11,6 +11,7 @@ import '../models/recipe.dart';
 import '../models/recipe_text.dart';
 import '../providers/recipes_state.dart';
 import '../services/photo_store.dart';
+import '../theme/decor.dart';
 import '../widgets/content_direction.dart';
 
 /// Adds or edits a recipe (REC-3–REC-8). Ingredients and steps are one line
@@ -283,7 +284,6 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                   hintText: l10n.fieldIngredientsHint,
                   hintMaxLines: 3,
                   alignLabelWithHint: true,
-                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 16),
@@ -296,7 +296,6 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                   labelText: l10n.steps,
                   hintText: l10n.fieldStepsHint,
                   alignLabelWithHint: true,
-                  border: const OutlineInputBorder(),
                 ),
                 validator: (v) =>
                     (v ?? '')
@@ -336,7 +335,6 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                 decoration: InputDecoration(
                   labelText: l10n.notes,
                   alignLabelWithHint: true,
-                  border: const OutlineInputBorder(),
                 ),
               ),
             ],
@@ -396,8 +394,12 @@ class _PhotoRow extends StatelessWidget {
         if (path != null)
           Padding(
             padding: const EdgeInsetsDirectional.only(end: 12),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+            child: ClipPath(
+              // LOOK-6: the same shape as a library thumbnail (Decor).
+              clipper: ShapeBorderClipper(
+                shape: Decor.of(context).thumbnailShape,
+                textDirection: Directionality.of(context),
+              ),
               child: Image.file(
                 File(path!),
                 width: 64,

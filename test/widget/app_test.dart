@@ -217,10 +217,15 @@ final _isolates = RegExp(
 );
 
 /// Text as the user reads it: without the invisible left-to-right isolates
-/// that wrap amounts inside Arabic lines (QTY-5).
-Finder shown(String text) => find.byWidgetPredicate(
-  (w) => w is Text && (w.data ?? '').replaceAll(_isolates, '').contains(text),
-);
+/// that wrap amounts inside Arabic lines (QTY-5). Matches a plain `Text`
+/// (`.data`) or `AmountLine`'s `Text.rich` (LOOK-4: it colours the amount
+/// span in a separate `TextSpan`, so `.data` is null there — `.toPlainText`
+/// flattens the spans back to the same string `formatLine` produced).
+Finder shown(String text) => find.byWidgetPredicate((w) {
+  if (w is! Text) return false;
+  final raw = w.data ?? w.textSpan?.toPlainText() ?? '';
+  return raw.replaceAll(_isolates, '').contains(text);
+});
 
 TextDirection dirOf(WidgetTester tester, Finder f) =>
     Directionality.of(tester.element(f.first));
@@ -606,7 +611,13 @@ void main() {
     await settle(tester);
     await tester.tap(find.text('×2')); // SCALE-6: the scale goes along
     await settle(tester);
-    await tester.scrollUntilVisible(find.text('ابدأ الطبخ'), 200);
+    // LOOK-6: RailHeading's own rail adds a little height to "المقادير"/
+    // "الطريقة", so a fixed-delta scroll no longer reliably lands the
+    // button's centre on screen — ensureVisible scrolls it fully into
+    // view instead of just into the tree (a plain ListView, so it's
+    // already built either way).
+    await tester.ensureVisible(find.text('ابدأ الطبخ'));
+    await settle(tester);
     await tester.tap(find.text('ابدأ الطبخ'));
     await settle(tester);
 

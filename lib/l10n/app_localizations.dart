@@ -464,6 +464,24 @@ abstract class AppLocalizations {
   /// **'Theme'**
   String get settingsTheme;
 
+  /// LOOK-1: the Settings row title for picking a look (Ink/Saffron), placed next to the theme (light/dark) row.
+  ///
+  /// In en, this message translates to:
+  /// **'Look'**
+  String get settingsLook;
+
+  /// LOOK-1: the Ink look's option label in the Look row.
+  ///
+  /// In en, this message translates to:
+  /// **'Ink'**
+  String get lookInk;
+
+  /// LOOK-1: the Saffron look's option label in the Look row.
+  ///
+  /// In en, this message translates to:
+  /// **'Saffron'**
+  String get lookSaffron;
+
   /// Theme follows the device.
   ///
   /// In en, this message translates to:

@@ -39,6 +39,11 @@ enum WeekStart { auto, saturday, sunday, monday }
 
 enum ThemePref { system, light, dark }
 
+/// LOOK-1: which of the two looks is drawn — حبر / Ink (the default) or
+/// زعفران / Saffron. Independent of [ThemePref] (the light/dark setting),
+/// so there are four combinations plus "حسب الجهاز".
+enum AppStyle { ink, saffron }
+
 /// The user's settings, stored as one JSON value in the meta table.
 class AppSettings {
   const AppSettings({
@@ -47,6 +52,7 @@ class AppSettings {
     this.units = UnitSystem.metric,
     this.weekStart = WeekStart.auto,
     this.theme = ThemePref.system,
+    this.style = AppStyle.ink, // LOOK-1: Ink is the default
     this.sort = LibrarySort.recent,
     this.grid = false,
     this.groceryView = GroceryView.byAisle,
@@ -64,6 +70,11 @@ class AppSettings {
   final UnitSystem units;
   final WeekStart weekStart;
   final ThemePref theme;
+
+  /// LOOK-1: the picked look (حبر/Ink or زعفران/Saffron), independent of
+  /// [theme]. Stored with the rest of settings, so a backup carries it
+  /// (BAK-6).
+  final AppStyle style;
 
   /// The library order and view, remembered (ORG-5).
   final LibrarySort sort;
@@ -106,6 +117,7 @@ class AppSettings {
     UnitSystem? units,
     WeekStart? weekStart,
     ThemePref? theme,
+    AppStyle? style,
     LibrarySort? sort,
     bool? grid,
     GroceryView? groceryView,
@@ -122,6 +134,7 @@ class AppSettings {
     units: units ?? this.units,
     weekStart: weekStart ?? this.weekStart,
     theme: theme ?? this.theme,
+    style: style ?? this.style,
     sort: sort ?? this.sort,
     grid: grid ?? this.grid,
     groceryView: groceryView ?? this.groceryView,
@@ -142,6 +155,7 @@ class AppSettings {
     'units': units.name,
     'weekStart': weekStart.name,
     'theme': theme.name,
+    'style': style.name,
     'sort': sort.name,
     'grid': grid,
     'groceryView': groceryView.name,
@@ -168,6 +182,7 @@ class AppSettings {
       units: pick(UnitSystem.values, m['units'], UnitSystem.metric),
       weekStart: pick(WeekStart.values, m['weekStart'], WeekStart.auto),
       theme: pick(ThemePref.values, m['theme'], ThemePref.system),
+      style: pick(AppStyle.values, m['style'], AppStyle.ink),
       sort: pick(LibrarySort.values, m['sort'], LibrarySort.recent),
       grid: m['grid'] == true,
       groceryView: pick(

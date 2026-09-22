@@ -89,6 +89,19 @@ class SettingsScreen extends StatelessWidget {
             },
             onChanged: (v) => set(s.copyWith(theme: v)),
           ),
+          // LOOK-1: independent of the theme (light/dark) row above —
+          // built the same way, placed right next to it — and applies at
+          // once, since `set` rebuilds through the same Consumer as every
+          // other row here (no restart, LANG-1's pattern).
+          _Choice<AppStyle>(
+            title: l10n.settingsLook,
+            value: s.style,
+            options: {
+              AppStyle.ink: l10n.lookInk,
+              AppStyle.saffron: l10n.lookSaffron,
+            },
+            onChanged: (v) => set(s.copyWith(style: v)),
+          ),
           _RamadanSection(settings: s, month: ramadanMonth, onChanged: set),
           const _BackupSection(),
         ],

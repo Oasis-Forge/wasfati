@@ -19,6 +19,7 @@ import 'services/photo_store.dart';
 import 'services/recipe_pages.dart' show ShareStorage;
 import 'services/sharer.dart';
 import 'services/web_import.dart';
+import 'theme/app_theme.dart';
 import 'widgets/share_router.dart';
 
 // Also the fixed light scheme for the share images (SHARE-3,
@@ -121,11 +122,6 @@ class WasfatiApp extends StatelessWidget {
       ),
     );
   }
-
-  static ThemeData _theme(Brightness b) => ThemeData(
-    fontFamily: fontFamily,
-    colorScheme: ColorScheme.fromSeed(seedColor: seedColor, brightness: b),
-  );
 }
 
 /// Keeps [PlanState] in step with Settings' Ramadan fields regardless of
@@ -247,8 +243,10 @@ class _LocaleObserverState extends State<_LocaleObserver>
         GlobalCupertinoLocalizations.delegate,
       ],
       themeMode: s.themeMode,
-      theme: WasfatiApp._theme(Brightness.light),
-      darkTheme: WasfatiApp._theme(Brightness.dark),
+      // LOOK-1: the look (Ink/Saffron) is independent of light/dark, and
+      // applies at once because Settings changes reach this Consumer.
+      theme: wasfatiTheme(s.settings.style, Brightness.light),
+      darkTheme: wasfatiTheme(s.settings.style, Brightness.dark),
       navigatorKey: WasfatiApp.navigatorKey,
       builder: (context, child) =>
           ShareRouter(navigator: WasfatiApp.navigatorKey, child: child!),

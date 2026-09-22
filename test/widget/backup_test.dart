@@ -420,7 +420,15 @@ void main() {
       await openSettings(tester);
       await scrollTo(tester, find.text('مشاركة النسخة'));
       await tester.tap(find.text('مشاركة النسخة'));
+      // BackupState.share() awaits the sharer, then a separate settings
+      // write that sets lastBackupAt (BAK-8) — waiting on the sharer alone
+      // races that second, still-pending await (should-fix: this test file
+      // already wraps its own direct settings writes for the same reason).
       await waitUntil(tester, () => sharer.filePaths.isNotEmpty);
+      await waitUntil(
+        tester,
+        () => settingsState.settings.lastBackupAt != null,
+      );
 
       expect(sharer.filePaths, hasLength(1));
       expect(sharer.filePaths.single.single, endsWith('.zip'));

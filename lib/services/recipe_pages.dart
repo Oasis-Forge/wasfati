@@ -9,12 +9,14 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-import '../app.dart' show fontFamily, seedColor;
+import '../app.dart' show fontFamily;
 import '../models/quantity/convert.dart';
 import '../models/quantity/format.dart';
 import '../models/quantity/rational.dart';
 import '../models/recipe.dart';
 import '../models/recipe_share.dart';
+import '../models/settings.dart' show AppStyle;
+import '../theme/colors.dart' show wasfatiColorScheme;
 import '../widgets/content_direction.dart';
 
 const _contentWidth = shareImageWidth - 2 * shareMargin;
@@ -83,7 +85,10 @@ Future<void> clearShareCache(ShareStorage storage) async {
 /// cookbooks or the cooked count (SHARE-1). [uiDirection] is the app's own
 /// reading edge (`Directionality.of(context)`), which every block aligns
 /// to (LANG-5, must-fix, adversarial review) whatever direction its own
-/// text reads in. An unscaled line carries [notScaledMark], through
+/// text reads in. [style] is the chosen look's light palette (LOOK-1,
+/// SHARE-3, Decision 16) — the caller's own `settings.style`, read once
+/// before rendering and threaded through, never read from settings inside
+/// this renderer. An unscaled line carries [notScaledMark], through
 /// [unscaledLineText] (SCALE-6, should-fix). Returns the pages' file paths
 /// in order, or null when the recipe needs more than [shareMaxPages] pages
 /// even after shrinking an oversized block, so the caller should offer
@@ -94,6 +99,7 @@ Future<List<String>?> renderSharePages(
   required UnitView view,
   required DigitStyle digits,
   required TextDirection uiDirection,
+  required AppStyle style,
   required String ingredientsHeading,
   required String stepsHeading,
   required String notScaledMark,
@@ -132,10 +138,10 @@ Future<List<String>?> renderSharePages(
     return null;
   }
 
-  final colors = ColorScheme.fromSeed(
-    seedColor: seedColor,
-    brightness: Brightness.light, // SHARE-3: pages always use the light theme
-  );
+  // LOOK-1/SHARE-3: the chosen look's own light palette, never a fixed
+  // seed — pages always use the light theme regardless of the device's
+  // own brightness.
+  final colors = wasfatiColorScheme(style, Brightness.light);
 
   try {
     final dir = await storage.pagesDir();
