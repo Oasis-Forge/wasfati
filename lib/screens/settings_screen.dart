@@ -1,8 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
@@ -10,14 +8,13 @@ import '../models/quantity/format.dart';
 import '../models/ramadan.dart';
 import '../models/recipe.dart';
 import '../models/settings.dart';
+import '../providers/backup_state.dart';
 import '../providers/grocery_state.dart';
 import '../providers/plan_state.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../services/backup.dart';
-import '../services/backup_files.dart' show BackupFiles, BackupFilesError;
-import '../services/recipe_pages.dart' show ShareStorage;
-import '../services/sharer.dart';
+import '../services/backup_files.dart' show BackupFilesError;
 import '../widgets/content_direction.dart';
 
 /// Settings (roadmap 2a): language (LANG-1), digit style (QTY-5), units
@@ -185,10 +182,15 @@ class _RamadanSection extends StatelessWidget {
 }
 
 /// BAK-1–BAK-10: save, share, restore and export, the reminder switch
-/// (BAK-8), and the latest automatic backups (BAK-2, BAK-7). Its own
-/// [StatefulWidget] because it holds UI-only state (the async list of
-/// automatic backups, and whether an action is in flight) that nothing
-/// else on the screen needs.
+/// (BAK-8), and the latest automatic backups (BAK-2, BAK-7). The flow
+/// itself — busy, the last result, the last error, and every call into the
+/// backup engine and its save/open dialogs — lives in [BackupState] (CLAUDE.md:
+/// screens stay presentational); this widget keeps only the UI: the
+/// buttons, the two-step "استبدال" confirmation (BAK-7), the progress
+/// indicator, and picking a message for whatever [BackupState] reports.
+/// Still its own [StatefulWidget], only so [initState] can trigger the
+/// automatic-backups list load the moment this section is first built,
+/// exactly as it always has.
 class _BackupSection extends StatefulWidget {
   const _BackupSection();
 
@@ -197,32 +199,13 @@ class _BackupSection extends StatefulWidget {
 }
 
 class _BackupSectionState extends State<_BackupSection> {
-  List<AutoBackup>? _autoBackups;
-  bool _busy = false;
-
   @override
   void initState() {
     super.initState();
-    _reloadAutoBackups();
+    context.read<BackupState>().loadAutoBackups();
   }
 
-  Future<void> _reloadAutoBackups() async {
-    final list = await context.read<BackupService>().automaticBackups();
-    if (mounted) setState(() => _autoBackups = list);
-  }
-
-  /// Runs one backup action at a time, so a second tap can't overlap it.
-  Future<void> _guarded(Future<void> Function() action) async {
-    if (_busy) return;
-    setState(() => _busy = true);
-    try {
-      await action();
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  Future<void> _save() => _guarded(() async {
+  Future<void> _save() => context.read<BackupState>().guarded(() async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     final saved = await saveBackupNow(context);
@@ -232,31 +215,17 @@ class _BackupSectionState extends State<_BackupSection> {
       ..showSnackBar(SnackBar(content: Text(l10n.backupSaveDone)));
   });
 
-  /// BAK-6: shares the same zip [saveBackupNow] would save, written first
-  /// to the app's share cache (services/recipe_pages.dart's [ShareStorage],
-  /// the same folder SHARE-4's images use and that's cleared at every
-  /// start), then handed to the share sheet. Sharing is the other way a
-  /// backup can leave the phone (principle 2), so it counts as "the last
-  /// backup" too, same as Save (should-fix, platform review: this used to
-  /// never update it, so BAK-8 kept reminding someone who only ever shares).
-  Future<void> _share() => _guarded(() async {
+  /// BAK-6: shares the same zip [saveBackupNow] would save (BackupState.
+  /// share, over SHARE-4's own cache folder), then hands it to the share
+  /// sheet. Sharing is the other way a backup can leave the phone
+  /// (principle 2), so it counts as "the last backup" too, same as Save
+  /// (should-fix, platform review: this used to never update it, so BAK-8
+  /// kept reminding someone who only ever shares).
+  Future<void> _share() => context.read<BackupState>().guarded(() async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    final backup = context.read<BackupService>();
-    final storage = context.read<ShareStorage>();
-    final sharer = context.read<Sharer>();
-    final settingsState = context.read<SettingsState>();
     try {
-      final bytes = await backup.createBackup();
-      final dir = await storage.pagesDir();
-      await dir.create(recursive: true);
-      final now = backup.now();
-      final file = File(p.join(dir.path, backupFileName(now)));
-      await file.writeAsBytes(bytes);
-      await sharer.shareFiles([file.path]);
-      await settingsState.update(
-        settingsState.settings.copyWith(lastBackupAt: now),
-      );
+      await context.read<BackupState>().share();
     } catch (_) {
       messenger
         ..hideCurrentSnackBar()
@@ -264,13 +233,12 @@ class _BackupSectionState extends State<_BackupSection> {
     }
   });
 
-  Future<void> _restore() => _guarded(() async {
+  Future<void> _restore() => context.read<BackupState>().guarded(() async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    final files = context.read<BackupFiles>();
     List<int>? bytes;
     try {
-      bytes = await files.openFile();
+      bytes = await context.read<BackupState>().openFile();
     } on BackupFilesError {
       messenger
         ..hideCurrentSnackBar()
@@ -281,11 +249,12 @@ class _BackupSectionState extends State<_BackupSection> {
     await _handleRestore(bytes);
   });
 
-  Future<void> _restoreAuto(AutoBackup auto) => _guarded(() async {
-    final bytes = await File(auto.path).readAsBytes();
-    if (!mounted) return;
-    await _handleRestore(bytes);
-  });
+  Future<void> _restoreAuto(AutoBackup auto) =>
+      context.read<BackupState>().guarded(() async {
+        final bytes = await context.read<BackupState>().readAutoBackup(auto);
+        if (!mounted) return;
+        await _handleRestore(bytes);
+      });
 
   /// BAK-4, BAK-7: shows what the file holds, then Merge or Replace
   /// (confirmed twice), or the translated reason it can't be restored at
@@ -295,7 +264,7 @@ class _BackupSectionState extends State<_BackupSection> {
     final messenger = ScaffoldMessenger.of(context);
     final BackupPreview preview;
     try {
-      preview = await context.read<BackupService>().inspect(bytes);
+      preview = await context.read<BackupState>().inspect(bytes);
     } on BackupError catch (e) {
       if (!mounted) return;
       messenger
@@ -449,14 +418,22 @@ class _BackupSectionState extends State<_BackupSection> {
 
   Future<void> _finishRestore(List<int> bytes, RestoreMode mode) async {
     final l10n = AppLocalizations.of(context);
-    final backup = context.read<BackupService>();
     final settingsState = context.read<SettingsState>();
     final recipes = context.read<RecipesState>();
     final plan = context.read<PlanState>();
     final groceries = context.read<GroceryState>();
     final messenger = ScaffoldMessenger.of(context);
     try {
-      final result = await backup.restore(bytes, mode: mode);
+      // should-fix, platform review: an automatic backup lives only in this
+      // phone's own storage (BAK-9 excludes it from Android's device
+      // backup), so restoring — merge or replace — is never itself a copy
+      // that has left the phone. Only Save and Share (principle 2) count as
+      // "the last backup" for BAK-8's reminder — finishRestore reloads
+      // BackupState's own [autoBackups] list, not [lastBackupAt].
+      final result = await context.read<BackupState>().finishRestore(
+        bytes,
+        mode: mode,
+      );
       // Every screen that reads this data reloads (CLAUDE.md), not just
       // the recipe list: the plan, groceries and settings can all have
       // changed underneath them.
@@ -464,12 +441,6 @@ class _BackupSectionState extends State<_BackupSection> {
       await plan.showWeek(plan.weekStart);
       await groceries.load();
       await settingsState.load();
-      // should-fix, platform review: an automatic backup lives only in this
-      // phone's own storage (BAK-9 excludes it from Android's device
-      // backup), so restoring — merge or replace — is never itself a copy
-      // that has left the phone. Only Save and Share (principle 2) count as
-      // "the last backup" for BAK-8's reminder.
-      await _reloadAutoBackups();
       if (!mounted) return;
       final counted = result.userFacing;
       await showDialog<void>(
@@ -506,12 +477,11 @@ class _BackupSectionState extends State<_BackupSection> {
 
   /// BAK-10: all recipes, or one cookbook's, as text, through the same
   /// save dialog as the backup zip.
-  Future<void> _export() => _guarded(() async {
+  Future<void> _export() => context.read<BackupState>().guarded(() async {
     final l10n = AppLocalizations.of(context);
     final recipesState = context.read<RecipesState>();
     final settingsState = context.read<SettingsState>();
-    final backup = context.read<BackupService>();
-    final files = context.read<BackupFiles>();
+    final backupState = context.read<BackupState>();
     final messenger = ScaffoldMessenger.of(context);
 
     final choice = await showModalBottomSheet<String>(
@@ -564,7 +534,7 @@ class _BackupSectionState extends State<_BackupSection> {
     String unscaledLineText(String line, String mark) =>
         l10n.shareUnscaledLine(line, mark);
 
-    final text = backup.exportText(
+    final text = backupState.exportText(
       full,
       digits: settingsState.digits,
       ingredientsHeading: l10n.shareHeadingIngredients,
@@ -577,9 +547,9 @@ class _BackupSectionState extends State<_BackupSection> {
       cookTimeLabel: cookTimeLabel,
       sourceLabel: l10n.shareSource,
     );
-    final name = _exportFileName(backup.now());
+    final name = _exportFileName(backupState.now());
     try {
-      final saved = await files.saveBytes(
+      final saved = await backupState.exportBytes(
         name,
         utf8.encode(text),
         'text/plain',
@@ -613,7 +583,9 @@ class _BackupSectionState extends State<_BackupSection> {
     final scheme = Theme.of(context).colorScheme;
     final state = context.watch<SettingsState>();
     final s = state.settings;
-    final autoBackups = _autoBackups;
+    final backupState = context.watch<BackupState>();
+    final busy = backupState.busy;
+    final autoBackups = backupState.autoBackups;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -629,25 +601,25 @@ class _BackupSectionState extends State<_BackupSection> {
         ListTile(
           leading: const Icon(Icons.save_outlined),
           title: Text(l10n.backupSaveAction),
-          enabled: !_busy,
+          enabled: !busy,
           onTap: () => _save(),
         ),
         ListTile(
           leading: const Icon(Icons.ios_share_outlined),
           title: Text(l10n.backupShareAction),
-          enabled: !_busy,
+          enabled: !busy,
           onTap: () => _share(),
         ),
         ListTile(
           leading: const Icon(Icons.restore_outlined),
           title: Text(l10n.backupRestoreAction),
-          enabled: !_busy,
+          enabled: !busy,
           onTap: () => _restore(),
         ),
         ListTile(
           leading: const Icon(Icons.description_outlined),
           title: Text(l10n.backupExportAction),
-          enabled: !_busy,
+          enabled: !busy,
           onTap: () => _export(),
         ),
         SwitchListTile(
@@ -690,7 +662,7 @@ class _BackupSectionState extends State<_BackupSection> {
                 ),
               ),
               trailing: TextButton(
-                onPressed: _busy ? null : () => _restoreAuto(auto),
+                onPressed: busy ? null : () => _restoreAuto(auto),
                 child: Text(l10n.backupRestoreAction),
               ),
             ),
@@ -710,34 +682,19 @@ String _exportFileName(DateTime createdAt) {
       '${local.day.toString().padLeft(2, '0')}.txt';
 }
 
-/// BAK-6, BAK-8: saves a backup through the system's save dialog and
-/// records [AppSettings.lastBackupAt] on success. Shared by this screen's
-/// own button and the library's reminder card ("احفظ الآن", BAK-8), so both
-/// behave identically. True if the user actually saved it; false both when
-/// they cancelled and when saving failed outright (must-fix, platform
-/// review: a thrown [BackupFilesError] or any other I/O failure used to
-/// escape uncaught here, showing nothing and — for the reminder card —
-/// leaving its buttons disabled for good).
+/// BAK-6, BAK-8: saves a backup through [BackupState.save] and shows the
+/// failure message itself. Shared by this screen's own button and the
+/// library's reminder card ("احفظ الآن", BAK-8), so both behave identically.
+/// True if the user actually saved it; false both when they cancelled and
+/// when saving failed outright (must-fix, platform review: a thrown
+/// [BackupFilesError] or any other I/O failure used to escape uncaught
+/// here, showing nothing and — for the reminder card — leaving its buttons
+/// disabled for good).
 Future<bool> saveBackupNow(BuildContext context) async {
-  final backup = context.read<BackupService>();
-  final files = context.read<BackupFiles>();
-  final settingsState = context.read<SettingsState>();
   final messenger = ScaffoldMessenger.of(context);
   final l10n = AppLocalizations.of(context);
   try {
-    final bytes = await backup.createBackup();
-    final now = backup.now();
-    final saved = await files.saveBytes(
-      backupFileName(now),
-      bytes,
-      backupMimeType,
-    );
-    if (saved) {
-      await settingsState.update(
-        settingsState.settings.copyWith(lastBackupAt: now),
-      );
-    }
-    return saved;
+    return await context.read<BackupState>().save();
   } catch (_) {
     messenger
       ..hideCurrentSnackBar()

@@ -7,6 +7,7 @@ import 'package:wasfati/db/recipe_repository.dart';
 import 'package:wasfati/models/quantity/convert.dart';
 import 'package:wasfati/models/quantity/rational.dart';
 import 'package:wasfati/models/recipe.dart';
+import 'package:wasfati/services/photo_store.dart' show NoopPhotoStore;
 
 import '../helpers.dart';
 
@@ -200,6 +201,42 @@ void main() {
         await expectLater(repo.restore(r.id), throwsStateError);
       },
     );
+
+    test('ORG-6, BAK-9: a recipe whose photo file is missing after a device '
+        'backup restore is forgotten, without bumping updated_at', () async {
+      final (repo, _, _) = await testRepo();
+      final present = await repo.save(
+        kabsa(repo, title: 'أ').copyWith(photoPath: '/p/present.jpg'),
+      );
+      final missing = await repo.save(
+        kabsa(repo, title: 'ب').copyWith(photoPath: '/p/missing.jpg'),
+      );
+      final beforeUpdatedAt = (await repo.get(missing.id))!.updatedAt;
+
+      await repo.forgetMissingPhotos(
+        const NoopPhotoStore(missing: {'/p/missing.jpg'}),
+      );
+
+      // The photo that's still there is untouched...
+      expect((await repo.get(present.id))!.photoPath, '/p/present.jpg');
+      // ...the missing one is cleared, so ORG-6's "بصورة" filter, the
+      // thumbnail and the share all agree there's no photo...
+      final after = await repo.get(missing.id);
+      expect(after!.photoPath, isNull);
+      // ...but this is device-local housekeeping, not a change the user
+      // made (should-fix, review): bumping updated_at would make this
+      // device wrongly win a later backup merge (BAK-3) for a photo the
+      // user never touched.
+      expect(after.updatedAt, beforeUpdatedAt);
+    });
+
+    test('forgetMissingPhotos is cheap and never throws with nothing to sweep '
+        '(ORG-6, BAK-9)', () async {
+      final (repo, _, _) = await testRepo();
+      await repo.save(kabsa(repo)); // no photo_path at all
+      await repo.forgetMissingPhotos(const NoopPhotoStore());
+      expect((await repo.list()).single.photoPath, isNull);
+    });
 
     test('the install ID is created once and then kept (SRV-4)', () async {
       final (repo, _, _) = await testRepo();

@@ -12,15 +12,30 @@ abstract interface class PhotoStore {
 
   /// Deletes a saved photo; a missing file is not an error.
   Future<void> delete(String path);
+
+  /// Whether the file at [path] still exists (ORG-6, BAK-9): Android's
+  /// device backup excludes `photos/` on purpose, so a restore can bring
+  /// back a database row whose photo file never came along. The repair
+  /// sweep (`RecipeRepository.forgetMissingPhotos`) asks this once per
+  /// recipe with a `photo_path`, at app start.
+  Future<bool> exists(String path);
 }
 
-/// The default in tests: picks nothing, deletes nothing.
+/// The default in tests: picks nothing, deletes nothing, and — unless a
+/// test says otherwise — claims every path still exists, so a test that
+/// never touches photos never has its recipes swept out from under it.
 class NoopPhotoStore implements PhotoStore {
-  const NoopPhotoStore();
+  const NoopPhotoStore({this.missing = const {}});
+
+  /// Paths this fake reports as gone (for the sweep's own tests).
+  final Set<String> missing;
+
   @override
   Future<String?> pickFromGallery(String recipeId) async => null;
   @override
   Future<void> delete(String path) async {}
+  @override
+  Future<bool> exists(String path) async => !missing.contains(path);
 }
 
 /// The real store; built only in `main.dart`.
@@ -53,4 +68,7 @@ class DevicePhotoStore implements PhotoStore {
     final f = File(path);
     if (await f.exists()) await f.delete();
   }
+
+  @override
+  Future<bool> exists(String path) => File(path).exists();
 }

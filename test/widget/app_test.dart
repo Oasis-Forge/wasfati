@@ -12,6 +12,7 @@ import 'package:wasfati/models/settings.dart';
 import 'package:wasfati/db/grocery_repository.dart';
 import 'package:wasfati/db/plan_repository.dart';
 import 'package:wasfati/db/recipe_repository.dart';
+import 'package:wasfati/providers/backup_state.dart';
 import 'package:wasfati/providers/grocery_state.dart';
 import 'package:wasfati/providers/plan_state.dart';
 import 'package:wasfati/providers/recipes_state.dart';
@@ -26,6 +27,7 @@ import 'package:wasfati/services/backup.dart';
 import 'package:wasfati/services/backup_files.dart';
 import 'package:wasfati/services/cook_services.dart';
 import 'package:wasfati/services/importer.dart';
+import 'package:wasfati/services/photo_store.dart' show NoopPhotoStore;
 import 'package:wasfati/services/recipe_pages.dart';
 import 'package:wasfati/services/sharer.dart';
 import 'package:wasfati/services/web_import.dart';
@@ -84,6 +86,11 @@ late BackupService backup;
 /// BAK-10): records every save, and returns [NoopBackupFiles.nextOpen] for
 /// the next "open".
 late NoopBackupFiles backupFiles;
+
+/// The backup/restore/export flow state (BAK-1–BAK-10) from the last
+/// [pumpApp], over [backup], [backupFiles] (or a test's own override),
+/// [sharer] and [shareStorage].
+late BackupState backupState;
 
 class FakeShareInbox implements ShareInbox {
   FakeShareInbox(this.stream);
@@ -171,6 +178,13 @@ Future<(RecipesState, SettingsState)> pumpApp(
     ids: ids.call,
   );
   backupFiles = NoopBackupFiles();
+  backupState = BackupState(
+    backup: backup,
+    files: backupFilesOverride ?? backupFiles,
+    sharer: sharerOverride ?? sharer,
+    shareStorage: shareStorage,
+    settings: settings,
+  );
   tester.view.physicalSize = const Size(1080, 2400); // a phone (LANG-6)
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
@@ -189,6 +203,7 @@ Future<(RecipesState, SettingsState)> pumpApp(
         shareStorage: shareStorage,
         backup: backup,
         backupFiles: backupFilesOverride ?? backupFiles,
+        backupState: backupState,
       ),
     ),
   );
@@ -312,6 +327,60 @@ void main() {
     await settle(tester);
     expect(find.text('كبسة لحم'), findsOneWidget);
   });
+
+  testWidgets(
+    'a recipe drops off the "بصورة" filter once its photo file is found '
+    'missing and the sweep runs (ORG-6, BAK-9, test-coverage gap)',
+    (tester) async {
+      final (recipes, _) = await pumpApp(tester);
+      const photoPath = '/p/gone-after-device-restore.jpg';
+      // Both real database calls: saving needs tester.runAsync itself
+      // (helpers.dart's own convention), and so does the sweep+reload pair
+      // below — this repo's real (non-fake-timer) I/O never resolves
+      // inside the test's fake-clock zone otherwise.
+      await tester.runAsync(() async {
+        final repo = recipes.repository;
+        await recipes.save(kabsa(repo).copyWith(photoPath: photoPath));
+      });
+      await settle(tester);
+
+      // The photo chip sits last in the filter bar's own horizontal list,
+      // past the sort/cookbook/tag/source/time ones, so it needs scrolling
+      // into view first (dragging positive-x brings later chips into view
+      // here, under Arabic's right-to-left layout), then ensureVisible so
+      // the tap's hit test lands on it rather than the row's own clip edge.
+      final photoChip = find.widgetWithText(FilterChip, 'بصورة');
+      final filterBar = find.byWidgetPredicate(
+        (w) => w is ListView && w.scrollDirection == Axis.horizontal,
+      );
+      for (var i = 0; i < 20 && photoChip.evaluate().isEmpty; i++) {
+        await tester.drag(filterBar, const Offset(200, 0));
+        await tester.pump();
+      }
+      await tester.ensureVisible(photoChip);
+      await tester.pump();
+      await tester.tap(photoChip);
+      await settle(tester);
+      expect(shown('كبسة لحم'), findsOneWidget); // it does have a photo
+
+      // ORG-6, BAK-9: the sweep (run from main.dart at every app start,
+      // which no test reaches) clears a photo_path whose file didn't
+      // survive a device backup restore — this recipe's own is deleted out
+      // from under it here to stand in for that.
+      await tester.runAsync(() async {
+        await recipes.repository.forgetMissingPhotos(
+          const NoopPhotoStore(missing: {photoPath}),
+        );
+        await recipes.load();
+      });
+      await settle(tester);
+      expect(shown('كبسة لحم'), findsNothing); // no longer "بصورة"
+
+      await tester.tap(photoChip); // clear the filter
+      await settle(tester);
+      expect(shown('كبسة لحم'), findsOneWidget); // the recipe itself is fine
+    },
+  );
 
   testWidgets('create a cookbook and put a recipe in it (ORG-1)', (
     tester,
@@ -727,6 +796,28 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
     expect(dirOf(tester, find.text('Settings')), TextDirection.ltr);
   });
+
+  testWidgets(
+    'the PHONE changing language applies at once too, on "حسب الجهاز" '
+    '(LANG-1, must-fix, review)',
+    (tester) async {
+      // The device starts in Arabic; LanguagePref.system follows it.
+      tester.platformDispatcher.localesTestValue = [const Locale('ar')];
+      addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+      await pumpApp(tester, language: LanguagePref.system);
+      expect(find.text('وصفاتي'), findsOneWidget);
+
+      // The device's language changes while the app stays open — no
+      // restart, no Settings screen involved at all. Setting the test
+      // value fires the platform dispatcher's own onLocaleChanged, exactly
+      // as a real device language change would (didChangeLocales below).
+      tester.platformDispatcher.localesTestValue = [const Locale('en')];
+      await settle(tester);
+
+      expect(find.text('Wasfati'), findsOneWidget);
+      expect(dirOf(tester, find.text('Wasfati')), TextDirection.ltr);
+    },
+  );
 
   for (final lang in [LanguagePref.ar, LanguagePref.en]) {
     testWidgets('${lang.name} at 1.3× text size: no overflow (LANG-6)', (
