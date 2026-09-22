@@ -386,6 +386,80 @@ void main() {
     });
   });
 
+  group('should-fix, review: a merge trashes the untouched sample once real '
+      'recipes arrive (RUN-6)', () {
+    test('the new phone\'s untouched sample is trashed once a merge from '
+        'the old phone brings in a real recipe', () async {
+      final newPhone = await testBackupFixture(idPrefix: 'new');
+      addTearDown(newPhone.dispose);
+      final oldPhone = await testBackupFixture(idPrefix: 'old');
+      addTearDown(oldPhone.dispose);
+
+      // The new phone's first launch offers the sample (RUN-6) before the
+      // user ever restores anything.
+      final added = await newPhone.recipes.addSampleOnFirstRun(arabic: true);
+      expect(added, isTrue);
+      final sample = (await newPhone.recipes.list()).single;
+
+      // The old phone has its own real recipe.
+      await oldPhone.recipes.save(kabsa(oldPhone.recipes));
+
+      final bytes = await oldPhone.backup.createBackup();
+      final result = await newPhone.backup.restore(
+        bytes,
+        mode: RestoreMode.merge,
+      );
+
+      expect(result.perTable['recipes']!.added, 1); // the kabsa only
+      final titles = (await newPhone.recipes.list()).map((r) => r.id);
+      expect(titles, isNot(contains(sample.id))); // the sample is gone
+      expect(
+        (await newPhone.recipes.list()).map((r) => r.title),
+        contains('كبسة لحم'),
+      );
+    });
+
+    test('a sample the user already touched (renamed, cooked, scaled…) '
+        'survives the same merge', () async {
+      final newPhone = await testBackupFixture(idPrefix: 'new');
+      addTearDown(newPhone.dispose);
+      final oldPhone = await testBackupFixture(idPrefix: 'old');
+      addTearDown(oldPhone.dispose);
+
+      await newPhone.recipes.addSampleOnFirstRun(arabic: true);
+      final sample = (await newPhone.recipes.list()).single;
+      newPhone.clock.now = newPhone.clock.now.add(const Duration(days: 1));
+      await newPhone.recipes.markCooked(sample.id); // updated_at moves on
+
+      await oldPhone.recipes.save(kabsa(oldPhone.recipes));
+      final bytes = await oldPhone.backup.createBackup();
+      await newPhone.backup.restore(bytes, mode: RestoreMode.merge);
+
+      final ids = (await newPhone.recipes.list()).map((r) => r.id);
+      expect(ids, contains(sample.id)); // no longer untouched, so it stays
+    });
+
+    test('a merge that adds no recipe (everything already existed) leaves '
+        'the sample alone', () async {
+      final newPhone = await testBackupFixture(idPrefix: 'new');
+      addTearDown(newPhone.dispose);
+
+      await newPhone.recipes.addSampleOnFirstRun(arabic: true);
+      final sample = (await newPhone.recipes.list()).single;
+
+      // A backup of this same phone: merging it back in adds nothing.
+      final bytes = await newPhone.backup.createBackup();
+      final result = await newPhone.backup.restore(
+        bytes,
+        mode: RestoreMode.merge,
+      );
+
+      expect(result.perTable['recipes']!.added, 0);
+      final ids = (await newPhone.recipes.list()).map((r) => r.id);
+      expect(ids, contains(sample.id));
+    });
+  });
+
   group('a failed restore changes nothing', () {
     test(
       'a constraint violation partway through rolls everything back',

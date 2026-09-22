@@ -4,6 +4,11 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-09-22
+
+### Added
+- A first look: a new install opens with one sample recipe, شوربة عدس, to try scaling, unit conversion and cook mode on. Delete it whenever you like; it won't come back.
+
 ## [0.12.0] - 2026-09-22
 
 ### Added

@@ -14,6 +14,7 @@ class DBHelper {
     _v2UnitView,
     _v3PlanEntries,
     _v4Groceries,
+    _v5SampleOffered,
   ];
 
   static int get version => steps.length;
@@ -215,5 +216,30 @@ $_record,
     'CREATE INDEX grocery_amounts_recipe ON grocery_amounts(recipe_id)',
   ]) {
     await db.execute(sql);
+  }
+}
+
+/// Step 5: marks a database from before this version as already offered
+/// the built-in sample recipe (RUN-6, must-fix, review). A database that
+/// already has a recipe row — any row, including one that only ever sat in
+/// the trash — or an install ID, is clearly not a fresh install, so the
+/// sample must never be added to it later, even once the purge (DEL-2) has
+/// removed every one of its rows. On a fresh create, `recipes` and `meta`
+/// are both still empty at this point, so this sets nothing, and the
+/// sample is still offered normally.
+Future<void> _v5SampleOffered(DatabaseExecutor db) async {
+  final recipeCount = Sqflite.firstIntValue(
+    await db.rawQuery('SELECT COUNT(*) FROM recipes'),
+  );
+  final hasInstallId = (await db.query(
+    'meta',
+    where: 'key = ?',
+    whereArgs: ['install_id'],
+  )).isNotEmpty;
+  if ((recipeCount ?? 0) > 0 || hasInstallId) {
+    await db.insert('meta', {
+      'key': 'sample_offered',
+      'value': '1',
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 }

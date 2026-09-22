@@ -55,6 +55,42 @@ void main() {
       },
     );
 
+    test('step 5 marks a pre-0.13 database as already offered the sample '
+        '(RUN-6, must-fix, review): a recipe that sat only in the trash '
+        'before this version must not be lost to the purge and then read as '
+        'an empty, never-offered library', () async {
+      sqfliteFfiInit();
+      final path =
+          '${Directory.systemTemp.path}/wasfati_sample_upgrade_test.db';
+      await databaseFactoryFfi.deleteDatabase(path);
+      final clock = FakeClock();
+      final ids = CountingIds();
+
+      final old = await DBHelper.open(databaseFactoryFfi, path, upTo: 4);
+      final oldRepo = RecipeRepository(old, clock: clock.call, ids: ids.call);
+      final r = await oldRepo.save(kabsa(oldRepo));
+      await oldRepo.delete(r.id); // trashed under the old schema, unpurged
+      await old.close();
+
+      // Reopening at the current schema runs step 5, which must see this
+      // recipe row (even trashed) and mark the database as already
+      // offered, before anything ever gets a chance to purge it away.
+      final db = await DBHelper.open(databaseFactoryFfi, path);
+      expect(await _version(db), DBHelper.version);
+      final repo = RecipeRepository(db, clock: clock.call, ids: ids.call);
+
+      clock.advance(const Duration(days: 31));
+      await repo.purgeTrash(); // DEL-2: the trashed recipe is gone now
+      expect(await repo.list(), isEmpty);
+
+      final added = await repo.addSampleOnFirstRun(arabic: true);
+      expect(added, isFalse);
+      expect(await repo.list(), isEmpty);
+
+      await db.close();
+      await databaseFactoryFfi.deleteDatabase(path);
+    });
+
     test(
       'REC-1, REC-2, DEL-1: every record table has id, times, deleted_at',
       () async {

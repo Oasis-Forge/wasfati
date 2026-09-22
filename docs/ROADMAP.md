@@ -32,7 +32,7 @@ Set up before the first feature, while it's cheap.
 - [x] GitHub repo, Dependabot, CI (checks + a build for every mobile platform) green on a first PR
 - [x] `main` ruleset: PR required, the CI checks required, no force pushes or deletion (`docs/RELEASING.md`)
 - [x] Every merged PR is a release: the CI version check, then a tag and a draft GitHub Release on merge. `v0.1.0` is the first.
-- [ ] The release workflow runs once by hand without secrets (unsigned artifacts, nothing published)
+- [x] The release workflow runs once by hand without secrets (unsigned artifacts, nothing published): 21 September 2026, run 35636267793 built and released nothing
 - [x] Privacy policy draft served by GitHub Pages
 - [x] Competitor research, hands-on (`docs/research/competitor-analysis.md`, PR #1)
 - [x] **`/spec` round 1** (19 September 2026): §7–§13 of `docs/PRODUCT_RULES.md`, Decisions 4–7. Areas:
@@ -100,7 +100,7 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
   - Scaling never silently skips a line: a line it can't scale is flagged.
 - [x] **Website import on the device** (IMP-2, IMP-5, IMP-6, IMP-9, IMP-11, IMP-13; v0.7.0; the share target for links and text is in too): paste or share a link → read the schema.org recipe → preview → save. Free and unlimited. A site without recipe data offers AI import instead (Phase 2b).
 - [x] **Delete, undo, trash** (DEL-1, DEL-2)
-- [ ] **First run:** empty states with one clear first action, and one built-in sample recipe (RUN-1)
+- [x] **First run:** empty states with one clear first action, and one built-in sample recipe (RUN-1, RUN-6; v0.13.0)
 
 ## Phase 2b: AI import (W6–W7)
 - [ ] **Import server** (SRV-1–SRV-11):
@@ -174,6 +174,7 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
 
 ## Known bugs
 <!-- Found and not fixed yet: what, where, and the rule it breaks. -->
+- With the language on "حسب الجهاز", a change of the phone's own language while Wasfati is open applies at the next launch, not at once (LANG-1): `lib/app.dart` resolves the locale when the settings change, not on the platform's locale change.
 - Merging two phones that both edited the same recipe can mix its ingredient lines and steps from each side, because rows merge one by one instead of as one recipe (BAK-3). `lib/services/backup.dart`.
 - A backup is built and read whole in memory, so a very large photo library could run out of memory (BAK-6). `lib/services/backup.dart`.
 - The library's "بصورة" filter still lists a recipe whose photo file is missing after an Android device-backup restore (BAK-9, ORG-6). `lib/models/library.dart`.

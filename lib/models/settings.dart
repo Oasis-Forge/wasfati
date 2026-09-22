@@ -1,10 +1,33 @@
 import 'dart:convert';
+import 'dart:ui' show Locale;
 
 import 'grocery.dart';
 import 'library.dart';
 import 'quantity/format.dart';
 
 enum LanguagePref { system, ar, en }
+
+/// LANG-1's resolver, shared by `MaterialApp` (as its
+/// `localeListResolutionCallback`) and by `main.dart`, so the language RUN-6
+/// picks for the sample recipe always matches the language the app actually
+/// starts in (should-fix, review): an explicit Settings choice wins;
+/// otherwise the first device-preferred locale Wasfati ships (ar or en),
+/// wherever it sits in the device's list; otherwise English.
+Locale appLanguage(LanguagePref pref, List<Locale> deviceLocales) {
+  switch (pref) {
+    case LanguagePref.ar:
+      return const Locale('ar');
+    case LanguagePref.en:
+      return const Locale('en');
+    case LanguagePref.system:
+      for (final l in deviceLocales) {
+        if (l.languageCode == 'ar' || l.languageCode == 'en') {
+          return Locale(l.languageCode);
+        }
+      }
+      return const Locale('en');
+  }
+}
 
 /// SCALE-5: which view conversion shows by default.
 enum UnitSystem { metric, kitchen }

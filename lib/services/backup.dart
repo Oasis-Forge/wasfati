@@ -735,7 +735,43 @@ class BackupService {
         unchanged: unchanged,
       );
     }
+    // should-fix, review: a merge only ever adds rows on top of what's
+    // already here (BAK-3), so a phone's untouched sample recipe (RUN-6)
+    // would otherwise sit forever among a user's real, restored recipes —
+    // the usual move to a new phone (first launch adds the sample, then
+    // Merge restores the old phone's backup, BAK-7's default) would defeat
+    // "deleting it never brings it back". Once a merge brings in at least
+    // one real recipe, an untouched sample (never renamed, rescaled or
+    // cooked) is no longer a fair stand-in for "no recipes yet", so it's
+    // trashed like any recipe the user no longer wants.
+    if ((counts['recipes']?.added ?? 0) > 0) {
+      await _trashUntouchedSample(tx);
+    }
     return RestoreResult(counts, RestoreMode.merge);
+  }
+
+  /// Moves this phone's still-untouched sample recipe (RUN-6) to the
+  /// trash: a `sample-*` id whose `updated_at` never moved past
+  /// `created_at`, so the user never renamed it, rescaled it, cooked it or
+  /// otherwise made it theirs.
+  Future<void> _trashUntouchedSample(Transaction tx) async {
+    final rows = await tx.query(
+      'recipes',
+      columns: ['id'],
+      where:
+          "id LIKE 'sample-%' AND deleted_at IS NULL "
+          'AND updated_at = created_at',
+    );
+    if (rows.isEmpty) return;
+    final now = _clock().millisecondsSinceEpoch;
+    for (final r in rows) {
+      await tx.update(
+        'recipes',
+        {'deleted_at': now, 'updated_at': now},
+        where: 'id = ?',
+        whereArgs: [r['id']],
+      );
+    }
   }
 
   /// The id of a live local tag whose name normalizes (ORG-4) the same as
