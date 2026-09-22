@@ -4,6 +4,22 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-09-23
+
+### Added
+- Two looks, chosen in Settings under "الطراز": حبر, quiet ink on paper, and زعفران, warmer, with cut corners and a button you can feel. Each has its own light and dark, the choice applies at once, and a backup remembers it.
+- Wasfati now wears its own name and face: وصفاتي on an Arabic phone, Wasfati on an English one, with a new icon and splash screen.
+
+### Changed
+- Amounts now stand out in every ingredient line, on the recipe page, in cook mode and on the grocery list.
+- A recipe shared as pictures follows the look you picked.
+- Changing your phone's own language now changes Wasfati straight away, instead of at the next start.
+
+### Fixed
+- Restoring a backup made on another phone no longer mixes one recipe's ingredients and steps from both phones: the newer version of that recipe wins, whole.
+- A backup is now written and read straight from the file, so a large photo library no longer has to fit in memory.
+- A recipe whose photo went missing, after Android restored the phone itself, no longer shows up under "بصورة".
+
 ## [0.13.0] - 2026-09-22
 
 ### Added
