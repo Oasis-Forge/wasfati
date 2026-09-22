@@ -9,6 +9,8 @@ import 'providers/recipes_state.dart';
 import 'providers/settings_state.dart';
 import 'screens/home_screen.dart';
 import 'providers/timers_state.dart';
+import 'services/backup.dart';
+import 'services/backup_files.dart';
 import 'services/cook_services.dart';
 import 'services/importer.dart';
 import 'services/photo_store.dart';
@@ -39,6 +41,8 @@ class WasfatiApp extends StatelessWidget {
     this.shareInbox = const NoopShareInbox(),
     required this.sharer,
     required this.shareStorage,
+    required this.backup,
+    required this.backupFiles,
   });
 
   final RecipesState recipes;
@@ -50,6 +54,17 @@ class WasfatiApp extends StatelessWidget {
   final ScreenAwake screenAwake;
   final Importer importer;
   final ShareInbox shareInbox;
+
+  /// The backup engine (BAK-1–BAK-10), over this same app's database. No
+  /// default: a real one always needs the app's actual database and photos
+  /// folder, so a screen or test that forgot to pass one should fail loudly
+  /// rather than silently back up nothing.
+  final BackupService backup;
+
+  /// The system's save and open dialogs for backups and exports (BAK-6,
+  /// BAK-7, BAK-10). No default, for the same reason as [sharer]: the test
+  /// fake records calls, so a test that forgot one should fail loudly.
+  final BackupFiles backupFiles;
 
   /// Sends text or files through the platform share sheet (GRO-6,
   /// SHARE-1–SHARE-4). No default: the caller (`main.dart`, or a test)
@@ -79,6 +94,8 @@ class WasfatiApp extends StatelessWidget {
         Provider<ShareInbox>.value(value: shareInbox),
         Provider<Sharer>.value(value: sharer),
         Provider<ShareStorage>.value(value: shareStorage),
+        Provider<BackupService>.value(value: backup),
+        Provider<BackupFiles>.value(value: backupFiles),
       ],
       child: _RamadanSync(
         settings: settings,

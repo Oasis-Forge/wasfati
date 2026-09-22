@@ -29,6 +29,9 @@ class AppSettings {
     this.ramadanShift = 0, // RAM-2: -1, 0 or +1 days
     this.ramadanShiftYear, // the Hijri year ramadanShift is for
     this.ramadanCardDismissedYear, // RAM-3: "ليس الآن", per Hijri year
+    this.lastBackupAt, // BAK-8
+    this.backupReminderSnoozedUntil, // BAK-8: "Later", for 30 days
+    this.backupReminderOff = false, // BAK-8: the Settings switch
   });
 
   final LanguagePref language;
@@ -57,6 +60,16 @@ class AppSettings {
   /// or null if it never was (for the current one).
   final int? ramadanCardDismissedYear;
 
+  /// When a backup was last made or restored (BAK-8), or null if never.
+  final DateTime? lastBackupAt;
+
+  /// Set by "Later" on the library's backup reminder card (BAK-8); the card
+  /// stays hidden until this time.
+  final DateTime? backupReminderSnoozedUntil;
+
+  /// The Settings switch that turns BAK-8's reminder off for good.
+  final bool backupReminderOff;
+
   /// The sighting shift that applies to [hijriYear] (RAM-2): [ramadanShift]
   /// when it was set for that year, else 0.
   int ramadanShiftFor(int hijriYear) =>
@@ -75,6 +88,9 @@ class AppSettings {
     int? ramadanShift,
     int? ramadanShiftYear,
     int? ramadanCardDismissedYear,
+    DateTime? lastBackupAt,
+    DateTime? backupReminderSnoozedUntil,
+    bool? backupReminderOff,
   }) => AppSettings(
     language: language ?? this.language,
     digits: digits ?? this.digits,
@@ -89,6 +105,10 @@ class AppSettings {
     ramadanShiftYear: ramadanShiftYear ?? this.ramadanShiftYear,
     ramadanCardDismissedYear:
         ramadanCardDismissedYear ?? this.ramadanCardDismissedYear,
+    lastBackupAt: lastBackupAt ?? this.lastBackupAt,
+    backupReminderSnoozedUntil:
+        backupReminderSnoozedUntil ?? this.backupReminderSnoozedUntil,
+    backupReminderOff: backupReminderOff ?? this.backupReminderOff,
   );
 
   String toJson() => jsonEncode({
@@ -104,6 +124,10 @@ class AppSettings {
     'ramadanShift': ramadanShift,
     'ramadanShiftYear': ramadanShiftYear,
     'ramadanCardDismissedYear': ramadanCardDismissedYear,
+    'lastBackupAt': lastBackupAt?.millisecondsSinceEpoch,
+    'backupReminderSnoozedUntil':
+        backupReminderSnoozedUntil?.millisecondsSinceEpoch,
+    'backupReminderOff': backupReminderOff,
   });
 
   /// Unknown or missing values fall back to the defaults, so a backup from a
@@ -130,6 +154,9 @@ class AppSettings {
       ramadanShift: ((m['ramadanShift'] as int?) ?? 0).clamp(-1, 1),
       ramadanShiftYear: m['ramadanShiftYear'] as int?,
       ramadanCardDismissedYear: m['ramadanCardDismissedYear'] as int?,
+      lastBackupAt: _msToUtc(m['lastBackupAt']),
+      backupReminderSnoozedUntil: _msToUtc(m['backupReminderSnoozedUntil']),
+      backupReminderOff: m['backupReminderOff'] == true,
     );
   }
 
@@ -140,3 +167,7 @@ class AppSettings {
   @override
   int get hashCode => toJson().hashCode;
 }
+
+DateTime? _msToUtc(Object? ms) => ms == null
+    ? null
+    : DateTime.fromMillisecondsSinceEpoch(ms as int, isUtc: true);

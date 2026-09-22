@@ -131,7 +131,7 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
   - 12 aisles that know Arabic ingredient names (at least 95% of the test fixtures placed).
   - Share the list as text on WhatsApp.
 - [x] **Share a recipe** (SHARE-1–SHARE-4; v0.11.0): as text, or as image pages sized for WhatsApp.
-- [ ] **Backup, restore, export** (BAK-1–BAK-10): after the last schema step, so the format covers every table. A backup file with photos, merge or replace, a monthly reminder, Android's device backup without photos, and a text export.
+- [x] **Backup, restore, export** (BAK-1–BAK-10; v0.12.0): after the last schema step, so the format covers every table. A backup file with photos, merge or replace, a monthly reminder, Android's device backup without photos, and a text export.
 
 ## Phase 3: Store readiness (alongside 2c)
 - [ ] Display name "وصفاتي" (Arabic) and "Wasfati" (English) on every platform: launcher label, bundle names.
@@ -174,3 +174,7 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
 
 ## Known bugs
 <!-- Found and not fixed yet: what, where, and the rule it breaks. -->
+- Merging two phones that both edited the same recipe can mix its ingredient lines and steps from each side, because rows merge one by one instead of as one recipe (BAK-3). `lib/services/backup.dart`.
+- A backup is built and read whole in memory, so a very large photo library could run out of memory (BAK-6). `lib/services/backup.dart`.
+- The library's "بصورة" filter still lists a recipe whose photo file is missing after an Android device-backup restore (BAK-9, ORG-6). `lib/models/library.dart`.
+- The backup flow's logic sits in the Settings screen rather than a state class (CLAUDE.md: screens stay presentational). `lib/screens/settings_screen.dart`.

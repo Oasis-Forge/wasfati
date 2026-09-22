@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../models/cookbook.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
+import '../services/backup.dart';
 import '../widgets/content_direction.dart';
 import 'groceries_screen.dart';
 import 'import_screen.dart';
@@ -114,7 +115,118 @@ class LibraryHome extends StatelessWidget {
             ? const Center(child: CircularProgressIndicator())
             : empty
             ? _Empty(l10n: l10n)
-            : const TabBarView(children: [LibraryView(), _CookbooksTab()]),
+            : const Column(
+                children: [
+                  _BackupReminderCard(),
+                  Expanded(
+                    child: TabBarView(
+                      children: [LibraryView(), _CookbooksTab()],
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+/// BAK-8: "آخر نسخة احتياطية قبل ٤٥ يومًا" (or "لم تحفظ نسخة احتياطية بعد")
+/// with "احفظ الآن" and "لاحقًا" (snoozes 30 days), above the library's
+/// tabs. Renders nothing when there's nothing to remind about — with fewer
+/// than 10 recipes, a recent-enough backup, a live snooze, or the Settings
+/// switch off ([shouldRemindBackup]) — so it never blocks anything. Never
+/// shown in cook mode, the editor or the import preview: those screens
+/// never build it at all.
+class _BackupReminderCard extends StatefulWidget {
+  const _BackupReminderCard();
+
+  @override
+  State<_BackupReminderCard> createState() => _BackupReminderCardState();
+}
+
+class _BackupReminderCardState extends State<_BackupReminderCard> {
+  bool _busy = false;
+
+  Future<void> _saveNow() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final l10n = AppLocalizations.of(context);
+      final messenger = ScaffoldMessenger.of(context);
+      final saved = await saveBackupNow(context);
+      if (!saved || !mounted) return;
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l10n.backupSaveDone)));
+    } finally {
+      // must-fix, platform review: a `finally` here, not a check right
+      // after the await, so a failed save (saveBackupNow now shows its own
+      // message and returns false rather than throwing) still re-enables
+      // both buttons instead of leaving the card stuck disabled.
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _later() {
+    final settings = context.read<SettingsState>();
+    final now = context.read<BackupService>().now();
+    settings.update(
+      settings.settings.copyWith(
+        backupReminderSnoozedUntil: now.add(const Duration(days: 30)),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final settingsState = context.watch<SettingsState>();
+    final recipes = context.watch<RecipesState>();
+    final backup = context.watch<BackupService>();
+    final now = backup.now();
+    if (!shouldRemindBackup(
+      recipes.recipes.length,
+      now,
+      settingsState.settings,
+    )) {
+      return const SizedBox.shrink();
+    }
+    final last = settingsState.settings.lastBackupAt;
+    final days = last == null ? 0 : now.difference(last).inDays;
+    final line = last == null
+        ? l10n.backupReminderNever
+        : l10n.backupReminderDaysAgo(days, settingsState.number(days));
+
+    return Card(
+      margin: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 0),
+      child: Padding(
+        padding: const EdgeInsetsDirectional.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(line),
+            const SizedBox(height: 8),
+            // must-fix, platform review: a plain end-aligned Row overflowed
+            // at 1.3× text size (LANG-6) — 13px in Arabic, 51px in English
+            // — because two full-width buttons plus their gap no longer fit
+            // a 360dp phone. OverflowBar wraps to a second line instead.
+            OverflowBar(
+              alignment: MainAxisAlignment.end,
+              spacing: 8,
+              overflowSpacing: 4,
+              children: [
+                TextButton(
+                  onPressed: _busy ? null : _later,
+                  child: Text(l10n.backupReminderLaterAction),
+                ),
+                FilledButton(
+                  onPressed: _busy ? null : _saveNow,
+                  child: Text(l10n.backupReminderNowAction),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

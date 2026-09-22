@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     BAK-9: Android's own device backup (API 30 and below), to the phone's
+     Google account, when the user has it turned on. Everything under the
+     app's files directory is backed up by default — the sqlite database
+     (settings live in its own `meta` table, providers/settings_state.dart,
+     so no separate sharedpref entry is needed) — except:
+
+     * photos/ (services/backup.dart's photosDir, the same folder
+       services/photo_store.dart saves recipe photos into): photos would
+       push the backup past Android's 25 MB limit, which stops the whole
+       backup, database included.
+     * backups/ (services/backup.dart's backupsDir): BAK-2's automatic
+       backups are zips that embed those same photos, so leaving them in
+       would defeat the exclusion above.
+
+     The cache directory is never included by Android regardless, so it
+     needs no rule here. None of this touches the backup file the user
+     saves or shares by hand (BAK-6) — that's written wherever they choose,
+     never under this app's own storage.
+
+     A phone restored this way gets its recipes and settings back with no
+     photos (screens show no photo rather than a broken image, BAK-9); the
+     backup file (BAK-6) carries the photos for a restore that needs them.
+-->
+<full-backup-content>
+    <exclude domain="file" path="photos" />
+    <exclude domain="file" path="backups" />
+</full-backup-content>

@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'app.dart';
@@ -12,6 +16,8 @@ import 'providers/plan_state.dart';
 import 'providers/recipes_state.dart';
 import 'providers/settings_state.dart';
 import 'providers/timers_state.dart';
+import 'services/backup.dart';
+import 'services/backup_files.dart';
 import 'services/cook_services.dart';
 import 'services/importer.dart';
 import 'services/recipe_pages.dart';
@@ -45,6 +51,16 @@ Future<void> main() async {
     // never stop the app from opening at all.
   }
   await repo.installId(); // SRV-4: created once, on first launch
+  final supportDir = await getApplicationSupportDirectory();
+  final packageInfo = await PackageInfo.fromPlatform();
+  final backup = BackupService(
+    db,
+    factory: databaseFactory,
+    photosDir: Directory(p.join(supportDir.path, 'photos')),
+    backupsDir: Directory(p.join(supportDir.path, 'backups')),
+    appVersion: packageInfo.version,
+  );
+  const backupFiles = DeviceBackupFiles();
   final settings = SettingsState(db);
   await settings.load();
   final recipes = RecipesState(repo);
@@ -71,6 +87,8 @@ Future<void> main() async {
       shareInbox: const DeviceShareInbox(),
       sharer: const DeviceSharer(),
       shareStorage: shareStorage,
+      backup: backup,
+      backupFiles: backupFiles,
     ),
   );
 }
