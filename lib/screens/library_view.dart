@@ -394,7 +394,10 @@ class _RecipeCard extends StatelessWidget {
   }
 }
 
-/// A recipe photo, or a placeholder; [size] null fills its box.
+/// A recipe photo, or a placeholder; [size] null fills its box. A missing
+/// photo file shows the same placeholder as no photo at all, never a broken
+/// image (BAK-9: Android's own device backup carries the database but not
+/// the photos folder, so a recipe restored that way has no photo file).
 class RecipeThumb extends StatelessWidget {
   const RecipeThumb(this.path, {super.key, this.size = 56});
   final String? path;
@@ -403,19 +406,20 @@ class RecipeThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    Widget placeholder() => ColoredBox(
+      color: scheme.secondaryContainer,
+      child: Icon(
+        Icons.restaurant_outlined,
+        color: scheme.onSecondaryContainer,
+      ),
+    );
     final child = path == null
-        ? ColoredBox(
-            color: scheme.secondaryContainer,
-            child: Icon(
-              Icons.restaurant_outlined,
-              color: scheme.onSecondaryContainer,
-            ),
-          )
+        ? placeholder()
         : Image.file(
             File(path!),
             fit: BoxFit.cover,
             cacheWidth: 480,
-            errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
+            errorBuilder: (_, _, _) => placeholder(),
           );
     if (size == null) return child;
     return ClipRRect(

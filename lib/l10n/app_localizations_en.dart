@@ -799,6 +799,180 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsRamadanSection => 'Ramadan';
 
   @override
+  String get settingsBackupSection => 'Backup';
+
+  @override
+  String get backupSaveAction => 'Save a backup';
+
+  @override
+  String get backupSaveDone => 'Backup saved';
+
+  @override
+  String get backupSaveFailed => 'Couldn\'t save the backup.';
+
+  @override
+  String get backupShareFailed => 'Couldn\'t share the backup.';
+
+  @override
+  String get backupShareAction => 'Share the backup';
+
+  @override
+  String get backupRestoreAction => 'Restore';
+
+  @override
+  String get backupErrorCantOpen => 'Couldn\'t open that file.';
+
+  @override
+  String get backupExportAction => 'Export as text';
+
+  @override
+  String get backupReminderSwitch => 'Backup reminder';
+
+  @override
+  String get backupAutoSection => 'Automatic backups';
+
+  @override
+  String get backupAutoEmpty => 'No automatic backups yet';
+
+  @override
+  String backupAutoBackupDate(String date, String time) {
+    return 'Backup from $date, $time';
+  }
+
+  @override
+  String get backupPreviewTitle => 'What this file holds';
+
+  @override
+  String backupPreviewRecipes(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown recipes',
+      one: '1 recipe',
+      zero: 'No recipes',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupPreviewCookbooks(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown cookbooks',
+      one: '1 cookbook',
+      zero: 'No cookbooks',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupPreviewWeeks(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown plan weeks',
+      one: '1 plan week',
+      zero: 'No plan weeks',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupPreviewGroceryItems(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown grocery items',
+      one: '1 grocery item',
+      zero: 'No grocery items',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backupMergeAction => 'Merge';
+
+  @override
+  String get backupReplaceAction => 'Replace';
+
+  @override
+  String get backupReplaceConfirmTitle => 'Replace everything?';
+
+  @override
+  String backupReplaceConfirmBody(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'This deletes the $shown recipes on this phone, plus the plan and grocery list, and replaces them with the file\'s.',
+      one: 'This deletes the recipe on this phone, plus the plan and grocery list, and replaces them with the file\'s.',
+      zero: 'This replaces the plan and grocery list on this phone with the file\'s.',
+    );
+    return '$_temp0 An automatic copy of what\'s here now is saved first.';
+  }
+
+  @override
+  String get backupReplaceConfirmFinalTitle => 'Are you sure?';
+
+  @override
+  String get backupReplaceConfirmFinalBody =>
+      'This can\'t be undone from here, except by restoring the automatic copy just saved.';
+
+  @override
+  String get backupResultTitle => 'Restore complete';
+
+  @override
+  String backupResultSummary(String added, String updated, String unchanged) {
+    return 'Added $added · Updated $updated · Unchanged $unchanged';
+  }
+
+  @override
+  String get backupErrorNotWasfati => 'This isn\'t a Wasfati backup file.';
+
+  @override
+  String get backupErrorDamaged => 'This file is damaged.';
+
+  @override
+  String get backupErrorNewerSchema =>
+      'This backup is from a newer version of the app. Update the app first.';
+
+  @override
+  String get backupErrorGeneric => 'The restore failed.';
+
+  @override
+  String get backupExportPickTitle => 'Export recipes';
+
+  @override
+  String get backupExportAll => 'All recipes';
+
+  @override
+  String get backupExportDone => 'Export saved';
+
+  @override
+  String get backupExportFailed => 'Couldn\'t save the export.';
+
+  @override
+  String get backupReminderNever => 'You haven\'t saved a backup yet';
+
+  @override
+  String backupReminderDaysAgo(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Last backup was $shown days ago',
+      one: 'Last backup was 1 day ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backupReminderNowAction => 'Back up now';
+
+  @override
+  String get backupReminderLaterAction => 'Later';
+
+  @override
   String get ramadanModeLabel => 'Ramadan mode';
 
   @override

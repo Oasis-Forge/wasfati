@@ -11,6 +11,7 @@ import 'package:wasfati/models/recipe_share.dart' show wasfatiPlayStoreUrl;
 import 'package:wasfati/models/settings.dart';
 import 'package:wasfati/db/grocery_repository.dart';
 import 'package:wasfati/db/plan_repository.dart';
+import 'package:wasfati/db/recipe_repository.dart';
 import 'package:wasfati/providers/grocery_state.dart';
 import 'package:wasfati/providers/plan_state.dart';
 import 'package:wasfati/providers/recipes_state.dart';
@@ -19,6 +20,10 @@ import 'package:wasfati/providers/timers_state.dart';
 
 import 'dart:async';
 
+import 'package:path/path.dart' as p;
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:wasfati/services/backup.dart';
+import 'package:wasfati/services/backup_files.dart';
 import 'package:wasfati/services/cook_services.dart';
 import 'package:wasfati/services/importer.dart';
 import 'package:wasfati/services/recipe_pages.dart';
@@ -71,6 +76,15 @@ late FakeShareStorage shareStorage;
 /// Shares sent into the app during a test (IMP-1).
 late StreamController<String> shares;
 
+/// The backup engine (BAK-1–BAK-10) from the last [pumpApp], over the same
+/// database, clock and IDs as [plan] and [groceries].
+late BackupService backup;
+
+/// The save/open dialogs the last [pumpApp] would use (BAK-6, BAK-7,
+/// BAK-10): records every save, and returns [NoopBackupFiles.nextOpen] for
+/// the next "open".
+late NoopBackupFiles backupFiles;
+
 class FakeShareInbox implements ShareInbox {
   FakeShareInbox(this.stream);
   final Stream<String> stream;
@@ -93,12 +107,23 @@ Future<(RecipesState, SettingsState)> pumpApp(
   // A Ramadan positioned relative to the FakeClock date, so Ramadan mode's
   // tests don't depend on the real, built-in calendar's dates (RAM-2).
   List<RamadanMonth>? ramadanMonths,
+  // A test that needs a [BackupFiles] or [Sharer] that fails on purpose
+  // (must-fix, platform review: save/share/export used to have no error
+  // path at all) passes one here instead of the usual no-op fake. The
+  // global [backupFiles]/[sharer] stay the plain fakes either way, so
+  // every other test's `backupFiles.saved`/`sharer.texts` keeps working.
+  BackupFiles? backupFilesOverride,
+  Sharer? sharerOverride,
 }) async {
   late RecipesState recipes;
   late SettingsState settings;
   late Importer importer;
+  late CountingIds ids;
+  late RecipeRepository repository;
   await tester.runAsync(() async {
-    final (repo, fakeClock, ids) = await testRepo();
+    final (repo, fakeClock, idSource) = await testRepo();
+    repository = repo;
+    ids = idSource;
     clock = fakeClock;
     plan = PlanState(
       PlanRepository(repo.db, clock: clock.call, ids: ids.call),
@@ -132,6 +157,20 @@ Future<(RecipesState, SettingsState)> pumpApp(
     if (shareDir.existsSync()) shareDir.deleteSync(recursive: true);
   });
   shareStorage = FakeShareStorage(shareDir);
+  final backupRoot = Directory.systemTemp.createTempSync('wasfati_backup_test');
+  addTearDown(() {
+    if (backupRoot.existsSync()) backupRoot.deleteSync(recursive: true);
+  });
+  backup = BackupService(
+    repository.db,
+    factory: databaseFactoryFfi,
+    photosDir: Directory(p.join(backupRoot.path, 'photos')),
+    backupsDir: Directory(p.join(backupRoot.path, 'backups')),
+    appVersion: 'test',
+    clock: clock.call,
+    ids: ids.call,
+  );
+  backupFiles = NoopBackupFiles();
   tester.view.physicalSize = const Size(1080, 2400); // a phone (LANG-6)
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
@@ -146,8 +185,10 @@ Future<(RecipesState, SettingsState)> pumpApp(
         timers: timers,
         importer: importer,
         shareInbox: FakeShareInbox(shares.stream),
-        sharer: sharer,
+        sharer: sharerOverride ?? sharer,
         shareStorage: shareStorage,
+        backup: backup,
+        backupFiles: backupFilesOverride ?? backupFiles,
       ),
     ),
   );

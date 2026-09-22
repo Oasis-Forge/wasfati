@@ -177,7 +177,12 @@ class _RecipeBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 32),
       children: [
-        if (r.photoPath != null)
+        // should-fix, platform review: `errorBuilder` only hides the
+        // broken-image icon, not the 4:3 box around it, so a missing photo
+        // file (BAK-9: a device restore brings back the database but not
+        // photos) used to leave a big empty rounded area above the title.
+        // Checking the file first collapses the whole block instead.
+        if (r.photoPath != null && File(r.photoPath!).existsSync())
           Padding(
             padding: const EdgeInsetsDirectional.only(bottom: 16),
             child: ClipRRect(
