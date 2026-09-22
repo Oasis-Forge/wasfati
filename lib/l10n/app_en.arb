@@ -101,6 +101,63 @@
   "@delete": {
     "description": "Button: move the recipe to the trash (DEL-1)."
   },
+  "shareTooltip": "Share",
+  "@shareTooltip": {
+    "description": "SHARE-1. Recipe page app-bar action, opening the share sheet."
+  },
+  "shareAsText": "As text",
+  "@shareAsText": {
+    "description": "SHARE-1. Share-sheet option: plain text."
+  },
+  "shareAsImages": "As images",
+  "@shareAsImages": {
+    "description": "SHARE-1. Share-sheet option: portrait picture pages."
+  },
+  "shareHeadingIngredients": "Ingredients",
+  "@shareHeadingIngredients": {
+    "description": "SHARE-2. Ingredients heading in the shared recipe text and images, distinct from the on-screen heading (\"ingredients\")."
+  },
+  "shareHeadingSteps": "Method",
+  "@shareHeadingSteps": {
+    "description": "SHARE-2. Steps heading in the shared recipe text and images, distinct from the on-screen heading (\"steps\")."
+  },
+  "shareSource": "Source: {url}",
+  "@shareSource": {
+    "description": "SHARE-2. The shared recipe's source line, when it has one.",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "shareFooterLine": "From the Wasfati app",
+  "@shareFooterLine": {
+    "description": "SHARE-2. The last line of a shared recipe text, right before the Play Store link."
+  },
+  "shareRendering": "Creating images…",
+  "@shareRendering": {
+    "description": "SHARE-1. Progress label while the share-as-images pages render."
+  },
+  "shareTooLong": "This recipe is too long to share as images. Share it as text instead.",
+  "@shareTooLong": {
+    "description": "SHARE-3. Shown when a recipe would need more than 6 image pages."
+  },
+  "shareFailed": "Couldn't create the images. Try again.",
+  "@shareFailed": {
+    "description": "SHARE-3. Shown when share-as-images fails unexpectedly (not the too-long case)."
+  },
+  "shareUnscaledLine": "{line} ({mark})",
+  "@shareUnscaledLine": {
+    "description": "SHARE-1, SCALE-6. Marks a shared line (text or image) the scaler couldn't change, matching the recipe page's own \"not scaled\" mark.",
+    "placeholders": {
+      "line": {
+        "type": "String"
+      },
+      "mark": {
+        "type": "String"
+      }
+    }
+  },
   "save": "Save",
   "@save": {
     "description": "Editor button."
@@ -625,6 +682,14 @@
   "@planThisWeek": {
     "description": "Returns the plan to the current week (PLAN-1)"
   },
+  "planViewWeek": "Week",
+  "@planViewWeek": {
+    "description": "RAM-4. The plan's week/Ramadan view toggle: the week side."
+  },
+  "planViewRamadan": "Ramadan",
+  "@planViewRamadan": {
+    "description": "RAM-4. The plan's week/Ramadan view toggle: the whole-month side."
+  },
   "planPreviousWeek": "Previous week",
   "@planPreviousWeek": {
     "description": "Tooltip on the arrow that moves a week back"
@@ -652,6 +717,14 @@
   "mealSnack": "Snack",
   "@mealSnack": {
     "description": "Meal slot (PLAN-1)"
+  },
+  "mealSuhoor": "Suhoor",
+  "@mealSuhoor": {
+    "description": "RAM-1. Meal slot name: the pre-dawn meal in Ramadan."
+  },
+  "mealIftar": "Iftar",
+  "@mealIftar": {
+    "description": "RAM-1. Meal slot name: the sunset meal in Ramadan."
   },
   "planAdd": "Add",
   "@planAdd": {
@@ -915,5 +988,220 @@
         "type": "String"
       }
     }
+  },
+  "ramadanCardSoon": "{count, plural, =1{Ramadan starts in 1 day. Switch the plan to suhoor and iftar?} other{Ramadan starts in {shown} days. Switch the plan to suhoor and iftar?}}",
+  "@ramadanCardSoon": {
+    "description": "RAM-3. The plan's card, 7 days before Ramadan through the day before it starts.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
+  },
+  "ramadanCardNow": "Ramadan kareem. Switch the plan to suhoor and iftar?",
+  "@ramadanCardNow": {
+    "description": "RAM-3. The plan's card, once Ramadan has started."
+  },
+  "ramadanCardEnable": "Enable",
+  "@ramadanCardEnable": {
+    "description": "RAM-3. The card's button that turns Ramadan mode on."
+  },
+  "ramadanCardNotNow": "Not now",
+  "@ramadanCardNotNow": {
+    "description": "RAM-3. The card's button that hides it until the next Ramadan."
+  },
+  "ramadanDayLabel": "{day} Ramadan",
+  "@ramadanDayLabel": {
+    "description": "RAM-2. A Ramadan day's Hijri date, shown beside the usual one.",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "ramadanEidLabel": "Eid al-Fitr",
+  "@ramadanEidLabel": {
+    "description": "RAM-2. Shown on the day after Ramadan's last one."
+  },
+  "settingsRamadanSection": "Ramadan",
+  "@settingsRamadanSection": {
+    "description": "RAM-1. Settings section heading."
+  },
+  "settingsBackupSection": "Backup",
+  "backupSaveAction": "Save a backup",
+  "backupSaveDone": "Backup saved",
+  "backupSaveFailed": "Couldn't save the backup.",
+  "@backupSaveFailed": {
+    "description": "BAK-6. Shown when saving a backup fails (the save dialog itself, or building the file)."
+  },
+  "backupShareFailed": "Couldn't share the backup.",
+  "@backupShareFailed": {
+    "description": "BAK-6. Shown when sharing a backup fails."
+  },
+  "backupShareAction": "Share the backup",
+  "backupRestoreAction": "Restore",
+  "backupErrorCantOpen": "Couldn't open that file.",
+  "@backupErrorCantOpen": {
+    "description": "BAK-7. Shown when the system's file picker itself fails to hand back the picked file (distinct from the user cancelling, and from backupErrorDamaged for a file that opens but isn't a usable backup)."
+  },
+  "backupExportAction": "Export as text",
+  "backupReminderSwitch": "Backup reminder",
+  "backupAutoSection": "Automatic backups",
+  "backupAutoEmpty": "No automatic backups yet",
+  "backupAutoBackupDate": "Backup from {date}, {time}",
+  "@backupAutoBackupDate": {
+    "description": "BAK-2, BAK-7. One automatic backup's label in Settings, next to its restore action. Includes the time, since a restore makes a new one at once and same-day rows would otherwise read identically.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "backupPreviewTitle": "What this file holds",
+  "@backupPreviewTitle": {
+    "description": "BAK-7. Heading of the sheet shown before a restore, above the counts and Merge/Replace."
+  },
+  "backupPreviewRecipes": "{count, plural, =0{No recipes} =1{1 recipe} other{{shown} recipes}}",
+  "@backupPreviewRecipes": {
+    "description": "BAK-7. Recipe count in the restore preview sheet.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
+  },
+  "backupPreviewCookbooks": "{count, plural, =0{No cookbooks} =1{1 cookbook} other{{shown} cookbooks}}",
+  "@backupPreviewCookbooks": {
+    "description": "BAK-7. Cookbook count in the restore preview sheet.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
+  },
+  "backupPreviewWeeks": "{count, plural, =0{No plan weeks} =1{1 plan week} other{{shown} plan weeks}}",
+  "@backupPreviewWeeks": {
+    "description": "BAK-7. Distinct plan weeks in the restore preview sheet.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
+  },
+  "backupPreviewGroceryItems": "{count, plural, =0{No grocery items} =1{1 grocery item} other{{shown} grocery items}}",
+  "@backupPreviewGroceryItems": {
+    "description": "BAK-7. Grocery item count in the restore preview sheet.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
+  },
+  "backupMergeAction": "Merge",
+  "backupReplaceAction": "Replace",
+  "backupReplaceConfirmTitle": "Replace everything?",
+  "backupReplaceConfirmBody": "{count, plural, =0{This replaces the plan and grocery list on this phone with the file's.} =1{This deletes the recipe on this phone, plus the plan and grocery list, and replaces them with the file's.} other{This deletes the {shown} recipes on this phone, plus the plan and grocery list, and replaces them with the file's.}} An automatic copy of what's here now is saved first.",
+  "@backupReplaceConfirmBody": {
+    "description": "BAK-7. Body of the first Replace-confirmation dialog: what will be lost, with this phone's own live recipe count (must-fix, platform review — this used to be a fixed string with no numbers).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
+  },
+  "backupReplaceConfirmFinalTitle": "Are you sure?",
+  "@backupReplaceConfirmFinalTitle": {
+    "description": "BAK-7. Title of the second, final Replace-confirmation dialog (must-fix, platform review: Replace used to be confirmed only once)."
+  },
+  "backupReplaceConfirmFinalBody": "This can't be undone from here, except by restoring the automatic copy just saved.",
+  "@backupReplaceConfirmFinalBody": {
+    "description": "BAK-7. Body of the second, final Replace-confirmation dialog, whose button is styled as destructive."
+  },
+  "backupResultTitle": "Restore complete",
+  "backupResultSummary": "Added {added} · Updated {updated} · Unchanged {unchanged}",
+  "@backupResultSummary": {
+    "description": "BAK-3. Counts after a restore, already in the user's digit style. Recipes, cookbooks, plan entries and grocery items only (DEL-1, should-fix: this used to sum every table, including sections/lines/steps/links, so restoring one recipe could read as \"added 14\").",
+    "placeholders": {
+      "added": {
+        "type": "String"
+      },
+      "updated": {
+        "type": "String"
+      },
+      "unchanged": {
+        "type": "String"
+      }
+    }
+  },
+  "backupErrorNotWasfati": "This isn't a Wasfati backup file.",
+  "backupErrorDamaged": "This file is damaged.",
+  "backupErrorNewerSchema": "This backup is from a newer version of the app. Update the app first.",
+  "backupErrorGeneric": "The restore failed.",
+  "backupExportPickTitle": "Export recipes",
+  "backupExportAll": "All recipes",
+  "backupExportDone": "Export saved",
+  "backupExportFailed": "Couldn't save the export.",
+  "@backupExportFailed": {
+    "description": "BAK-10. Shown when saving the exported text fails."
+  },
+  "backupReminderNever": "You haven't saved a backup yet",
+  "@backupReminderNever": {
+    "description": "BAK-8. The library's reminder card when no backup was ever made."
+  },
+  "backupReminderDaysAgo": "{count, plural, =1{Last backup was 1 day ago} other{Last backup was {shown} days ago}}",
+  "@backupReminderDaysAgo": {
+    "description": "BAK-8. The library's reminder card, days since the last backup.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
+  },
+  "backupReminderNowAction": "Back up now",
+  "backupReminderLaterAction": "Later",
+  "ramadanModeLabel": "Ramadan mode",
+  "@ramadanModeLabel": {
+    "description": "RAM-1. Settings switch that turns Ramadan mode on or off."
+  },
+  "ramadanStartLabel": "Ramadan starts: {date}",
+  "@ramadanStartLabel": {
+    "description": "RAM-2. Settings row showing the current or next Ramadan's first day.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "ramadanShiftEarlier": "One day earlier",
+  "@ramadanShiftEarlier": {
+    "description": "RAM-2. Tooltip: moves Ramadan's first day a day earlier, for the local moon sighting."
+  },
+  "ramadanShiftLater": "One day later",
+  "@ramadanShiftLater": {
+    "description": "RAM-2. Tooltip: moves Ramadan's first day a day later, for the local moon sighting."
   }
 }

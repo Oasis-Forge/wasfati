@@ -403,7 +403,14 @@ class _PhotoRow extends StatelessWidget {
                 width: 64,
                 height: 64,
                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
+                // BAK-9: no photo file (Android's own device backup carries
+                // the database but not photos) shows nothing, never a
+                // broken image.
+                errorBuilder: (_, _, _) => const SizedBox(
+                  width: 64,
+                  height: 64,
+                  child: Icon(Icons.restaurant_outlined),
+                ),
               ),
             ),
           ),

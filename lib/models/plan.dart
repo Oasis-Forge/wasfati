@@ -1,9 +1,178 @@
 import 'quantity/rational.dart';
+import 'ramadan.dart';
 import 'settings.dart';
 
-/// The meals a day is planned by, in the order they're shown (PLAN-1).
-/// Ramadan mode swaps these for suhoor and iftar on Ramadan days (RAM-1).
-enum MealSlot { breakfast, lunch, dinner, snack }
+/// The meals a day is planned by (PLAN-1). [suhoor] and [iftar] are
+/// appended after [snack] so they're stored by name (`slot.name`, see
+/// [PlanEntry.toMap]) and never disturb the others' saved rows (RAM-1).
+/// Which of these a given day actually shows, and in what order, comes
+/// from [slotsFor] — never this raw declaration order.
+enum MealSlot { breakfast, lunch, dinner, snack, suhoor, iftar }
+
+/// A day's slots, in display order (RAM-1):
+/// - An ordinary day (or Ramadan mode off): breakfast, lunch, dinner,
+///   snack, then suhoor/iftar only if [withEntries] already has them —
+///   they're never normally offered outside Ramadan.
+/// - A Ramadan day with the mode on: suhoor, iftar, snack, then any of
+///   breakfast/lunch/dinner in [withEntries], under their own name, so
+///   nothing already planned is hidden.
+List<MealSlot> slotsFor(
+  DateTime day, {
+  required bool ramadan,
+  RamadanMonth? month,
+  Set<MealSlot> withEntries = const {},
+}) {
+  final inRamadan = ramadan && (month?.contains(dateOnly(day)) ?? false);
+  if (inRamadan) {
+    return [
+      MealSlot.suhoor,
+      MealSlot.iftar,
+      MealSlot.snack,
+      for (final s in [MealSlot.breakfast, MealSlot.lunch, MealSlot.dinner])
+        if (withEntries.contains(s)) s,
+    ];
+  }
+  return [
+    MealSlot.breakfast,
+    MealSlot.lunch,
+    MealSlot.dinner,
+    MealSlot.snack,
+    for (final s in [MealSlot.suhoor, MealSlot.iftar])
+      if (withEntries.contains(s)) s,
+  ];
+}
+
+/// Maps [wanted] onto one of [offered] when it isn't already there
+/// (RAM-1): so a preselected or previously picked meal that the current
+/// day doesn't show — the last meal used before Ramadan started, or the
+/// last one used inside it — lands on that day's real equivalent instead
+/// of silently offering a slot the day hides (must-fix). Falls back to
+/// the first offered slot, or [wanted] itself if nothing is offered
+/// (never happens in practice: every day offers at least one slot).
+MealSlot slotOnDay(MealSlot wanted, List<MealSlot> offered) {
+  if (offered.contains(wanted)) return wanted;
+  const toRamadan = {
+    MealSlot.breakfast: MealSlot.suhoor,
+    MealSlot.lunch: MealSlot.iftar,
+    MealSlot.dinner: MealSlot.iftar,
+  };
+  // iftar -> lunch, not dinner: lunch is the day's main meal (PLAN-1's
+  // own order), the closest ordinary equivalent of iftar.
+  const toOrdinary = {
+    MealSlot.suhoor: MealSlot.breakfast,
+    MealSlot.iftar: MealSlot.lunch,
+  };
+  final mapped = toRamadan[wanted] ?? toOrdinary[wanted];
+  if (mapped != null && offered.contains(mapped)) return mapped;
+  return offered.isNotEmpty ? offered.first : wanted;
+}
+
+/// The Ramadan month [day] falls in, from [months] (default the built-in
+/// table), shifted per [shiftFor] (RAM-2). Mirrors [RamadanMonth.contains]
+/// over a whole calendar, for a specific day rather than "today".
+RamadanMonth? ramadanMonthContaining(
+  DateTime day, {
+  List<RamadanMonth> months = ramadanTable,
+  int Function(int hijriYear)? shiftFor,
+}) {
+  final d = dateOnly(day);
+  for (final m in months) {
+    final shifted = m.shifted(shiftFor?.call(m.hijriYear) ?? 0);
+    // Skip the day-by-day check unless [d] can possibly be in this month
+    // (should-fix, performance): looking up a day outside any Ramadan
+    // used to check all 36 rows regardless.
+    if (d.isBefore(shifted.start) || shifted.last.isBefore(d)) continue;
+    if (shifted.contains(d)) return shifted;
+  }
+  return null;
+}
+
+/// The Ramadan [today] is in, or the next one, from [months] (default the
+/// built-in table); shifted per [shiftFor] (RAM-2). The same rule as
+/// [currentOrNextRamadan], but over an injectable calendar, so Ramadan
+/// mode's own tests don't depend on the real dates in [ramadanTable].
+RamadanMonth? currentOrNextRamadanIn(
+  DateTime today, {
+  List<RamadanMonth> months = ramadanTable,
+  int Function(int hijriYear)? shiftFor,
+}) {
+  final d = dateOnly(today);
+  for (final m in months) {
+    final r = m.shifted(shiftFor?.call(m.hijriYear) ?? 0);
+    if (!r.last.isBefore(d)) return r;
+  }
+  return null;
+}
+
+/// The Ramadan month Settings' shift row should show for [today] (RAM-2):
+/// the same year [currentOrNextRamadanIn] would, but decided without the
+/// shift being edited for that year, and with one extra day of grace past
+/// its unshifted last day.
+///
+/// Without the grace, editing the shift right at the boundary can flip
+/// which year the row targets mid-edit: on the last day of Ramadan,
+/// shifting -1 turns "today" into Eid, so a plain [currentOrNextRamadanIn]
+/// call would jump the row to next year — and since only one shift is
+/// stored per year (BAK-6), pressing "+" next would then silently
+/// overwrite *that* year's shift instead of undoing this one's
+/// (should-fix). The extra day covers every shift from -1 to +1, so the
+/// row stays on the same year for the whole time any of those shifts
+/// could apply to it.
+RamadanMonth? ramadanMonthForShiftRow(
+  DateTime today, {
+  List<RamadanMonth> months = ramadanTable,
+  int Function(int hijriYear)? shiftFor,
+}) {
+  final d = dateOnly(today);
+  for (final m in months) {
+    if (!m.shifted(1).last.isBefore(d)) {
+      return m.shifted(shiftFor?.call(m.hijriYear) ?? 0);
+    }
+  }
+  return null;
+}
+
+/// Whether [today] is anywhere from 7 days before [month] to its last day
+/// (RAM-3, RAM-4): the window the card and the "رمضان" view can appear in.
+bool inRamadanWindow(DateTime today, RamadanMonth month) {
+  final d = dateOnly(today);
+  final windowStart = DateTime(month.year, month.month, month.day - 7);
+  return !d.isBefore(windowStart) && !d.isAfter(month.last);
+}
+
+/// Days from [today] until [month] starts; 0 or negative once it has
+/// (RAM-3's count). Counted with [calendarDaysBetween], not
+/// [DateTime.difference] (DATE-1): a daylight-saving change between
+/// [today] and [month]'s start must never drop or add a day.
+int daysUntilRamadan(DateTime today, RamadanMonth month) =>
+    calendarDaysBetween(dateOnly(today), month.start);
+
+/// RAM-3's card: shown while the mode is off, [today] is in the window
+/// (RAM-3, RAM-4) and it wasn't dismissed for this Ramadan's Hijri year
+/// already; null otherwise. The mode never turns itself on.
+class RamadanCard {
+  const RamadanCard(this.month, this.daysUntil);
+
+  final RamadanMonth month;
+
+  /// Days until [month] starts; 0 or less once Ramadan has (the card then
+  /// reads "رمضان كريم" instead of a countdown).
+  final int daysUntil;
+
+  bool get started => daysUntil <= 0;
+}
+
+RamadanCard? ramadanCard(
+  RamadanMonth? month,
+  DateTime today, {
+  required bool mode,
+  int? dismissedYear,
+}) {
+  if (mode || month == null) return null;
+  if (dismissedYear == month.hijriYear) return null;
+  if (!inRamadanWindow(today, month)) return null;
+  return RamadanCard(month, daysUntilRamadan(today, month));
+}
 
 /// One planned meal (PLAN-2): a recipe or a short note, on one day, in one
 /// slot. A recipe entry carries its own servings, which scale what it sends

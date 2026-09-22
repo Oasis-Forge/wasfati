@@ -1,12 +1,17 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wasfati/app.dart';
 import 'package:wasfati/models/quantity/format.dart';
 import 'package:wasfati/models/library.dart';
+import 'package:wasfati/models/ramadan.dart';
 import 'package:wasfati/models/recipe.dart';
+import 'package:wasfati/models/recipe_share.dart' show wasfatiPlayStoreUrl;
 import 'package:wasfati/models/settings.dart';
 import 'package:wasfati/db/grocery_repository.dart';
 import 'package:wasfati/db/plan_repository.dart';
+import 'package:wasfati/db/recipe_repository.dart';
 import 'package:wasfati/providers/grocery_state.dart';
 import 'package:wasfati/providers/plan_state.dart';
 import 'package:wasfati/providers/recipes_state.dart';
@@ -15,8 +20,13 @@ import 'package:wasfati/providers/timers_state.dart';
 
 import 'dart:async';
 
+import 'package:path/path.dart' as p;
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:wasfati/services/backup.dart';
+import 'package:wasfati/services/backup_files.dart';
 import 'package:wasfati/services/cook_services.dart';
 import 'package:wasfati/services/importer.dart';
+import 'package:wasfati/services/recipe_pages.dart';
 import 'package:wasfati/services/sharer.dart';
 import 'package:wasfati/services/web_import.dart';
 
@@ -49,14 +59,31 @@ late NoopTimerAlerts alerts;
 /// The meal plan from the last [pumpApp] (PLAN-1).
 late PlanState plan;
 
+/// The clock behind [plan] and the recipe repository, so a test can move
+/// "today" (DATE-1) without restarting the app.
+late FakeClock clock;
+
 /// The grocery list from the last [pumpApp] (GRO-1).
 late GroceryState groceries;
 
 /// What the last [pumpApp] shared (GRO-6, SHARE-1–SHARE-4).
 late NoopSharer sharer;
 
+/// Where the last [pumpApp] would render share images (SHARE-3): a temp
+/// directory the test owns, deleted again when the test ends.
+late FakeShareStorage shareStorage;
+
 /// Shares sent into the app during a test (IMP-1).
 late StreamController<String> shares;
+
+/// The backup engine (BAK-1–BAK-10) from the last [pumpApp], over the same
+/// database, clock and IDs as [plan] and [groceries].
+late BackupService backup;
+
+/// The save/open dialogs the last [pumpApp] would use (BAK-6, BAK-7,
+/// BAK-10): records every save, and returns [NoopBackupFiles.nextOpen] for
+/// the next "open".
+late NoopBackupFiles backupFiles;
 
 class FakeShareInbox implements ShareInbox {
   FakeShareInbox(this.stream);
@@ -76,19 +103,40 @@ Future<(RecipesState, SettingsState)> pumpApp(
   DigitStyle digits = DigitStyle.western,
   double textScale = 1,
   bool withRecipe = false,
+  bool ramadanMode = false,
+  // A Ramadan positioned relative to the FakeClock date, so Ramadan mode's
+  // tests don't depend on the real, built-in calendar's dates (RAM-2).
+  List<RamadanMonth>? ramadanMonths,
+  // A test that needs a [BackupFiles] or [Sharer] that fails on purpose
+  // (must-fix, platform review: save/share/export used to have no error
+  // path at all) passes one here instead of the usual no-op fake. The
+  // global [backupFiles]/[sharer] stay the plain fakes either way, so
+  // every other test's `backupFiles.saved`/`sharer.texts` keeps working.
+  BackupFiles? backupFilesOverride,
+  Sharer? sharerOverride,
 }) async {
   late RecipesState recipes;
   late SettingsState settings;
   late Importer importer;
+  late CountingIds ids;
+  late RecipeRepository repository;
   await tester.runAsync(() async {
-    final (repo, clock, ids) = await testRepo();
-    plan = PlanState(PlanRepository(repo.db, clock: clock.call, ids: ids.call));
+    final (repo, fakeClock, idSource) = await testRepo();
+    repository = repo;
+    ids = idSource;
+    clock = fakeClock;
+    plan = PlanState(
+      PlanRepository(repo.db, clock: clock.call, ids: ids.call),
+      ramadanMonths: ramadanMonths ?? ramadanTable,
+    );
     groceries = GroceryState(
       GroceryRepository(repo.db, clock: clock.call, ids: ids.call),
     );
     await groceries.load();
     settings = SettingsState(repo.db);
-    await settings.update(AppSettings(language: language, digits: digits));
+    await settings.update(
+      AppSettings(language: language, digits: digits, ramadanMode: ramadanMode),
+    );
     recipes = RecipesState(repo);
     importer = Importer(
       FakeFetcher({'https://site.com/kabsa': kabsaPage}),
@@ -104,6 +152,25 @@ Future<(RecipesState, SettingsState)> pumpApp(
   timers = TimersState(alerts, autoTick: false);
   addTearDown(timers.dispose);
   sharer = NoopSharer();
+  final shareDir = Directory.systemTemp.createTempSync('wasfati_share_test');
+  addTearDown(() {
+    if (shareDir.existsSync()) shareDir.deleteSync(recursive: true);
+  });
+  shareStorage = FakeShareStorage(shareDir);
+  final backupRoot = Directory.systemTemp.createTempSync('wasfati_backup_test');
+  addTearDown(() {
+    if (backupRoot.existsSync()) backupRoot.deleteSync(recursive: true);
+  });
+  backup = BackupService(
+    repository.db,
+    factory: databaseFactoryFfi,
+    photosDir: Directory(p.join(backupRoot.path, 'photos')),
+    backupsDir: Directory(p.join(backupRoot.path, 'backups')),
+    appVersion: 'test',
+    clock: clock.call,
+    ids: ids.call,
+  );
+  backupFiles = NoopBackupFiles();
   tester.view.physicalSize = const Size(1080, 2400); // a phone (LANG-6)
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
@@ -118,7 +185,10 @@ Future<(RecipesState, SettingsState)> pumpApp(
         timers: timers,
         importer: importer,
         shareInbox: FakeShareInbox(shares.stream),
-        sharer: sharer,
+        sharer: sharerOverride ?? sharer,
+        shareStorage: shareStorage,
+        backup: backup,
+        backupFiles: backupFilesOverride ?? backupFiles,
       ),
     ),
   );
@@ -346,6 +416,117 @@ void main() {
     await settle(tester);
     expect(shown('555 غرامًا ارز بسمتي'), findsOneWidget);
     expect(recipes.lastError, isNull);
+  });
+
+  testWidgets('SHARE-1/2: مشاركة → كنص shares the page as text', (
+    tester,
+  ) async {
+    await pumpApp(tester, withRecipe: true);
+    await tester.tap(find.text('كبسة لحم'));
+    await settle(tester);
+
+    await tester.tap(find.byTooltip('مشاركة'));
+    await settle(tester);
+    await tester.tap(find.text('كنص'));
+    await settle(tester);
+
+    expect(sharer.texts, isNotEmpty);
+    expect(sharer.texts.last, startsWith('كبسة لحم'));
+    expect(sharer.texts.last, contains('المقادير'));
+    expect(sharer.texts.last, contains(wasfatiPlayStoreUrl));
+  });
+
+  testWidgets('SHARE-1/3: مشاركة → كصورة renders and shares pages', (
+    tester,
+  ) async {
+    await pumpApp(tester, withRecipe: true);
+    await tester.tap(find.text('كبسة لحم'));
+    await settle(tester);
+
+    await tester.tap(find.byTooltip('مشاركة'));
+    await settle(tester);
+    await tester.tap(find.text('كصورة'));
+    await settle(tester); // the render itself is real async (dart:ui)
+
+    expect(sharer.filePaths, isNotEmpty);
+    expect(sharer.filePaths.last, isNotEmpty);
+    for (final path in sharer.filePaths.last) {
+      expect(File(path).existsSync(), isTrue);
+    }
+  });
+
+  testWidgets(
+    'SHARE-1/3: system Back during rendering does not close the recipe '
+    'page or fire a second share (must-fix, adversarial review)',
+    (tester) async {
+      await pumpApp(tester, withRecipe: true);
+      await tester.tap(find.text('كبسة لحم'));
+      await settle(tester);
+
+      await tester.tap(find.byTooltip('مشاركة'));
+      await settle(tester);
+      await tester.tap(find.text('كصورة'));
+      await tester.pump(); // the progress dialog appears
+      expect(find.byType(AlertDialog), findsOneWidget);
+
+      // PopScope(canPop: false): Back must not dismiss the dialog while
+      // rendering is in flight — it used to, leaving the recipe page
+      // popped once the render's own unconditional pop later fired.
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.text('كبسة لحم'), findsOneWidget);
+
+      await settle(tester); // let the render finish for real
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('كبسة لحم'), findsOneWidget); // still on the page
+      expect(sharer.filePaths, hasLength(1)); // exactly one share, not two
+    },
+  );
+
+  testWidgets('SHARE-3: a too-long recipe offers to share as text instead '
+      '(should-fix, adversarial review)', (tester) async {
+    final (recipes, _) = await pumpApp(tester);
+    await tester.runAsync(() async {
+      final repo = recipes.repository;
+      final now = repo.now();
+      await recipes.save(
+        Recipe(
+          id: repo.newId(),
+          title: 'وصفة طويلة جدًا',
+          steps: [
+            Section(
+              id: repo.newId(),
+              items: [
+                for (var i = 0; i < 40; i++)
+                  RecipeStep(id: repo.newId(), text: 'خطوة ' * 200),
+              ],
+            ),
+          ],
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+    });
+    await settle(tester);
+    await tester.tap(find.text('وصفة طويلة جدًا'));
+    await settle(tester);
+
+    await tester.tap(find.byTooltip('مشاركة'));
+    await settle(tester);
+    await tester.tap(find.text('كصورة'));
+    await settle(tester); // rendering fails "too long" before any dialog
+
+    expect(
+      find.text('هذه الوصفة طويلة جدًا لتُشارك كصور. شاركها كنص بدلاً من ذلك.'),
+      findsOneWidget,
+    );
+    expect(sharer.filePaths, isEmpty);
+
+    await tester.tap(find.text('كنص')); // the SnackBarAction
+    await settle(tester);
+    expect(sharer.texts, isNotEmpty);
+    expect(sharer.texts.last, startsWith('وصفة طويلة جدًا'));
   });
 
   testWidgets('cook mode: steps, a timer from the text, mark as cooked', (

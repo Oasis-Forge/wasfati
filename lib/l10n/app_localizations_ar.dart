@@ -101,6 +101,44 @@ class AppLocalizationsAr extends AppLocalizations {
   String get delete => 'حذف';
 
   @override
+  String get shareTooltip => 'مشاركة';
+
+  @override
+  String get shareAsText => 'كنص';
+
+  @override
+  String get shareAsImages => 'كصورة';
+
+  @override
+  String get shareHeadingIngredients => 'المقادير';
+
+  @override
+  String get shareHeadingSteps => 'الطريقة';
+
+  @override
+  String shareSource(String url) {
+    return 'المصدر: $url';
+  }
+
+  @override
+  String get shareFooterLine => 'من تطبيق وصفاتي';
+
+  @override
+  String get shareRendering => 'جارٍ إنشاء الصور…';
+
+  @override
+  String get shareTooLong =>
+      'هذه الوصفة طويلة جدًا لتُشارك كصور. شاركها كنص بدلاً من ذلك.';
+
+  @override
+  String get shareFailed => 'تعذّر إنشاء الصور. حاول مرة أخرى.';
+
+  @override
+  String shareUnscaledLine(String line, String mark) {
+    return '$line ($mark)';
+  }
+
+  @override
   String get save => 'حفظ';
 
   @override
@@ -500,6 +538,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get planThisWeek => 'هذا الأسبوع';
 
   @override
+  String get planViewWeek => 'الأسبوع';
+
+  @override
+  String get planViewRamadan => 'رمضان';
+
+  @override
   String get planPreviousWeek => 'الأسبوع السابق';
 
   @override
@@ -519,6 +563,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get mealSnack => 'وجبة خفيفة';
+
+  @override
+  String get mealSuhoor => 'السحور';
+
+  @override
+  String get mealIftar => 'الإفطار';
 
   @override
   String get planAdd => 'إضافة';
@@ -739,4 +789,246 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String ramadanCardSoon(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'رمضان بعد $shown يوم. نحوّل الخطة إلى سحور وإفطار؟',
+      many: 'رمضان بعد $shown يومًا. نحوّل الخطة إلى سحور وإفطار؟',
+      few: 'رمضان بعد $shown أيام. نحوّل الخطة إلى سحور وإفطار؟',
+      two: 'رمضان بعد يومين. نحوّل الخطة إلى سحور وإفطار؟',
+      one: 'رمضان بعد يوم واحد. نحوّل الخطة إلى سحور وإفطار؟',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get ramadanCardNow => 'رمضان كريم. نحوّل الخطة إلى سحور وإفطار؟';
+
+  @override
+  String get ramadanCardEnable => 'تفعيل';
+
+  @override
+  String get ramadanCardNotNow => 'ليس الآن';
+
+  @override
+  String ramadanDayLabel(String day) {
+    return '$day رمضان';
+  }
+
+  @override
+  String get ramadanEidLabel => 'عيد الفطر';
+
+  @override
+  String get settingsRamadanSection => 'رمضان';
+
+  @override
+  String get settingsBackupSection => 'النسخ الاحتياطي';
+
+  @override
+  String get backupSaveAction => 'احفظ نسخة احتياطية';
+
+  @override
+  String get backupSaveDone => 'تم حفظ النسخة الاحتياطية';
+
+  @override
+  String get backupSaveFailed => 'تعذّر حفظ النسخة الاحتياطية.';
+
+  @override
+  String get backupShareFailed => 'تعذّر مشاركة النسخة الاحتياطية.';
+
+  @override
+  String get backupShareAction => 'مشاركة النسخة';
+
+  @override
+  String get backupRestoreAction => 'استعادة';
+
+  @override
+  String get backupErrorCantOpen => 'تعذّر فتح هذا الملف.';
+
+  @override
+  String get backupExportAction => 'تصدير كنص';
+
+  @override
+  String get backupReminderSwitch => 'التذكير بالنسخ الاحتياطي';
+
+  @override
+  String get backupAutoSection => 'النسخ التلقائية';
+
+  @override
+  String get backupAutoEmpty => 'لا نسخ تلقائية بعد';
+
+  @override
+  String backupAutoBackupDate(String date, String time) {
+    return 'نسخة $date، $time';
+  }
+
+  @override
+  String get backupPreviewTitle => 'محتوى الملف';
+
+  @override
+  String backupPreviewRecipes(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown وصفة',
+      many: '$shown وصفة',
+      few: '$shown وصفات',
+      two: 'وصفتان',
+      one: 'وصفة واحدة',
+      zero: 'بلا وصفات',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupPreviewCookbooks(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown كتاب طبخ',
+      many: '$shown كتاب طبخ',
+      few: '$shown كتب طبخ',
+      two: 'كتابا طبخ',
+      one: 'كتاب طبخ واحد',
+      zero: 'بلا كتب طبخ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupPreviewWeeks(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown أسبوع في الخطة',
+      many: '$shown أسبوعًا في الخطة',
+      few: '$shown أسابيع في الخطة',
+      two: 'أسبوعان في الخطة',
+      one: 'أسبوع واحد في الخطة',
+      zero: 'بلا أسابيع في الخطة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupPreviewGroceryItems(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown عنصر في المشتريات',
+      many: '$shown عنصرًا في المشتريات',
+      few: '$shown عناصر في المشتريات',
+      two: 'عنصران في المشتريات',
+      one: 'عنصر واحد في المشتريات',
+      zero: 'بلا عناصر في المشتريات',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backupMergeAction => 'دمج';
+
+  @override
+  String get backupReplaceAction => 'استبدال';
+
+  @override
+  String get backupReplaceConfirmTitle => 'استبدال كل البيانات؟';
+
+  @override
+  String backupReplaceConfirmBody(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'سيحذف هذا وصفة هذا الجهاز الـ$shown، مع خطة الوجبات وقائمة المشتريات، ويضع مكانها ما في الملف.',
+      many:
+          'سيحذف هذا وصفة هذا الجهاز الـ$shown، مع خطة الوجبات وقائمة المشتريات، ويضع مكانها ما في الملف.',
+      few:
+          'سيحذف هذا وصفات هذا الجهاز الـ$shown، مع خطة الوجبات وقائمة المشتريات، ويضع مكانها ما في الملف.',
+      two: 'سيحذف هذا الوصفتين الموجودتين في هذا الجهاز، مع خطة الوجبات وقائمة المشتريات، ويضع مكانهما ما في الملف.',
+      one: 'سيحذف هذا الوصفة الموجودة في هذا الجهاز، مع خطة الوجبات وقائمة المشتريات، ويضع مكانها ما في الملف.',
+      zero: 'سيستبدل هذا خطة الوجبات وقائمة المشتريات في هذا الجهاز بما في الملف.',
+    );
+    return '$_temp0 تُحفظ نسخة تلقائية مما هنا الآن أولًا.';
+  }
+
+  @override
+  String get backupReplaceConfirmFinalTitle => 'هل أنت متأكد؟';
+
+  @override
+  String get backupReplaceConfirmFinalBody =>
+      'لا يمكن التراجع عن هذا من هنا، إلا باستعادة النسخة التلقائية التي حُفظت للتو.';
+
+  @override
+  String get backupResultTitle => 'اكتملت الاستعادة';
+
+  @override
+  String backupResultSummary(String added, String updated, String unchanged) {
+    return 'أُضيف $added · حُدّث $updated · بلا تغيير $unchanged';
+  }
+
+  @override
+  String get backupErrorNotWasfati => 'هذا ليس ملف نسخة احتياطية من وصفاتي.';
+
+  @override
+  String get backupErrorDamaged => 'هذا الملف تالف.';
+
+  @override
+  String get backupErrorNewerSchema =>
+      'هذه النسخة الاحتياطية من إصدار أحدث من التطبيق. حدّث التطبيق أولًا.';
+
+  @override
+  String get backupErrorGeneric => 'تعذّرت الاستعادة.';
+
+  @override
+  String get backupExportPickTitle => 'تصدير الوصفات';
+
+  @override
+  String get backupExportAll => 'كل الوصفات';
+
+  @override
+  String get backupExportDone => 'تم حفظ ملف التصدير';
+
+  @override
+  String get backupExportFailed => 'تعذّر حفظ ملف التصدير.';
+
+  @override
+  String get backupReminderNever => 'لم تحفظ نسخة احتياطية بعد';
+
+  @override
+  String backupReminderDaysAgo(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'آخر نسخة احتياطية قبل $shown يوم',
+      many: 'آخر نسخة احتياطية قبل $shown يومًا',
+      few: 'آخر نسخة احتياطية قبل $shown أيام',
+      two: 'آخر نسخة احتياطية قبل يومين',
+      one: 'آخر نسخة احتياطية قبل يوم واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backupReminderNowAction => 'احفظ الآن';
+
+  @override
+  String get backupReminderLaterAction => 'لاحقًا';
+
+  @override
+  String get ramadanModeLabel => 'وضع رمضان';
+
+  @override
+  String ramadanStartLabel(String date) {
+    return 'بداية رمضان: $date';
+  }
+
+  @override
+  String get ramadanShiftEarlier => 'يوم أبكر';
+
+  @override
+  String get ramadanShiftLater => 'يوم لاحق';
 }

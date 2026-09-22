@@ -4,6 +4,38 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-09-22
+
+### Added
+- A first look: a new install opens with one sample recipe, شوربة عدس, to try scaling, unit conversion and cook mode on. Delete it whenever you like; it won't come back.
+
+## [0.12.0] - 2026-09-22
+
+### Added
+- Back up everything to one file you keep: recipes and their photos, cookbooks, tags, the meal plan, the grocery list and your settings. Save it to Google Drive or Files, or send it anywhere through the share sheet.
+- Restore by merging with what's on your phone, where the newer version of each item wins, deletions included, or by replacing it. Before any restore, Wasfati keeps an automatic copy of what was there; the last three stay in Settings.
+- A gentle reminder once you have 10 recipes and no backup in 30 days. Turn it off in Settings.
+- Export all your recipes, or one cookbook, as a text file.
+- Android's own phone backup now includes your recipes and settings; photos travel in Wasfati's backup file.
+
+### Changed
+- The privacy policy now describes backups and exports.
+
+## [0.11.0] - 2026-09-22
+
+### Added
+- Share a recipe from its page, as text or as pictures. Both show the recipe exactly as you're looking at it: scaled, converted, and in your digits.
+- As text: the ingredients and numbered steps, the source link, and a line with where to get Wasfati. Your notes, tags and rating stay private.
+- As pictures: portrait pages sized so WhatsApp keeps them sharp, with the photo on the first page. Each line reads in its own direction, and a page never breaks in the middle of a line.
+
+## [0.10.0] - 2026-09-22
+
+### Added
+- Ramadan mode. On Ramadan days the plan shows السحور، الإفطار and وجبة خفيفة, with the Hijri date beside each day and عيد الفطر after the last. Anything already planned for lunch or dinner stays where you put it.
+- A week before Ramadan the plan offers to switch; it never switches by itself. Turn it on or off any time in Settings.
+- A whole-month view for planning Ramadan, and "add to groceries" for the rest of the month.
+- If your country starts Ramadan a day earlier or later than the Umm al-Qura calendar, move it in Settings; it resets for the next year.
+
 ## [0.9.0] - 2026-09-21
 
 ### Added

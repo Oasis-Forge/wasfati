@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wasfati/models/plan.dart';
 import 'package:wasfati/models/quantity/rational.dart';
+import 'package:wasfati/models/ramadan.dart';
 import 'package:wasfati/models/settings.dart';
 
 PlanEntry _entry({
@@ -120,6 +121,263 @@ void main() {
       expect(dateKey(dateOnly(DateTime(2026, 9, 20, 23, 30))), '2026-09-20');
       expect(dateFromKey('2026-09-20'), DateTime(2026, 9, 20));
       expect(dateKey(DateTime(2026, 1, 5)), '2026-01-05'); // padded
+    });
+  });
+
+  // A Ramadan positioned near the app's FakeClock date (2026-09-19), not a
+  // real table entry, so this doesn't depend on Umm al-Qura dates changing.
+  final testRamadan = const RamadanMonth(1448, 2026, 9, 22, 30);
+
+  group('RAM-1: slotsFor gives a day\'s slots in display order', () {
+    test('an ordinary day (mode off) is the usual four, in order', () {
+      expect(slotsFor(DateTime(2026, 9, 1), ramadan: false), [
+        MealSlot.breakfast,
+        MealSlot.lunch,
+        MealSlot.dinner,
+        MealSlot.snack,
+      ]);
+    });
+
+    test('the mode is on, but the day is outside Ramadan: unchanged', () {
+      expect(
+        slotsFor(DateTime(2026, 9, 1), ramadan: true, month: testRamadan),
+        [MealSlot.breakfast, MealSlot.lunch, MealSlot.dinner, MealSlot.snack],
+      );
+    });
+
+    test('a Ramadan day with the mode on: suhoor, iftar, snack', () {
+      expect(slotsFor(testRamadan.start, ramadan: true, month: testRamadan), [
+        MealSlot.suhoor,
+        MealSlot.iftar,
+        MealSlot.snack,
+      ]);
+    });
+
+    test('an entry already in an ordinary slot on a Ramadan day stays visible, '
+        'under its own name and in its own order (RAM-1: nothing hidden)', () {
+      expect(
+        slotsFor(
+          testRamadan.start,
+          ramadan: true,
+          month: testRamadan,
+          withEntries: {MealSlot.lunch},
+        ),
+        [MealSlot.suhoor, MealSlot.iftar, MealSlot.snack, MealSlot.lunch],
+      );
+      expect(
+        slotsFor(
+          testRamadan.start,
+          ramadan: true,
+          month: testRamadan,
+          withEntries: {MealSlot.dinner, MealSlot.breakfast},
+        ),
+        [
+          MealSlot.suhoor,
+          MealSlot.iftar,
+          MealSlot.snack,
+          MealSlot.breakfast, // breakfast before dinner either way
+          MealSlot.dinner,
+        ],
+      );
+    });
+
+    test('an ordinary day only offers suhoor/iftar if they hold entries', () {
+      expect(
+        slotsFor(
+          DateTime(2026, 9, 1),
+          ramadan: false,
+          withEntries: {MealSlot.suhoor},
+        ),
+        [
+          MealSlot.breakfast,
+          MealSlot.lunch,
+          MealSlot.dinner,
+          MealSlot.snack,
+          MealSlot.suhoor,
+        ],
+      );
+    });
+  });
+
+  group('RAM-1: slotOnDay maps a slot the day does not offer (must-fix)', () {
+    const ramadanSlots = [MealSlot.suhoor, MealSlot.iftar, MealSlot.snack];
+    const ordinarySlots = [
+      MealSlot.breakfast,
+      MealSlot.lunch,
+      MealSlot.dinner,
+      MealSlot.snack,
+    ];
+
+    test('already offered: stays as it is', () {
+      expect(slotOnDay(MealSlot.iftar, ramadanSlots), MealSlot.iftar);
+      expect(slotOnDay(MealSlot.lunch, ordinarySlots), MealSlot.lunch);
+    });
+
+    test('breakfast/lunch/dinner map onto a Ramadan day\'s own slots', () {
+      expect(slotOnDay(MealSlot.breakfast, ramadanSlots), MealSlot.suhoor);
+      expect(slotOnDay(MealSlot.lunch, ramadanSlots), MealSlot.iftar);
+      expect(slotOnDay(MealSlot.dinner, ramadanSlots), MealSlot.iftar);
+    });
+
+    test('suhoor/iftar map back onto an ordinary day\'s slots', () {
+      expect(slotOnDay(MealSlot.suhoor, ordinarySlots), MealSlot.breakfast);
+      // iftar -> lunch (the day's main meal), not dinner.
+      expect(slotOnDay(MealSlot.iftar, ordinarySlots), MealSlot.lunch);
+    });
+
+    test('nothing offered falls back to the slot itself', () {
+      expect(slotOnDay(MealSlot.lunch, const []), MealSlot.lunch);
+    });
+  });
+
+  group('RAM-2: ramadanMonthForShiftRow picks a stable year (should-fix)', () {
+    final months = [
+      const RamadanMonth(1447, 2026, 8, 21, 30), // last day 2026-09-19
+      const RamadanMonth(1448, 2027, 8, 10, 29),
+    ];
+
+    test('on the last day, with no shift, still shows this year', () {
+      final m = ramadanMonthForShiftRow(DateTime(2026, 9, 19), months: months);
+      expect(m?.hijriYear, 1447);
+    });
+
+    test('a -1 shift making "today" Eid does not flip the row to next year '
+        '(the bug: currentOrNextRamadanIn would)', () {
+      int shiftFor(int y) => y == 1447 ? -1 : 0;
+      // Sanity check: this is exactly the case the plain lookup gets
+      // wrong, jumping a year early.
+      expect(
+        currentOrNextRamadanIn(
+          DateTime(2026, 9, 19),
+          months: months,
+          shiftFor: shiftFor,
+        )?.hijriYear,
+        1448,
+      );
+      final m = ramadanMonthForShiftRow(
+        DateTime(2026, 9, 19),
+        months: months,
+        shiftFor: shiftFor,
+      );
+      expect(m?.hijriYear, 1447);
+      expect(dateKey(m!.start), '2026-08-20'); // the -1 shift still shows
+    });
+
+    test('a +1 shift the day after the unshifted last day is still covered '
+        '(the grace day)', () {
+      final m = ramadanMonthForShiftRow(DateTime(2026, 9, 20), months: months);
+      expect(m?.hijriYear, 1447);
+    });
+
+    test(
+      'two days after the last day, past every possible shift: moves on',
+      () {
+        final m = ramadanMonthForShiftRow(
+          DateTime(2026, 9, 21),
+          months: months,
+        );
+        expect(m?.hijriYear, 1448);
+      },
+    );
+  });
+
+  group('RAM-2: the injected Ramadan calendar', () {
+    test('ramadanMonthContaining finds the day inside, shifted (RAM-2)', () {
+      expect(
+        ramadanMonthContaining(
+          testRamadan.start,
+          months: [testRamadan],
+        )?.hijriYear,
+        1448,
+      );
+      expect(
+        ramadanMonthContaining(DateTime(2026, 9, 21), months: [testRamadan]),
+        isNull,
+      );
+      final shifted = ramadanMonthContaining(
+        DateTime(2026, 9, 21),
+        months: [testRamadan],
+        shiftFor: (_) => -1, // a day earlier, so the 21st is now day 1
+      );
+      expect(shifted?.start, DateTime(2026, 9, 21));
+    });
+
+    test('currentOrNextRamadanIn picks the next one, shifted (RAM-2)', () {
+      expect(
+        currentOrNextRamadanIn(
+          DateTime(2026, 9, 19),
+          months: [testRamadan],
+        )?.start,
+        testRamadan.start,
+      );
+      expect(
+        currentOrNextRamadanIn(DateTime(2026, 11, 1), months: [testRamadan]),
+        isNull, // past the (single-entry) table
+      );
+    });
+
+    test('inRamadanWindow: 7 days before through the last day (RAM-3)', () {
+      expect(inRamadanWindow(DateTime(2026, 9, 15), testRamadan), isTrue);
+      expect(inRamadanWindow(DateTime(2026, 9, 14), testRamadan), isFalse);
+      expect(inRamadanWindow(testRamadan.last, testRamadan), isTrue);
+      expect(inRamadanWindow(testRamadan.eid, testRamadan), isFalse);
+    });
+
+    test('daysUntilRamadan counts down, 0 or less once it started', () {
+      expect(daysUntilRamadan(DateTime(2026, 9, 19), testRamadan), 3);
+      expect(daysUntilRamadan(testRamadan.start, testRamadan), 0);
+      expect(daysUntilRamadan(DateTime(2026, 9, 25), testRamadan), -3);
+    });
+  });
+
+  group('RAM-3: ramadanCard', () {
+    test('the countdown, while off, in the window, not dismissed', () {
+      final card = ramadanCard(testRamadan, DateTime(2026, 9, 19), mode: false);
+      expect((card!.daysUntil, card.started), (3, false));
+    });
+
+    test('"started" once Ramadan has (the "كريم" text)', () {
+      expect(
+        ramadanCard(testRamadan, testRamadan.start, mode: false)!.started,
+        isTrue,
+      );
+    });
+
+    test('null while the mode is on: it never turns itself on', () {
+      expect(
+        ramadanCard(testRamadan, DateTime(2026, 9, 19), mode: true),
+        isNull,
+      );
+    });
+
+    test('null once dismissed for this Ramadan\'s Hijri year, not another', () {
+      expect(
+        ramadanCard(
+          testRamadan,
+          DateTime(2026, 9, 19),
+          mode: false,
+          dismissedYear: 1448,
+        ),
+        isNull,
+      );
+      expect(
+        ramadanCard(
+          testRamadan,
+          DateTime(2026, 9, 19),
+          mode: false,
+          dismissedYear: 1447,
+        ),
+        isNotNull,
+      );
+    });
+
+    test('null outside the window, or with no Ramadan at all', () {
+      expect(
+        ramadanCard(testRamadan, DateTime(2026, 9, 14), mode: false),
+        isNull,
+      );
+      expect(ramadanCard(testRamadan, testRamadan.eid, mode: false), isNull);
+      expect(ramadanCard(null, DateTime(2026, 9, 19), mode: false), isNull);
     });
   });
 }

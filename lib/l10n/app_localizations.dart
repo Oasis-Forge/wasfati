@@ -206,6 +206,72 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get delete;
 
+  /// SHARE-1. Recipe page app-bar action, opening the share sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get shareTooltip;
+
+  /// SHARE-1. Share-sheet option: plain text.
+  ///
+  /// In en, this message translates to:
+  /// **'As text'**
+  String get shareAsText;
+
+  /// SHARE-1. Share-sheet option: portrait picture pages.
+  ///
+  /// In en, this message translates to:
+  /// **'As images'**
+  String get shareAsImages;
+
+  /// SHARE-2. Ingredients heading in the shared recipe text and images, distinct from the on-screen heading ("ingredients").
+  ///
+  /// In en, this message translates to:
+  /// **'Ingredients'**
+  String get shareHeadingIngredients;
+
+  /// SHARE-2. Steps heading in the shared recipe text and images, distinct from the on-screen heading ("steps").
+  ///
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get shareHeadingSteps;
+
+  /// SHARE-2. The shared recipe's source line, when it has one.
+  ///
+  /// In en, this message translates to:
+  /// **'Source: {url}'**
+  String shareSource(String url);
+
+  /// SHARE-2. The last line of a shared recipe text, right before the Play Store link.
+  ///
+  /// In en, this message translates to:
+  /// **'From the Wasfati app'**
+  String get shareFooterLine;
+
+  /// SHARE-1. Progress label while the share-as-images pages render.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating images…'**
+  String get shareRendering;
+
+  /// SHARE-3. Shown when a recipe would need more than 6 image pages.
+  ///
+  /// In en, this message translates to:
+  /// **'This recipe is too long to share as images. Share it as text instead.'**
+  String get shareTooLong;
+
+  /// SHARE-3. Shown when share-as-images fails unexpectedly (not the too-long case).
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t create the images. Try again.'**
+  String get shareFailed;
+
+  /// SHARE-1, SCALE-6. Marks a shared line (text or image) the scaler couldn't change, matching the recipe page's own "not scaled" mark.
+  ///
+  /// In en, this message translates to:
+  /// **'{line} ({mark})'**
+  String shareUnscaledLine(String line, String mark);
+
   /// Editor button.
   ///
   /// In en, this message translates to:
@@ -926,6 +992,18 @@ abstract class AppLocalizations {
   /// **'This week'**
   String get planThisWeek;
 
+  /// RAM-4. The plan's week/Ramadan view toggle: the week side.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get planViewWeek;
+
+  /// RAM-4. The plan's week/Ramadan view toggle: the whole-month side.
+  ///
+  /// In en, this message translates to:
+  /// **'Ramadan'**
+  String get planViewRamadan;
+
   /// Tooltip on the arrow that moves a week back
   ///
   /// In en, this message translates to:
@@ -967,6 +1045,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Snack'**
   String get mealSnack;
+
+  /// RAM-1. Meal slot name: the pre-dawn meal in Ramadan.
+  ///
+  /// In en, this message translates to:
+  /// **'Suhoor'**
+  String get mealSuhoor;
+
+  /// RAM-1. Meal slot name: the sunset meal in Ramadan.
+  ///
+  /// In en, this message translates to:
+  /// **'Iftar'**
+  String get mealIftar;
 
   /// Tooltip on the + of an empty meal slot (PLAN-3)
   ///
@@ -1297,6 +1387,300 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{Nothing to add} =1{1 meal added to groceries} other{{shown} meals added to groceries}}'**
   String planGroceriesAddedCount(int count, String shown);
+
+  /// RAM-3. The plan's card, 7 days before Ramadan through the day before it starts.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Ramadan starts in 1 day. Switch the plan to suhoor and iftar?} other{Ramadan starts in {shown} days. Switch the plan to suhoor and iftar?}}'**
+  String ramadanCardSoon(int count, String shown);
+
+  /// RAM-3. The plan's card, once Ramadan has started.
+  ///
+  /// In en, this message translates to:
+  /// **'Ramadan kareem. Switch the plan to suhoor and iftar?'**
+  String get ramadanCardNow;
+
+  /// RAM-3. The card's button that turns Ramadan mode on.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable'**
+  String get ramadanCardEnable;
+
+  /// RAM-3. The card's button that hides it until the next Ramadan.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get ramadanCardNotNow;
+
+  /// RAM-2. A Ramadan day's Hijri date, shown beside the usual one.
+  ///
+  /// In en, this message translates to:
+  /// **'{day} Ramadan'**
+  String ramadanDayLabel(String day);
+
+  /// RAM-2. Shown on the day after Ramadan's last one.
+  ///
+  /// In en, this message translates to:
+  /// **'Eid al-Fitr'**
+  String get ramadanEidLabel;
+
+  /// RAM-1. Settings section heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Ramadan'**
+  String get settingsRamadanSection;
+
+  /// No description provided for @settingsBackupSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup'**
+  String get settingsBackupSection;
+
+  /// No description provided for @backupSaveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Save a backup'**
+  String get backupSaveAction;
+
+  /// No description provided for @backupSaveDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup saved'**
+  String get backupSaveDone;
+
+  /// BAK-6. Shown when saving a backup fails (the save dialog itself, or building the file).
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the backup.'**
+  String get backupSaveFailed;
+
+  /// BAK-6. Shown when sharing a backup fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t share the backup.'**
+  String get backupShareFailed;
+
+  /// No description provided for @backupShareAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Share the backup'**
+  String get backupShareAction;
+
+  /// No description provided for @backupRestoreAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get backupRestoreAction;
+
+  /// BAK-7. Shown when the system's file picker itself fails to hand back the picked file (distinct from the user cancelling, and from backupErrorDamaged for a file that opens but isn't a usable backup).
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open that file.'**
+  String get backupErrorCantOpen;
+
+  /// No description provided for @backupExportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Export as text'**
+  String get backupExportAction;
+
+  /// No description provided for @backupReminderSwitch.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup reminder'**
+  String get backupReminderSwitch;
+
+  /// No description provided for @backupAutoSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic backups'**
+  String get backupAutoSection;
+
+  /// No description provided for @backupAutoEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No automatic backups yet'**
+  String get backupAutoEmpty;
+
+  /// BAK-2, BAK-7. One automatic backup's label in Settings, next to its restore action. Includes the time, since a restore makes a new one at once and same-day rows would otherwise read identically.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup from {date}, {time}'**
+  String backupAutoBackupDate(String date, String time);
+
+  /// BAK-7. Heading of the sheet shown before a restore, above the counts and Merge/Replace.
+  ///
+  /// In en, this message translates to:
+  /// **'What this file holds'**
+  String get backupPreviewTitle;
+
+  /// BAK-7. Recipe count in the restore preview sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No recipes} =1{1 recipe} other{{shown} recipes}}'**
+  String backupPreviewRecipes(int count, String shown);
+
+  /// BAK-7. Cookbook count in the restore preview sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No cookbooks} =1{1 cookbook} other{{shown} cookbooks}}'**
+  String backupPreviewCookbooks(int count, String shown);
+
+  /// BAK-7. Distinct plan weeks in the restore preview sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No plan weeks} =1{1 plan week} other{{shown} plan weeks}}'**
+  String backupPreviewWeeks(int count, String shown);
+
+  /// BAK-7. Grocery item count in the restore preview sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No grocery items} =1{1 grocery item} other{{shown} grocery items}}'**
+  String backupPreviewGroceryItems(int count, String shown);
+
+  /// No description provided for @backupMergeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge'**
+  String get backupMergeAction;
+
+  /// No description provided for @backupReplaceAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get backupReplaceAction;
+
+  /// No description provided for @backupReplaceConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace everything?'**
+  String get backupReplaceConfirmTitle;
+
+  /// BAK-7. Body of the first Replace-confirmation dialog: what will be lost, with this phone's own live recipe count (must-fix, platform review — this used to be a fixed string with no numbers).
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{This replaces the plan and grocery list on this phone with the file\'s.} =1{This deletes the recipe on this phone, plus the plan and grocery list, and replaces them with the file\'s.} other{This deletes the {shown} recipes on this phone, plus the plan and grocery list, and replaces them with the file\'s.}} An automatic copy of what\'s here now is saved first.'**
+  String backupReplaceConfirmBody(int count, String shown);
+
+  /// BAK-7. Title of the second, final Replace-confirmation dialog (must-fix, platform review: Replace used to be confirmed only once).
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure?'**
+  String get backupReplaceConfirmFinalTitle;
+
+  /// BAK-7. Body of the second, final Replace-confirmation dialog, whose button is styled as destructive.
+  ///
+  /// In en, this message translates to:
+  /// **'This can\'t be undone from here, except by restoring the automatic copy just saved.'**
+  String get backupReplaceConfirmFinalBody;
+
+  /// No description provided for @backupResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore complete'**
+  String get backupResultTitle;
+
+  /// BAK-3. Counts after a restore, already in the user's digit style. Recipes, cookbooks, plan entries and grocery items only (DEL-1, should-fix: this used to sum every table, including sections/lines/steps/links, so restoring one recipe could read as "added 14").
+  ///
+  /// In en, this message translates to:
+  /// **'Added {added} · Updated {updated} · Unchanged {unchanged}'**
+  String backupResultSummary(String added, String updated, String unchanged);
+
+  /// No description provided for @backupErrorNotWasfati.
+  ///
+  /// In en, this message translates to:
+  /// **'This isn\'t a Wasfati backup file.'**
+  String get backupErrorNotWasfati;
+
+  /// No description provided for @backupErrorDamaged.
+  ///
+  /// In en, this message translates to:
+  /// **'This file is damaged.'**
+  String get backupErrorDamaged;
+
+  /// No description provided for @backupErrorNewerSchema.
+  ///
+  /// In en, this message translates to:
+  /// **'This backup is from a newer version of the app. Update the app first.'**
+  String get backupErrorNewerSchema;
+
+  /// No description provided for @backupErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'The restore failed.'**
+  String get backupErrorGeneric;
+
+  /// No description provided for @backupExportPickTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export recipes'**
+  String get backupExportPickTitle;
+
+  /// No description provided for @backupExportAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All recipes'**
+  String get backupExportAll;
+
+  /// No description provided for @backupExportDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Export saved'**
+  String get backupExportDone;
+
+  /// BAK-10. Shown when saving the exported text fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the export.'**
+  String get backupExportFailed;
+
+  /// BAK-8. The library's reminder card when no backup was ever made.
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t saved a backup yet'**
+  String get backupReminderNever;
+
+  /// BAK-8. The library's reminder card, days since the last backup.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Last backup was 1 day ago} other{Last backup was {shown} days ago}}'**
+  String backupReminderDaysAgo(int count, String shown);
+
+  /// No description provided for @backupReminderNowAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up now'**
+  String get backupReminderNowAction;
+
+  /// No description provided for @backupReminderLaterAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get backupReminderLaterAction;
+
+  /// RAM-1. Settings switch that turns Ramadan mode on or off.
+  ///
+  /// In en, this message translates to:
+  /// **'Ramadan mode'**
+  String get ramadanModeLabel;
+
+  /// RAM-2. Settings row showing the current or next Ramadan's first day.
+  ///
+  /// In en, this message translates to:
+  /// **'Ramadan starts: {date}'**
+  String ramadanStartLabel(String date);
+
+  /// RAM-2. Tooltip: moves Ramadan's first day a day earlier, for the local moon sighting.
+  ///
+  /// In en, this message translates to:
+  /// **'One day earlier'**
+  String get ramadanShiftEarlier;
+
+  /// RAM-2. Tooltip: moves Ramadan's first day a day later, for the local moon sighting.
+  ///
+  /// In en, this message translates to:
+  /// **'One day later'**
+  String get ramadanShiftLater;
 }
 
 class _AppLocalizationsDelegate
