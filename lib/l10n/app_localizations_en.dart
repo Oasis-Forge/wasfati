@@ -487,6 +487,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planThisWeek => 'This week';
 
   @override
+  String get planViewWeek => 'Week';
+
+  @override
+  String get planViewRamadan => 'Ramadan';
+
+  @override
   String get planPreviousWeek => 'Previous week';
 
   @override
@@ -506,6 +512,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mealSnack => 'Snack';
+
+  @override
+  String get mealSuhoor => 'Suhoor';
+
+  @override
+  String get mealIftar => 'Iftar';
 
   @override
   String get planAdd => 'Add';
@@ -714,4 +726,51 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String ramadanCardSoon(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Ramadan starts in $shown days. Switch the plan to suhoor and iftar?',
+      one: 'Ramadan starts in 1 day. Switch the plan to suhoor and iftar?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get ramadanCardNow =>
+      'Ramadan kareem. Switch the plan to suhoor and iftar?';
+
+  @override
+  String get ramadanCardEnable => 'Enable';
+
+  @override
+  String get ramadanCardNotNow => 'Not now';
+
+  @override
+  String ramadanDayLabel(String day) {
+    return '$day Ramadan';
+  }
+
+  @override
+  String get ramadanEidLabel => 'Eid al-Fitr';
+
+  @override
+  String get settingsRamadanSection => 'Ramadan';
+
+  @override
+  String get ramadanModeLabel => 'Ramadan mode';
+
+  @override
+  String ramadanStartLabel(String date) {
+    return 'Ramadan starts: $date';
+  }
+
+  @override
+  String get ramadanShiftEarlier => 'One day earlier';
+
+  @override
+  String get ramadanShiftLater => 'One day later';
 }

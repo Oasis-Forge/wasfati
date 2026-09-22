@@ -69,24 +69,28 @@ class WasfatiApp extends StatelessWidget {
         Provider<ShareInbox>.value(value: shareInbox),
         Provider<Sharer>.value(value: sharer),
       ],
-      child: Consumer<SettingsState>(
-        builder: (context, s, _) => MaterialApp(
-          onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-          locale: s.locale, // LANG-1: null follows the device
-          supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          themeMode: s.themeMode,
-          theme: _theme(Brightness.light),
-          darkTheme: _theme(Brightness.dark),
-          navigatorKey: navigatorKey,
-          builder: (context, child) =>
-              ShareRouter(navigator: navigatorKey, child: child!),
-          home: const HomeScreen(),
+      child: _RamadanSync(
+        settings: settings,
+        plan: plan,
+        child: Consumer<SettingsState>(
+          builder: (context, s, _) => MaterialApp(
+            onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+            locale: s.locale, // LANG-1: null follows the device
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            themeMode: s.themeMode,
+            theme: _theme(Brightness.light),
+            darkTheme: _theme(Brightness.dark),
+            navigatorKey: navigatorKey,
+            builder: (context, child) =>
+                ShareRouter(navigator: navigatorKey, child: child!),
+            home: const HomeScreen(),
+          ),
         ),
       ),
     );
@@ -96,4 +100,52 @@ class WasfatiApp extends StatelessWidget {
     fontFamily: fontFamily,
     colorScheme: ColorScheme.fromSeed(seedColor: _seed, brightness: b),
   );
+}
+
+/// Keeps [PlanState] in step with Settings' Ramadan fields regardless of
+/// which screen is on screen (should-fix, RAM-1/RAM-2): this used to
+/// happen only from `PlanScreen.didChangeDependencies`, so Settings (and
+/// anything else reading `plan.ramadanMode`/`ramadanFor`) saw stale
+/// Ramadan dates whenever the plan tab wasn't mounted — which HomeScreen
+/// never mounts at all while the library is empty.
+class _RamadanSync extends StatefulWidget {
+  const _RamadanSync({
+    required this.settings,
+    required this.plan,
+    required this.child,
+  });
+
+  final SettingsState settings;
+  final PlanState plan;
+  final Widget child;
+
+  @override
+  State<_RamadanSync> createState() => _RamadanSyncState();
+}
+
+class _RamadanSyncState extends State<_RamadanSync> {
+  @override
+  void initState() {
+    super.initState();
+    widget.settings.addListener(_sync);
+    _sync();
+  }
+
+  void _sync() {
+    final s = widget.settings.settings;
+    widget.plan.setRamadanMode(
+      s.ramadanMode,
+      shift: s.ramadanShift,
+      shiftYear: s.ramadanShiftYear,
+    );
+  }
+
+  @override
+  void dispose() {
+    widget.settings.removeListener(_sync);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

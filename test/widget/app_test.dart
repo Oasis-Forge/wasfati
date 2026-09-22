@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wasfati/app.dart';
 import 'package:wasfati/models/quantity/format.dart';
 import 'package:wasfati/models/library.dart';
+import 'package:wasfati/models/ramadan.dart';
 import 'package:wasfati/models/recipe.dart';
 import 'package:wasfati/models/settings.dart';
 import 'package:wasfati/db/grocery_repository.dart';
@@ -49,6 +50,10 @@ late NoopTimerAlerts alerts;
 /// The meal plan from the last [pumpApp] (PLAN-1).
 late PlanState plan;
 
+/// The clock behind [plan] and the recipe repository, so a test can move
+/// "today" (DATE-1) without restarting the app.
+late FakeClock clock;
+
 /// The grocery list from the last [pumpApp] (GRO-1).
 late GroceryState groceries;
 
@@ -76,19 +81,29 @@ Future<(RecipesState, SettingsState)> pumpApp(
   DigitStyle digits = DigitStyle.western,
   double textScale = 1,
   bool withRecipe = false,
+  bool ramadanMode = false,
+  // A Ramadan positioned relative to the FakeClock date, so Ramadan mode's
+  // tests don't depend on the real, built-in calendar's dates (RAM-2).
+  List<RamadanMonth>? ramadanMonths,
 }) async {
   late RecipesState recipes;
   late SettingsState settings;
   late Importer importer;
   await tester.runAsync(() async {
-    final (repo, clock, ids) = await testRepo();
-    plan = PlanState(PlanRepository(repo.db, clock: clock.call, ids: ids.call));
+    final (repo, fakeClock, ids) = await testRepo();
+    clock = fakeClock;
+    plan = PlanState(
+      PlanRepository(repo.db, clock: clock.call, ids: ids.call),
+      ramadanMonths: ramadanMonths ?? ramadanTable,
+    );
     groceries = GroceryState(
       GroceryRepository(repo.db, clock: clock.call, ids: ids.call),
     );
     await groceries.load();
     settings = SettingsState(repo.db);
-    await settings.update(AppSettings(language: language, digits: digits));
+    await settings.update(
+      AppSettings(language: language, digits: digits, ramadanMode: ramadanMode),
+    );
     recipes = RecipesState(repo);
     importer = Importer(
       FakeFetcher({'https://site.com/kabsa': kabsaPage}),

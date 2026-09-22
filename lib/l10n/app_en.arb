@@ -625,6 +625,14 @@
   "@planThisWeek": {
     "description": "Returns the plan to the current week (PLAN-1)"
   },
+  "planViewWeek": "Week",
+  "@planViewWeek": {
+    "description": "RAM-4. The plan's week/Ramadan view toggle: the week side."
+  },
+  "planViewRamadan": "Ramadan",
+  "@planViewRamadan": {
+    "description": "RAM-4. The plan's week/Ramadan view toggle: the whole-month side."
+  },
   "planPreviousWeek": "Previous week",
   "@planPreviousWeek": {
     "description": "Tooltip on the arrow that moves a week back"
@@ -652,6 +660,14 @@
   "mealSnack": "Snack",
   "@mealSnack": {
     "description": "Meal slot (PLAN-1)"
+  },
+  "mealSuhoor": "Suhoor",
+  "@mealSuhoor": {
+    "description": "RAM-1. Meal slot name: the pre-dawn meal in Ramadan."
+  },
+  "mealIftar": "Iftar",
+  "@mealIftar": {
+    "description": "RAM-1. Meal slot name: the sunset meal in Ramadan."
   },
   "planAdd": "Add",
   "@planAdd": {
@@ -915,5 +931,67 @@
         "type": "String"
       }
     }
+  },
+  "ramadanCardSoon": "{count, plural, =1{Ramadan starts in 1 day. Switch the plan to suhoor and iftar?} other{Ramadan starts in {shown} days. Switch the plan to suhoor and iftar?}}",
+  "@ramadanCardSoon": {
+    "description": "RAM-3. The plan's card, 7 days before Ramadan through the day before it starts.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
+  },
+  "ramadanCardNow": "Ramadan kareem. Switch the plan to suhoor and iftar?",
+  "@ramadanCardNow": {
+    "description": "RAM-3. The plan's card, once Ramadan has started."
+  },
+  "ramadanCardEnable": "Enable",
+  "@ramadanCardEnable": {
+    "description": "RAM-3. The card's button that turns Ramadan mode on."
+  },
+  "ramadanCardNotNow": "Not now",
+  "@ramadanCardNotNow": {
+    "description": "RAM-3. The card's button that hides it until the next Ramadan."
+  },
+  "ramadanDayLabel": "{day} Ramadan",
+  "@ramadanDayLabel": {
+    "description": "RAM-2. A Ramadan day's Hijri date, shown beside the usual one.",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "ramadanEidLabel": "Eid al-Fitr",
+  "@ramadanEidLabel": {
+    "description": "RAM-2. Shown on the day after Ramadan's last one."
+  },
+  "settingsRamadanSection": "Ramadan",
+  "@settingsRamadanSection": {
+    "description": "RAM-1. Settings section heading."
+  },
+  "ramadanModeLabel": "Ramadan mode",
+  "@ramadanModeLabel": {
+    "description": "RAM-1. Settings switch that turns Ramadan mode on or off."
+  },
+  "ramadanStartLabel": "Ramadan starts: {date}",
+  "@ramadanStartLabel": {
+    "description": "RAM-2. Settings row showing the current or next Ramadan's first day.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "ramadanShiftEarlier": "One day earlier",
+  "@ramadanShiftEarlier": {
+    "description": "RAM-2. Tooltip: moves Ramadan's first day a day earlier, for the local moon sighting."
+  },
+  "ramadanShiftLater": "One day later",
+  "@ramadanShiftLater": {
+    "description": "RAM-2. Tooltip: moves Ramadan's first day a day later, for the local moon sighting."
   }
 }

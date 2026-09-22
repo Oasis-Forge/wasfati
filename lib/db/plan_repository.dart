@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../models/plan.dart';
+import '../models/ramadan.dart';
 import '../services/ids.dart';
 
 /// Reads and writes the meal plan (PLAN-1–PLAN-6). Entries live in their
@@ -20,7 +21,17 @@ class PlanRepository {
   /// Live entries from [from] to [to] (both included), in day, meal and
   /// position order. An entry whose recipe is in the trash is left out and
   /// comes back when the recipe is restored (PLAN-6, DEL-1).
-  Future<List<PlanEntry>> entriesBetween(DateTime from, DateTime to) async {
+  ///
+  /// The meal order within a day follows [slotsFor], not the raw enum
+  /// index (RAM-1): pass [ramadanMode] and [ramadanMonthFor] (the Ramadan
+  /// month a day falls in, if any) to sort Ramadan days as suhoor, iftar,
+  /// snack. Both default to "never Ramadan", the plain order.
+  Future<List<PlanEntry>> entriesBetween(
+    DateTime from,
+    DateTime to, {
+    bool ramadanMode = false,
+    RamadanMonth? Function(DateTime day)? ramadanMonthFor,
+  }) async {
     final rows = await _db.rawQuery(
       'SELECT p.* FROM plan_entries p '
       'LEFT JOIN recipes r ON r.id = p.recipe_id '
@@ -29,13 +40,23 @@ class PlanRepository {
       [dateKey(from), dateKey(to)],
     );
     final entries = [for (final r in rows) PlanEntry.fromMap(r)];
-    entries.sort(_inDayOrder);
+    _sortInDayOrder(
+      entries,
+      ramadanMode: ramadanMode,
+      ramadanMonthFor: ramadanMonthFor,
+    );
     return entries;
   }
 
   /// The next meal this recipe is planned for, from [from] on, or null
-  /// (PLAN-6).
-  Future<PlanEntry?> nextFor(String recipeId, DateTime from) async {
+  /// (PLAN-6). Same-day ties follow [slotsFor] (RAM-1); see
+  /// [entriesBetween].
+  Future<PlanEntry?> nextFor(
+    String recipeId,
+    DateTime from, {
+    bool ramadanMode = false,
+    RamadanMonth? Function(DateTime day)? ramadanMonthFor,
+  }) async {
     final rows = await _db.query(
       'plan_entries',
       where: 'deleted_at IS NULL AND recipe_id = ? AND date >= ?',
@@ -44,7 +65,11 @@ class PlanRepository {
     );
     if (rows.isEmpty) return null;
     final entries = [for (final r in rows) PlanEntry.fromMap(r)];
-    entries.sort(_inDayOrder);
+    _sortInDayOrder(
+      entries,
+      ramadanMode: ramadanMode,
+      ramadanMonthFor: ramadanMonthFor,
+    );
     return entries.first;
   }
 
@@ -190,12 +215,39 @@ class PlanRepository {
       ) ??
       0;
 
-  static int _inDayOrder(PlanEntry a, PlanEntry b) {
-    final day = a.date.compareTo(b.date);
-    if (day != 0) return day;
-    final slot = a.slot.index.compareTo(b.slot.index);
-    if (slot != 0) return slot;
-    final at = a.position.compareTo(b.position);
-    return at != 0 ? at : a.createdAt.compareTo(b.createdAt);
+  /// Sorts [entries] by day, then meal in that day's display order (RAM-1:
+  /// [slotsFor], never the raw enum index), then position and add time.
+  static void _sortInDayOrder(
+    List<PlanEntry> entries, {
+    required bool ramadanMode,
+    RamadanMonth? Function(DateTime day)? ramadanMonthFor,
+  }) {
+    final withEntries = <String, Set<MealSlot>>{};
+    for (final e in entries) {
+      (withEntries[dateKey(e.date)] ??= {}).add(e.slot);
+    }
+    // Computed once per day, not once per comparison, and [ramadanMonthFor]
+    // is never even called with the mode off (should-fix, performance):
+    // every reload used to look Ramadan up for every same-day tie, mode on
+    // or off.
+    final orderCache = <String, List<MealSlot>>{};
+    List<MealSlot> orderFor(DateTime day) => orderCache.putIfAbsent(
+      dateKey(day),
+      () => slotsFor(
+        day,
+        ramadan: ramadanMode,
+        month: ramadanMode ? ramadanMonthFor?.call(day) : null,
+        withEntries: withEntries[dateKey(day)] ?? const {},
+      ),
+    );
+    entries.sort((a, b) {
+      final day = a.date.compareTo(b.date);
+      if (day != 0) return day;
+      final order = orderFor(a.date);
+      final slot = order.indexOf(a.slot).compareTo(order.indexOf(b.slot));
+      if (slot != 0) return slot;
+      final at = a.position.compareTo(b.position);
+      return at != 0 ? at : a.createdAt.compareTo(b.createdAt);
+    });
   }
 }

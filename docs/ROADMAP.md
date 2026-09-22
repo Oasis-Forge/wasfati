@@ -120,7 +120,7 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
 
 ## Phase 2c: Plan and shop (W8–W10, shipped as updates during the closed test)
 - [x] **Meal plan** (PLAN-1–PLAN-4, PLAN-6; schema step 3; v0.8.0): a week view starting on the day from Settings; recipes or notes by day and meal (breakfast, lunch, dinner, snack), each with its own servings; move, copy, clear a week, and undo. "Add the week to groceries" (PLAN-5) ships with the grocery list.
-- [ ] **Ramadan mode** (RAM-1–RAM-5):
+- [x] **Ramadan mode** (RAM-1–RAM-5; v0.10.0):
   - Suhoor, iftar and snack slots on Ramadan days, with Hijri dates (Umm al-Qura, movable by a day).
   - A whole-month view for planning Ramadan; gatherings use each entry's servings.
   - Offered by a card 7 days before Ramadan, never switched on by itself.

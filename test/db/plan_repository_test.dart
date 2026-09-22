@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wasfati/db/plan_repository.dart';
 import 'package:wasfati/db/recipe_repository.dart';
 import 'package:wasfati/models/plan.dart';
+import 'package:wasfati/models/ramadan.dart';
 import 'package:wasfati/providers/plan_state.dart';
 
 import '../helpers.dart';
@@ -10,6 +11,9 @@ import '../helpers.dart';
 final saturday = DateTime(2026, 9, 19);
 final sunday = DateTime(2026, 9, 20);
 final monday = DateTime(2026, 9, 21);
+
+/// A Ramadan positioned near it, not a real table entry (RAM-2).
+final testRamadan = const RamadanMonth(1448, 2026, 9, 22, 30);
 
 void main() {
   late PlanRepository plan;
@@ -217,6 +221,105 @@ void main() {
         expect(state.entries, isEmpty);
         await state.restore(ids);
         expect(state.entries.length, 2);
+      },
+    );
+  });
+
+  group('RAM-1: entriesBetween sorts a day by its display order', () {
+    test('with no Ramadan info, it is the plain (non-Ramadan) order', () async {
+      await add(testRamadan.start, MealSlot.snack, note: 'تمر');
+      await add(testRamadan.start, MealSlot.iftar, note: 'شوربة');
+      await add(testRamadan.start, MealSlot.suhoor, note: 'بيض');
+
+      final week = await plan.entriesBetween(
+        testRamadan.start,
+        testRamadan.start,
+      );
+      // The default: breakfast, lunch, dinner, snack, then suhoor, iftar.
+      expect(week.map((e) => e.note), ['تمر', 'بيض', 'شوربة']);
+    });
+
+    test('with ramadanMode and ramadanMonthFor, a Ramadan day sorts suhoor, '
+        'iftar, snack, ahead of the raw enum index', () async {
+      await add(testRamadan.start, MealSlot.snack, note: 'تمر');
+      await add(testRamadan.start, MealSlot.iftar, note: 'شوربة');
+      await add(testRamadan.start, MealSlot.suhoor, note: 'بيض');
+      await add(testRamadan.start, MealSlot.lunch, note: 'غداء'); // stays
+
+      final week = await plan.entriesBetween(
+        testRamadan.start,
+        testRamadan.start,
+        ramadanMode: true,
+        ramadanMonthFor: (d) => testRamadan.contains(d) ? testRamadan : null,
+      );
+      expect(week.map((e) => e.note), ['بيض', 'شوربة', 'تمر', 'غداء']);
+    });
+
+    test(
+      'a day outside the Ramadan month is unaffected by ramadanMode',
+      () async {
+        await add(sunday, MealSlot.snack, note: 'تمر');
+        await add(sunday, MealSlot.breakfast, note: 'بيض');
+
+        final week = await plan.entriesBetween(
+          sunday,
+          sunday,
+          ramadanMode: true,
+          ramadanMonthFor: (d) => testRamadan.contains(d) ? testRamadan : null,
+        );
+        expect(week.map((e) => e.note), [
+          'بيض',
+          'تمر',
+        ]); // breakfast, then snack
+      },
+    );
+
+    test(
+      'with the mode off, ramadanMonthFor is never called (should-fix, '
+      'performance): every reload used to look Ramadan up regardless',
+      () async {
+        await add(saturday, MealSlot.breakfast, note: 'بيض');
+        await add(saturday, MealSlot.breakfast, note: 'خبز');
+        await add(sunday, MealSlot.lunch, note: 'مندي');
+
+        var calls = 0;
+        await plan.entriesBetween(
+          saturday,
+          monday,
+          // ramadanMode defaults to false.
+          ramadanMonthFor: (d) {
+            calls++;
+            return null;
+          },
+        );
+        expect(calls, 0);
+      },
+    );
+
+    test(
+      'with the mode on, ramadanMonthFor is called at most once per day '
+      '(should-fix, performance), not once per same-day comparison',
+      () async {
+        for (var i = 0; i < 6; i++) {
+          await add(saturday, MealSlot.breakfast, note: 'وجبة $i');
+        }
+        for (var i = 0; i < 6; i++) {
+          await add(sunday, MealSlot.lunch, note: 'وجبة $i');
+        }
+
+        var calls = 0;
+        await plan.entriesBetween(
+          saturday,
+          monday,
+          ramadanMode: true,
+          ramadanMonthFor: (d) {
+            calls++;
+            return null;
+          },
+        );
+        // One call per distinct day among the entries (saturday, sunday),
+        // not one per pairwise comparison a sort makes.
+        expect(calls, 2);
       },
     );
   });

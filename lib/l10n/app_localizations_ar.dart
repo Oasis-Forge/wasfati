@@ -500,6 +500,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get planThisWeek => 'هذا الأسبوع';
 
   @override
+  String get planViewWeek => 'الأسبوع';
+
+  @override
+  String get planViewRamadan => 'رمضان';
+
+  @override
   String get planPreviousWeek => 'الأسبوع السابق';
 
   @override
@@ -519,6 +525,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get mealSnack => 'وجبة خفيفة';
+
+  @override
+  String get mealSuhoor => 'السحور';
+
+  @override
+  String get mealIftar => 'الإفطار';
 
   @override
   String get planAdd => 'إضافة';
@@ -739,4 +751,52 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String ramadanCardSoon(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'رمضان بعد $shown يوم. نحوّل الخطة إلى سحور وإفطار؟',
+      many: 'رمضان بعد $shown يومًا. نحوّل الخطة إلى سحور وإفطار؟',
+      few: 'رمضان بعد $shown أيام. نحوّل الخطة إلى سحور وإفطار؟',
+      two: 'رمضان بعد يومين. نحوّل الخطة إلى سحور وإفطار؟',
+      one: 'رمضان بعد يوم واحد. نحوّل الخطة إلى سحور وإفطار؟',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get ramadanCardNow => 'رمضان كريم. نحوّل الخطة إلى سحور وإفطار؟';
+
+  @override
+  String get ramadanCardEnable => 'تفعيل';
+
+  @override
+  String get ramadanCardNotNow => 'ليس الآن';
+
+  @override
+  String ramadanDayLabel(String day) {
+    return '$day رمضان';
+  }
+
+  @override
+  String get ramadanEidLabel => 'عيد الفطر';
+
+  @override
+  String get settingsRamadanSection => 'رمضان';
+
+  @override
+  String get ramadanModeLabel => 'وضع رمضان';
+
+  @override
+  String ramadanStartLabel(String date) {
+    return 'بداية رمضان: $date';
+  }
+
+  @override
+  String get ramadanShiftEarlier => 'يوم أبكر';
+
+  @override
+  String get ramadanShiftLater => 'يوم لاحق';
 }
