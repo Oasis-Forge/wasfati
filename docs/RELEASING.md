@@ -110,3 +110,22 @@ Run `/install-github-app` from a `claude` terminal, or install the Claude GitHub
 ## App icon and splash screen
 
 Draw them from one committed source, generate the platform files with the stack's tools, and commit the results. The commands are in `docs/STACK_NOTES.md`.
+
+## Brand assets
+
+LOOK-9: the launcher icon, the splash screen and the store icon are one design, from one committed source image, and none of them change with the look (LOOK-1) or the light/dark setting. The mark is a khatam star above the app's Arabic name «وصفاتي» (LANG-2).
+
+- **Source:** `assets/brand/icon-1024.png` — a committed image, generated with an image model and kept verbatim (not drawn, not edited by hand): the saffron ground, an eight-point khatam star outline and «وصفاتي» in cream, 1024×1024.
+- **Derive the other layers** from it after any change to the source (reads `icon-1024.png`, writes `assets/brand/icon-foreground-1024.png` and `splash-1024.png` — the mark alone, ground keyed out to transparent, scaled to ~60%/~50% of the canvas — and `icon-128.png`, a small-size proof copy to judge the icon by eye at launcher size; nothing here is committed by the command itself, the PNGs are just left in the working tree):
+  ```
+  flutter test tool/brand/derive_brand_assets.dart
+  ```
+  `tool/brand/derive_brand_assets.dart` samples the ground colour from `icon-1024.png`'s own corners (never hard-coded, so it still works if the source image changes) and prints it — that value also goes into `pubspec.yaml`'s `flutter_launcher_icons`/`flutter_native_splash` config below, since those are static YAML and can't sample it themselves. Currently `#B04E26`.
+- **Regenerate the platform files** from those PNGs (configured under `flutter_launcher_icons:` and `flutter_native_splash:` in `pubspec.yaml`, background/colour set to the sampled hex above):
+  ```
+  dart run flutter_launcher_icons
+  dart run flutter_native_splash:create
+  ```
+- Commit the regenerated PNGs under `assets/brand/` and every platform file the two generators touch (Android `mipmap-*`, `drawable*`, `values*`; iOS `Assets.xcassets`, `Info.plist`, `LaunchScreen.storyboard`). `assets/brand/` is a build-time source only — it is never added to the app's runtime `assets:` list, so the app doesn't grow by the PNGs' size.
+- **`assets/brand/logo-wasfati.png`** is a separate, committed-as-is brand image: the Latin "Wasfati" wordmark and khatam star, also made with an image generator. It's the English-language brand image for the store listing — the icon itself never uses it, since the icon is the Arabic mark.
+- The Arabic Android launcher label lives in `android/app/src/main/res/values-ar/strings.xml` (`app_name` = وصفاتي); the English default is in `values/strings.xml`. The iOS Arabic display name needs Xcode and is Phase 6 work.

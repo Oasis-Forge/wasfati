@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- LANG-2, LOOK-9: the launcher label. Arabic override in values-ar/strings.xml. -->
+<resources>
+    <string name="app_name">Wasfati</string>
+</resources>

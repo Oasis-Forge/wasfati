@@ -66,6 +66,8 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   sqflite_common_ffi: ^2.4.3
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.8
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -122,3 +124,36 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# LOOK-9: launcher icon. The source is a committed image,
+# assets/brand/icon-1024.png; tool/brand/derive_brand_assets.dart derives
+# the other layers from it. Never changes with the look. The background
+# hex below is sampled from icon-1024.png's own corners (see that
+# script's printed output), not the app's seedColor — re-sample if the
+# source image changes. Commands and details are in docs/RELEASING.md.
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/brand/icon-1024.png"
+  adaptive_icon_background: "#B04E26"
+  adaptive_icon_foreground: "assets/brand/icon-foreground-1024.png"
+  # icon-1024.png is a fully opaque, solid-ground design, but PNG export
+  # still carries an alpha channel; the App Store rejects that even at
+  # 100% opacity.
+  remove_alpha_ios: true
+
+# LOOK-9: splash screen, derived from the same source image as the
+# launcher icon. The colour and image are the same in light and dark,
+# since the splash doesn't change with the look or the brightness.
+flutter_native_splash:
+  color: "#B04E26"
+  image: assets/brand/splash-1024.png
+  color_dark: "#B04E26"
+  image_dark: assets/brand/splash-1024.png
+  android_12:
+    color: "#B04E26"
+    color_dark: "#B04E26"
+    image: assets/brand/splash-1024.png
+    image_dark: assets/brand/splash-1024.png
+    icon_background_color: "#B04E26"
+    icon_background_color_dark: "#B04E26"
