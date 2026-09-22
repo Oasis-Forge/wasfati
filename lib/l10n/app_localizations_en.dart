@@ -93,6 +93,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get delete => 'Delete';
 
   @override
+  String get shareTooltip => 'Share';
+
+  @override
+  String get shareAsText => 'As text';
+
+  @override
+  String get shareAsImages => 'As images';
+
+  @override
+  String get shareHeadingIngredients => 'Ingredients';
+
+  @override
+  String get shareHeadingSteps => 'Method';
+
+  @override
+  String shareSource(String url) {
+    return 'Source: $url';
+  }
+
+  @override
+  String get shareFooterLine => 'From the Wasfati app';
+
+  @override
+  String get shareRendering => 'Creating images…';
+
+  @override
+  String get shareTooLong =>
+      'This recipe is too long to share as images. Share it as text instead.';
+
+  @override
+  String get shareFailed => 'Couldn\'t create the images. Try again.';
+
+  @override
+  String shareUnscaledLine(String line, String mark) {
+    return '$line ($mark)';
+  }
+
+  @override
   String get save => 'Save';
 
   @override

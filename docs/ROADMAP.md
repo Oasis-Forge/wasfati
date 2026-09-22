@@ -130,7 +130,7 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
   - Merges the same item across recipes with unit maths.
   - 12 aisles that know Arabic ingredient names (at least 95% of the test fixtures placed).
   - Share the list as text on WhatsApp.
-- [ ] **Share a recipe** (SHARE-1–SHARE-4): as text, or as image pages sized for WhatsApp.
+- [x] **Share a recipe** (SHARE-1–SHARE-4; v0.11.0): as text, or as image pages sized for WhatsApp.
 - [ ] **Backup, restore, export** (BAK-1–BAK-10): after the last schema step, so the format covers every table. A backup file with photos, merge or replace, a monthly reminder, Android's device backup without photos, and a text export.
 
 ## Phase 3: Store readiness (alongside 2c)

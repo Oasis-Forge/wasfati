@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
-import '../models/quantity/arabic_text.dart';
 import '../models/quantity/convert.dart';
 import '../models/quantity/format.dart';
 import '../models/quantity/rational.dart';
@@ -179,14 +178,7 @@ class _IngredientRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final line = shown.line;
-    final text = line.min == null
-        ? line.original
-        : formatLine(
-            line,
-            arabic: hasArabic(line.original),
-            digits: digitsFor(line.original, digits),
-            isolate: true,
-          );
+    final text = shownLineText(shown, digits);
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsetsDirectional.symmetric(vertical: 6),

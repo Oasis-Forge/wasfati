@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wasfati/app.dart';
@@ -5,6 +7,7 @@ import 'package:wasfati/models/quantity/format.dart';
 import 'package:wasfati/models/library.dart';
 import 'package:wasfati/models/ramadan.dart';
 import 'package:wasfati/models/recipe.dart';
+import 'package:wasfati/models/recipe_share.dart' show wasfatiPlayStoreUrl;
 import 'package:wasfati/models/settings.dart';
 import 'package:wasfati/db/grocery_repository.dart';
 import 'package:wasfati/db/plan_repository.dart';
@@ -18,6 +21,7 @@ import 'dart:async';
 
 import 'package:wasfati/services/cook_services.dart';
 import 'package:wasfati/services/importer.dart';
+import 'package:wasfati/services/recipe_pages.dart';
 import 'package:wasfati/services/sharer.dart';
 import 'package:wasfati/services/web_import.dart';
 
@@ -59,6 +63,10 @@ late GroceryState groceries;
 
 /// What the last [pumpApp] shared (GRO-6, SHARE-1–SHARE-4).
 late NoopSharer sharer;
+
+/// Where the last [pumpApp] would render share images (SHARE-3): a temp
+/// directory the test owns, deleted again when the test ends.
+late FakeShareStorage shareStorage;
 
 /// Shares sent into the app during a test (IMP-1).
 late StreamController<String> shares;
@@ -119,6 +127,11 @@ Future<(RecipesState, SettingsState)> pumpApp(
   timers = TimersState(alerts, autoTick: false);
   addTearDown(timers.dispose);
   sharer = NoopSharer();
+  final shareDir = Directory.systemTemp.createTempSync('wasfati_share_test');
+  addTearDown(() {
+    if (shareDir.existsSync()) shareDir.deleteSync(recursive: true);
+  });
+  shareStorage = FakeShareStorage(shareDir);
   tester.view.physicalSize = const Size(1080, 2400); // a phone (LANG-6)
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
@@ -134,6 +147,7 @@ Future<(RecipesState, SettingsState)> pumpApp(
         importer: importer,
         shareInbox: FakeShareInbox(shares.stream),
         sharer: sharer,
+        shareStorage: shareStorage,
       ),
     ),
   );
@@ -361,6 +375,117 @@ void main() {
     await settle(tester);
     expect(shown('555 غرامًا ارز بسمتي'), findsOneWidget);
     expect(recipes.lastError, isNull);
+  });
+
+  testWidgets('SHARE-1/2: مشاركة → كنص shares the page as text', (
+    tester,
+  ) async {
+    await pumpApp(tester, withRecipe: true);
+    await tester.tap(find.text('كبسة لحم'));
+    await settle(tester);
+
+    await tester.tap(find.byTooltip('مشاركة'));
+    await settle(tester);
+    await tester.tap(find.text('كنص'));
+    await settle(tester);
+
+    expect(sharer.texts, isNotEmpty);
+    expect(sharer.texts.last, startsWith('كبسة لحم'));
+    expect(sharer.texts.last, contains('المقادير'));
+    expect(sharer.texts.last, contains(wasfatiPlayStoreUrl));
+  });
+
+  testWidgets('SHARE-1/3: مشاركة → كصورة renders and shares pages', (
+    tester,
+  ) async {
+    await pumpApp(tester, withRecipe: true);
+    await tester.tap(find.text('كبسة لحم'));
+    await settle(tester);
+
+    await tester.tap(find.byTooltip('مشاركة'));
+    await settle(tester);
+    await tester.tap(find.text('كصورة'));
+    await settle(tester); // the render itself is real async (dart:ui)
+
+    expect(sharer.filePaths, isNotEmpty);
+    expect(sharer.filePaths.last, isNotEmpty);
+    for (final path in sharer.filePaths.last) {
+      expect(File(path).existsSync(), isTrue);
+    }
+  });
+
+  testWidgets(
+    'SHARE-1/3: system Back during rendering does not close the recipe '
+    'page or fire a second share (must-fix, adversarial review)',
+    (tester) async {
+      await pumpApp(tester, withRecipe: true);
+      await tester.tap(find.text('كبسة لحم'));
+      await settle(tester);
+
+      await tester.tap(find.byTooltip('مشاركة'));
+      await settle(tester);
+      await tester.tap(find.text('كصورة'));
+      await tester.pump(); // the progress dialog appears
+      expect(find.byType(AlertDialog), findsOneWidget);
+
+      // PopScope(canPop: false): Back must not dismiss the dialog while
+      // rendering is in flight — it used to, leaving the recipe page
+      // popped once the render's own unconditional pop later fired.
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.text('كبسة لحم'), findsOneWidget);
+
+      await settle(tester); // let the render finish for real
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('كبسة لحم'), findsOneWidget); // still on the page
+      expect(sharer.filePaths, hasLength(1)); // exactly one share, not two
+    },
+  );
+
+  testWidgets('SHARE-3: a too-long recipe offers to share as text instead '
+      '(should-fix, adversarial review)', (tester) async {
+    final (recipes, _) = await pumpApp(tester);
+    await tester.runAsync(() async {
+      final repo = recipes.repository;
+      final now = repo.now();
+      await recipes.save(
+        Recipe(
+          id: repo.newId(),
+          title: 'وصفة طويلة جدًا',
+          steps: [
+            Section(
+              id: repo.newId(),
+              items: [
+                for (var i = 0; i < 40; i++)
+                  RecipeStep(id: repo.newId(), text: 'خطوة ' * 200),
+              ],
+            ),
+          ],
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+    });
+    await settle(tester);
+    await tester.tap(find.text('وصفة طويلة جدًا'));
+    await settle(tester);
+
+    await tester.tap(find.byTooltip('مشاركة'));
+    await settle(tester);
+    await tester.tap(find.text('كصورة'));
+    await settle(tester); // rendering fails "too long" before any dialog
+
+    expect(
+      find.text('هذه الوصفة طويلة جدًا لتُشارك كصور. شاركها كنص بدلاً من ذلك.'),
+      findsOneWidget,
+    );
+    expect(sharer.filePaths, isEmpty);
+
+    await tester.tap(find.text('كنص')); // the SnackBarAction
+    await settle(tester);
+    expect(sharer.texts, isNotEmpty);
+    expect(sharer.texts.last, startsWith('وصفة طويلة جدًا'));
   });
 
   testWidgets('cook mode: steps, a timer from the text, mark as cooked', (

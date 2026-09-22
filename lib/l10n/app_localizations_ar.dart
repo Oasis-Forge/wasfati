@@ -101,6 +101,44 @@ class AppLocalizationsAr extends AppLocalizations {
   String get delete => 'حذف';
 
   @override
+  String get shareTooltip => 'مشاركة';
+
+  @override
+  String get shareAsText => 'كنص';
+
+  @override
+  String get shareAsImages => 'كصورة';
+
+  @override
+  String get shareHeadingIngredients => 'المقادير';
+
+  @override
+  String get shareHeadingSteps => 'الطريقة';
+
+  @override
+  String shareSource(String url) {
+    return 'المصدر: $url';
+  }
+
+  @override
+  String get shareFooterLine => 'من تطبيق وصفاتي';
+
+  @override
+  String get shareRendering => 'جارٍ إنشاء الصور…';
+
+  @override
+  String get shareTooLong =>
+      'هذه الوصفة طويلة جدًا لتُشارك كصور. شاركها كنص بدلاً من ذلك.';
+
+  @override
+  String get shareFailed => 'تعذّر إنشاء الصور. حاول مرة أخرى.';
+
+  @override
+  String shareUnscaledLine(String line, String mark) {
+    return '$line ($mark)';
+  }
+
+  @override
   String get save => 'حفظ';
 
   @override
