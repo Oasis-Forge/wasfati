@@ -4,6 +4,18 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-09-22
+
+### Added
+- Back up everything to one file you keep: recipes and their photos, cookbooks, tags, the meal plan, the grocery list and your settings. Save it to Google Drive or Files, or send it anywhere through the share sheet.
+- Restore by merging with what's on your phone, where the newer version of each item wins, deletions included, or by replacing it. Before any restore, Wasfati keeps an automatic copy of what was there; the last three stay in Settings.
+- A gentle reminder once you have 10 recipes and no backup in 30 days. Turn it off in Settings.
+- Export all your recipes, or one cookbook, as a text file.
+- Android's own phone backup now includes your recipes and settings; photos travel in Wasfati's backup file.
+
+### Changed
+- The privacy policy now describes backups and exports.
+
 ## [0.11.0] - 2026-09-22
 
 ### Added
