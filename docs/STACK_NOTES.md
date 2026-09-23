@@ -66,7 +66,7 @@ Add `windows,macos,linux` to `--platforms` if desktop is a target. Then:
 - `pdf` package: use static TTF fonts (variable fonts lose their weights), and set text direction per run on right-to-left pages. Test a PDF by reading its text back, not by byte count.
 - Writing `\u` escapes has put literal invisible characters in files. Use `String.fromCharCode` instead.
 - The format hook may use a different SDK than CI. Run the pinned SDK's `dart format lib test` before committing.
-- Icons and splash: draw them in a test (`tool/render_app_icons_test.dart`), then run `dart run flutter_launcher_icons` and `dart run flutter_native_splash:create`, and commit the generated files.
+- Icons and splash: the one committed source is `assets/brand/icon-1024.png` (a generated image, kept verbatim); `flutter test tool/brand/derive_brand_assets.dart` derives the other PNGs into `assets/brand/`, then `dart run flutter_launcher_icons` and `dart run flutter_native_splash:create` write the platform files — commit the PNGs and those generated files. Details in `docs/RELEASING.md`.
 
 ## Device drill (Android emulator, Git Bash)
 

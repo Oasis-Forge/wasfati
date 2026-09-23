@@ -386,6 +386,125 @@ void main() {
     });
   });
 
+  group('must-fix (BAK-3): a recipe edited on both phones merges as one '
+      'coherent unit, never a blend', () {
+    test(
+      'the newer side supplies its whole set of sections, ingredient '
+      "lines and steps; none of the older side's rows are left behind",
+      () async {
+        final local = await testBackupFixture(idPrefix: 'lo');
+        addTearDown(local.dispose);
+        final remote = await testBackupFixture(idPrefix: 're');
+        addTearDown(remote.dispose);
+
+        const recipeId = 'shared-recipe';
+        final day1 = DateTime.utc(2026, 1, 1);
+        final day2 = DateTime.utc(2026, 1, 2); // remote edited later, wins
+
+        local.clock.now = day1;
+        await local.recipes.save(
+          Recipe(
+            id: recipeId,
+            title: 'قبل التعديل',
+            ingredients: [
+              Section(
+                id: local.ids(),
+                items: [
+                  IngredientLine.parse(local.ids(), 'كوب أرز'),
+                  IngredientLine.parse(local.ids(), 'ملعقة ملح'),
+                ],
+              ),
+            ],
+            steps: [
+              Section(
+                id: local.ids(),
+                items: [RecipeStep(id: local.ids(), text: 'يُغسل الأرز.')],
+              ),
+            ],
+            createdAt: day1,
+            updatedAt: day1,
+          ),
+        );
+
+        remote.clock.now = day2;
+        await remote.recipes.save(
+          Recipe(
+            id: recipeId,
+            title: 'بعد التعديل',
+            ingredients: [
+              Section(
+                id: remote.ids(),
+                items: [
+                  IngredientLine.parse(remote.ids(), 'كوب سكر'),
+                  IngredientLine.parse(remote.ids(), 'بيضتان'),
+                  IngredientLine.parse(remote.ids(), 'كوب دقيق'),
+                ],
+              ),
+            ],
+            steps: [
+              Section(
+                id: remote.ids(),
+                items: [
+                  RecipeStep(id: remote.ids(), text: 'تُخفق البيضات.'),
+                  RecipeStep(id: remote.ids(), text: 'يُضاف السكر والدقيق.'),
+                ],
+              ),
+            ],
+            createdAt: day1,
+            updatedAt: day2,
+          ),
+        );
+
+        final bytes = await remote.backup.createBackup();
+        final result = await local.backup.restore(
+          bytes,
+          mode: RestoreMode.merge,
+        );
+        expect(result.perTable['recipes'], const TableMergeCount(updated: 1));
+
+        final restored = await local.recipes.get(recipeId);
+        expect(restored, isNotNull);
+        expect(restored!.title, 'بعد التعديل'); // the newer side's row
+
+        // Exactly the newer side's ingredient lines, in order, none of
+        // the older side's mixed in.
+        final lines = restored.ingredients
+            .expand((s) => s.items)
+            .map((l) => l.original)
+            .toList();
+        expect(lines, ['كوب سكر', 'بيضتان', 'كوب دقيق']);
+
+        // Exactly the newer side's steps, in order.
+        final steps = restored.steps
+            .expand((s) => s.items)
+            .map((s) => s.text)
+            .toList();
+        expect(steps, ['تُخفق البيضات.', 'يُضاف السكر والدقيق.']);
+
+        // None of the older (local) side's rows survive at all, live or
+        // otherwise — the losing side's content is dropped, not merged.
+        final allLines = await local.db.query(
+          'ingredient_lines',
+          where: 'recipe_id = ?',
+          whereArgs: [recipeId],
+        );
+        expect(
+          allLines.map((r) => r['original_text']),
+          everyElement(isNot(anyOf('كوب أرز', 'ملعقة ملح'))),
+        );
+        final allSteps = await local.db.query(
+          'steps',
+          where: 'recipe_id = ?',
+          whereArgs: [recipeId],
+        );
+        expect(
+          allSteps.map((r) => r['text']),
+          everyElement(isNot('يُغسل الأرز.')),
+        );
+      },
+    );
+  });
+
   group('should-fix, review: a merge trashes the untouched sample once real '
       'recipes arrive (RUN-6)', () {
     test('the new phone\'s untouched sample is trashed once a merge from '
@@ -734,6 +853,33 @@ void main() {
         throwsA(isA<BackupError>()),
       );
       expect(await f.db.query('recipes'), before);
+    });
+
+    test('must-fix, review: a photo entry named to escape the scratch folder '
+        '(zip slip) never writes outside it', () async {
+      final f = await testBackupFixture();
+      addTearDown(f.dispose);
+      final archive = Archive()
+        ..addFile(ArchiveFile.string('backup.json', jsonEncode(_minimalJson())))
+        // Two `..` segments climb out of `photos/` and then out of the
+        // scratch folder itself (backup.dart's `_extractPhotos`), landing
+        // in its parent — exactly the shape a crafted backup.json still
+        // gets past `_openBackup` with (a bare `"app": "wasfati"` is
+        // enough), and exactly what the fixed containment check must skip.
+        ..addFile(
+          ArchiveFile.bytes(
+            'photos/../../escaped.txt',
+            utf8.encode('should never land here'),
+          ),
+        );
+      final bytes = ZipEncoder().encodeBytes(archive);
+
+      await f.backup.restore(bytes, mode: RestoreMode.merge);
+
+      expect(
+        await File(p.join(f.backupsDir.path, 'escaped.txt')).exists(),
+        isFalse,
+      );
     });
   });
 

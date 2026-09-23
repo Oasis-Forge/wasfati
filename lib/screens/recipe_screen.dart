@@ -16,7 +16,11 @@ import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../services/recipe_pages.dart';
 import '../services/sharer.dart';
+import '../theme/decor.dart';
+import '../widgets/amount_line.dart';
 import '../widgets/content_direction.dart';
+import '../widgets/pressable_slab.dart';
+import '../widgets/rail_heading.dart';
 import '../models/quantity/rational.dart';
 import 'cook_mode_screen.dart';
 import 'ingredients_section.dart';
@@ -185,8 +189,13 @@ class _RecipeBody extends StatelessWidget {
         if (r.photoPath != null && File(r.photoPath!).existsSync())
           Padding(
             padding: const EdgeInsetsDirectional.only(bottom: 16),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+            child: ClipPath(
+              // LOOK-6: the hero photo's own shape (Ink rounds its two
+              // bottom corners; Saffron is full-bleed and square-cut).
+              clipper: ShapeBorderClipper(
+                shape: Decor.of(context).photoShape,
+                textDirection: Directionality.of(context),
+              ),
               child: AspectRatio(
                 aspectRatio: 4 / 3,
                 child: Image.file(
@@ -235,15 +244,19 @@ class _RecipeBody extends StatelessWidget {
         ],
         if (r.steps.isNotEmpty) ...[
           _Heading(l10n.steps),
-          // COOK-1: free, and no ads in cook mode.
-          FilledButton.icon(
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => CookModeScreen(recipe: r, factor: factor),
+          // COOK-1: free, and no ads in cook mode. LOOK-7: one of the
+          // three primary actions Saffron's press ledge wraps; a no-op in
+          // Ink (Decor.ledgeDepth 0).
+          PressableSlab(
+            child: FilledButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => CookModeScreen(recipe: r, factor: factor),
+                ),
               ),
+              icon: const Icon(Icons.soup_kitchen_outlined),
+              label: Text(l10n.startCooking),
             ),
-            icon: const Icon(Icons.soup_kitchen_outlined),
-            label: Text(l10n.startCooking),
           ),
           const SizedBox(height: 8),
           ..._stepRows(context, r.steps, s),
@@ -273,7 +286,7 @@ class _RecipeBody extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(radius: 14, child: Text(s.number(n))),
+                _StepBadge(s.number(n)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: ContentText(
@@ -291,6 +304,37 @@ class _RecipeBody extends StatelessWidget {
   }
 }
 
+/// should-fix, platform review: LOOK-6 names "photos, chips and step
+/// numbers" as Saffron's chamfer targets; this used to be a bare
+/// `CircleAvatar`, in both looks, agreeing with neither — a stadium the
+/// M3-pill-free Ink spec rules out, and no chamfer for Saffron. Reads
+/// [Decor.chipShape] (the same shape a themed [Chip] gets) so both looks'
+/// step number gets its own shape from data, never a widget-level branch
+/// on the look (LOOK-2).
+class _StepBadge extends StatelessWidget {
+  const _StepBadge(this.number);
+  final String number;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      width: 28,
+      height: 28,
+      alignment: Alignment.center,
+      decoration: ShapeDecoration(
+        color: cs.primaryContainer,
+        shape: Decor.of(context).chipShape,
+      ),
+      child: Text(
+        number,
+        style: Theme.of(context).textTheme.labelMedium
+            ?.copyWith(color: cs.onPrimaryContainer),
+      ),
+    );
+  }
+}
+
 class _Heading extends StatelessWidget {
   const _Heading(this.text);
   final String text;
@@ -298,7 +342,7 @@ class _Heading extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsetsDirectional.only(top: 24, bottom: 8),
-    child: Text(text, style: Theme.of(context).textTheme.titleLarge),
+    child: RailHeading(text),
   );
 }
 
@@ -371,7 +415,7 @@ Future<void> openAddToGroceries(
                 CheckboxListTile(
                   value: c.checked,
                   onChanged: (v) => setInner(() => c.checked = v ?? false),
-                  title: ContentText(
+                  title: AmountLine(
                     shownLineText(c.shown, settings.digits),
                     source: c.shown.line.original,
                   ),
@@ -451,6 +495,9 @@ Future<void> openShareRecipe(
   // the images align to the app's own reading edge whatever the recipe's
   // own language is.
   final uiDirection = Directionality.of(context);
+  // LOOK-1/SHARE-3: the chosen look's own light palette, threaded through
+  // rather than read inside the renderer.
+  final style = settings.settings.style;
 
   String servingsLabel(int n) => l10n.servings(n, settings.number(n));
   String prepTimeLabel(int m) =>
@@ -543,6 +590,7 @@ Future<void> openShareRecipe(
       view: r.unitView,
       digits: settings.digits,
       uiDirection: uiDirection,
+      style: style,
       ingredientsHeading: l10n.shareHeadingIngredients,
       stepsHeading: l10n.shareHeadingSteps,
       notScaledMark: l10n.notScaled,

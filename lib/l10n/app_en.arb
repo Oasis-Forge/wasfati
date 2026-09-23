@@ -286,6 +286,18 @@
   "@settingsTheme": {
     "description": "Theme setting."
   },
+  "settingsLook": "Look",
+  "@settingsLook": {
+    "description": "LOOK-1: the Settings row title for picking a look (Ink/Saffron), placed next to the theme (light/dark) row."
+  },
+  "lookInk": "Ink",
+  "@lookInk": {
+    "description": "LOOK-1: the Ink look's option label in the Look row."
+  },
+  "lookSaffron": "Saffron",
+  "@lookSaffron": {
+    "description": "LOOK-1: the Saffron look's option label in the Look row."
+  },
   "themeSystem": "System",
   "@themeSystem": {
     "description": "Theme follows the device."

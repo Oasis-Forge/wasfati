@@ -42,6 +42,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 - **BAK-1** A backup is a file with the app version and the schema version, saved or shared only when the user chooses to.
 - **BAK-2** Before a restore replaces or merges anything, the app saves an automatic backup of the current data.
 - **BAK-3** Merge matches records by ID (REC-2); the later `updated_at` wins, deletions included (DEL-1). The app then shows how many records were added, updated, and unchanged.
+  - A recipe's groups, ingredient lines and steps move as one unit, not row by row: whichever side's `recipes` row is strictly newer takes its whole set of them, and the other side's rows for that recipe are never merged in. A tie keeps this phone's.
 - **BAK-4** A backup from a newer schema is refused with a message to update the app. Older backups are migrated with the app's own schema steps.
 - **BAK-5** Exported files use ISO dates and plain decimals with a `.`, whatever the language. Spreadsheet text starting with `=`, `+`, `-`, or `@` gets a leading apostrophe.
 - **BAK-6** The backup file (round 2, 20 September 2026):
@@ -520,8 +521,34 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
   - Body text is at least 32 px, and a page breaks between lines, never inside one.
   - Each page's footer shows "وصفاتي" and the page count ("٢/٣").
   - At most 6 pages; a longer recipe offers text instead.
-  - Each line reads in its own direction, as on the recipe page (LANG-5), and pages always use the light theme.
+  - Each line reads in its own direction, as on the recipe page (LANG-5). Pages always use the light palette of the look the user picked (LOOK-1), whatever the light/dark setting says, so a share looks like the app the sender uses and stays readable on a white chat background.
 - **SHARE-4** Images are drawn on the device into the app's cache and deleted at the next start. No permission is needed (RUN-2), and a page carries no ad, QR code or tracking link (ADS-9).
+
+## 18. Look and feel
+
+**They do:**
+- One look, built for English: white cards, a single accent colour, left-to-right layout. Arabic recipe lines sit left-aligned inside it, with the number visually at the end of the phrase (weak spot 3).
+- No choice of look; dark mode was not verified.
+
+**Learn:**
+- A cooking app is read on a counter, at arm's length, often at night: legibility and contrast are features, not polish.
+- The look is part of being Arabic-first. A Western layout with Arabic poured into it reads as a translation.
+- Taste differs. One well-made look still feels wrong to part of the people who open it, and a choice costs little when the looks are data, not forks.
+
+- **LOOK-1** Two looks, picked in Settings under "الطراز / Look": **حبر / Ink**, the default, and **زعفران / Saffron** (Decision 14). The choice is independent of the light/dark setting ("المظهر"), so there are four combinations plus "حسب الجهاز". It applies at once, without a restart (LANG-1), and it's stored with the settings, so a backup carries it (BAK-6). A shared recipe image uses the chosen look's light palette (SHARE-3, Decision 16).
+- **LOOK-2** A look changes only colour, type, shape and drawn decoration. It never changes a string, a tooltip, the order or position of a control, or what a screen shows, so muscle memory, screenshots in help and the widget tests hold in both.
+- **LOOK-3** Contrast, in both looks and both brightnesses:
+  - body text at least 4.5:1 and large text at least 3:1 against every surface it can sit on;
+  - the boundary of a control or container at least 3:1 (a fill step alone never makes a card a card);
+  - disabled text at least 3:1, never Material's default 38% alpha;
+  - hint text at full `onSurfaceVariant`, never faded.
+  A pure-Dart test computes the WCAG 2.1 ratio of every text/surface pair each theme uses from its `ColorScheme` and fails below the bar.
+- **LOOK-4** Amounts are the loudest text in an ingredient line (the app's claim is that they're right). **Ink** sets the amount in the primary colour at weight 600; **Saffron** in the body colour at weight 600. The amount and the unit word that agrees with it stay one phrase (QTY-6): the line is split at the isolate characters `formatLine` already emits, never re-parsed. Cook mode's ingredient sheet and the grocery list do the same.
+- **LOOK-5** Type: one family, IBM Plex Sans Arabic (400–700), letter-spacing 0 on every token, even leading. Line height 1.75 on any text that can wrap to a second line and 1.5 on single-line chrome — from the font's own metrics, 1.729 em clears any Arabic glyph pair, tashkeel included. The full scale is in `docs/research/design-styles.md`.
+- **LOOK-6** Decoration is drawn, never a bitmap, and mirrors with the language: Ink's heading rail (a 3 × 20 dp bar at the reading edge of every section heading), Saffron's 45° cut corner on photos, chips and step numbers, and the empty-state ornament are `ShapeBorder`s and `CustomPainter`s placed with `EdgeInsetsDirectional` / `BorderDirectional`. No new package, font or image.
+- **LOOK-7** Depth: Ink has no shadow or elevation anywhere. Saffron has exactly one: a 2 dp press ledge under its three primary actions ("أضف وصفة", "ابدأ الطبخ" and cook mode's "التالي"), which collapses while pressed. Neither look tints surfaces by elevation.
+- **LOOK-8** Every main screen renders in both looks, both brightnesses and both languages at 1.3× text on a 360 dp phone without overflow (LANG-6). Cook mode keeps COOK-2's sizes in both. The banner slot (ADS-9) sits in the same place in both, and an empty slot shows nothing in either.
+- **LOOK-9** The launcher icon, the splash screen and the store icon are one design, from one committed source image, and they don't change with the look: the store shows one app. The app's name on the device is "وصفاتي" in Arabic and "Wasfati" in English (LANG-2).
 
 ## Decisions
 <!-- Numbered and dated answers to open questions, citing the rules they settle. -->

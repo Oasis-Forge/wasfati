@@ -13,6 +13,7 @@ import '../providers/plan_state.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../widgets/content_direction.dart';
+import '../widgets/empty_state.dart';
 import 'home_screen.dart';
 
 /// The meal plan: one week at a time, four meals a day (PLAN-1). Adding,
@@ -394,27 +395,13 @@ class _EmptyPlan extends StatelessWidget {
   final AppLocalizations l10n;
 
   @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(24, 16, 24, 8),
-      child: Column(
-        children: [
-          Text(
-            l10n.planEmptyTitle,
-            style: text.titleMedium,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            l10n.planEmptyBody,
-            style: text.bodySmall,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => EmptyState(
+    title: l10n.planEmptyTitle,
+    body: l10n.planEmptyBody,
+    // Sits inside the week's own scrolling Column, above the day cards,
+    // which still render below it — never the sole content of the screen.
+    scrollable: false,
+  );
 }
 
 class _DayCard extends StatelessWidget {
@@ -897,7 +884,6 @@ Future<String?> pickRecipe(BuildContext context) {
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.search),
                         hintText: l10n.searchHint,
-                        border: const OutlineInputBorder(),
                       ),
                       onChanged: (v) => setInner(() => text = v),
                     ),

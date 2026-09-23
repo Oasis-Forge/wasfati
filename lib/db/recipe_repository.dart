@@ -9,6 +9,7 @@ import '../models/quantity/convert.dart';
 import '../models/recipe.dart';
 import '../models/sample_recipe.dart';
 import '../services/ids.dart';
+import '../services/photo_store.dart';
 
 /// A recipe row for lists and search, without its sections.
 class RecipeSummary {
@@ -525,6 +526,78 @@ class RecipeRepository {
       }
     });
     return photos;
+  }
+
+  /// ORG-6, BAK-9: clears `photo_path` on every recipe (live or trashed)
+  /// whose photo file no longer exists, so the "بصورة" filter (ORG-6), the
+  /// thumbnail and the share all agree there's no photo — the case this
+  /// fixes is Android's device backup, which restores the database but
+  /// excludes `photos/` on purpose (BAK-9), so a row can point at a file
+  /// that was never brought back. Meant to run once at every app start
+  /// (main.dart, after the trash purge), so it's cheap when there's nothing
+  /// to do: one query for the paths, no work at all when none are set, and
+  /// it never throws — [PhotoStore.exists] answering false for a photos
+  /// folder that doesn't exist yet (a fresh install) just means every path
+  /// gets cleared, same as a genuinely missing file.
+  ///
+  /// Deliberately does NOT bump `updated_at`: this is device-local
+  /// housekeeping, not a change the user made, so it must never make this
+  /// device wrongly "win" a later backup merge (BAK-3) for a photo the user
+  /// never touched.
+  ///
+  /// Every id this sweep clears is also recorded under [_photosSweptKey]
+  /// (must-fix, review): a plain `photo_path = null` reads, to
+  /// `BackupService`, exactly like the user removing the photo — nothing
+  /// else says "this phone lost the file, not the recipe's photo". Left
+  /// alone, that let a later merge treat a recipe another phone still has
+  /// the photo for as one whose photo was intentionally deleted, and wipe
+  /// that phone's copy too. `BackupService.createBackup` reads this same
+  /// key and unions it into `photosMissingAtBackup`, so a row this sweep
+  /// cleared is reported exactly like one whose file merely went missing
+  /// at backup time — which is what it is. Once set, an id is never
+  /// removed from here: it only ever matters when this recipe's own
+  /// `photo_path` is null again in a future backup, and by then it's
+  /// harmless either way (a real photo re-added later exports with its own
+  /// real path, past the check that reads this list).
+  Future<void> forgetMissingPhotos(PhotoStore photoStore) async {
+    final rows = await _db.query(
+      'recipes',
+      columns: ['id', 'photo_path'],
+      where: 'photo_path IS NOT NULL',
+    );
+    final swept = <String>[];
+    for (final row in rows) {
+      final path = row['photo_path']! as String;
+      if (await photoStore.exists(path)) continue;
+      await _db.update(
+        'recipes',
+        {'photo_path': null},
+        where: 'id = ?',
+        whereArgs: [row['id']],
+      );
+      swept.add(row['id']! as String);
+    }
+    if (swept.isEmpty) return;
+    final existing = await _photosSweptIds();
+    await _db.insert('meta', {
+      'key': _photosSweptKey,
+      'value': jsonEncode((existing..addAll(swept)).toList()),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  /// `BackupService`'s own key name for this; kept here (not exported) so
+  /// both sides agree on it without either owning the other's table.
+  static const _photosSweptKey = 'photos_swept';
+
+  Future<Set<String>> _photosSweptIds() async {
+    final rows = await _db.query(
+      'meta',
+      where: 'key = ?',
+      whereArgs: [_photosSweptKey],
+    );
+    if (rows.isEmpty) return {};
+    final decoded = jsonDecode(rows.single['value']! as String);
+    return decoded is List ? decoded.cast<String>().toSet() : {};
   }
 
   /// The anonymous install ID the import server needs (SRV-4). Created once,

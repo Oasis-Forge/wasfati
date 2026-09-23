@@ -6,7 +6,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:archive/archive.dart';
+import 'package:archive/archive_io.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
@@ -223,6 +223,17 @@ bool shouldRemindBackup(int recipeCount, DateTime now, AppSettings settings) {
   return now.difference(last) >= reminderGap;
 }
 
+/// A table's counts while [BackupService._mergeRecipeContent] (BAK-3) builds
+/// them up row by row; [TableMergeCount] itself stays immutable everywhere
+/// else.
+class _Tally {
+  var added = 0;
+  var updated = 0;
+  var unchanged = 0;
+  TableMergeCount get result =>
+      TableMergeCount(added: added, updated: updated, unchanged: unchanged);
+}
+
 /// Creates, inspects and restores Wasfati backups (BAK-1–BAK-10), over the
 /// database, the app's private photos folder and a clock. Every restore
 /// runs in one transaction: a failure changes nothing.
@@ -275,8 +286,17 @@ class BackupService {
   /// database itself keeps them as milliseconds, so [_tablesOf] converts
   /// back to milliseconds the moment a file is read, and nothing past that
   /// boundary needs to know the file format differs from the database.
+  ///
+  /// BAK-6: written straight to a scratch file with [ZipFileEncoder]
+  /// instead of an in-memory `Archive` (must-fix, review — a large photo
+  /// library used to sit in memory twice over: every photo's raw bytes
+  /// held on the `Archive`, then the whole compressed zip built again in a
+  /// second buffer). [ZipFileEncoder.addFile] streams each photo straight
+  /// off disk instead. The scratch file is only read back, once, at the
+  /// very end, because [createBackup] itself still hands back the finished
+  /// bytes — its own callers (the save dialog, [_writeAutoBackup]) are
+  /// unchanged.
   Future<List<int>> createBackup() async {
-    final archive = Archive();
     // Must-fix, adversary review (probe P15): every table is read inside
     // one transaction, so a write landing between two reads can never
     // produce a backup whose child rows point at a parent it doesn't have.
@@ -288,42 +308,79 @@ class BackupService {
       return tables;
     });
 
-    final exported = await _exportRecipeRows(snapshot['recipes']!, archive);
-    final tables = <String, List<Map<String, Object?>>>{
-      for (final entry in snapshot.entries)
-        entry.key: [
-          for (final row
-              in entry.key == 'recipes' ? exported.rows : entry.value)
-            _rowToIso(row),
-        ],
-    };
+    await _backupsDir.create(recursive: true);
+    // A fixed name (`createBackup` never runs twice at once on one
+    // BackupService): [ZipFileEncoder.create] always (re)writes it from
+    // scratch, so a previous run's leftovers, if cleanup itself failed to
+    // run once, are simply overwritten rather than needing their own
+    // cleanup pass first. Doesn't spend an id (IdSource), unlike the
+    // photos this backup carries, so it never nudges a caller's own id
+    // sequence (tests build two phones' data from the same counter to get
+    // matching ids on purpose, REC-2).
+    final scratchFile = File(p.join(_backupsDir.path, 'export.zip.part'));
+    try {
+      final encoder = ZipFileEncoder()..create(scratchFile.path);
+      final sweptIds = await _sweptPhotoIds();
+      final exported = await _exportRecipeRows(
+        snapshot['recipes']!,
+        encoder,
+        sweptIds,
+      );
+      final tables = <String, List<Map<String, Object?>>>{
+        for (final entry in snapshot.entries)
+          entry.key: [
+            for (final row
+                in entry.key == 'recipes' ? exported.rows : entry.value)
+              _rowToIso(row),
+          ],
+      };
 
-    final json = {
-      'app': appId,
-      'appVersion': _appVersion,
-      'schemaVersion': DBHelper.version,
-      'createdAt': _clock().toIso8601String(), // BAK-5
-      'tables': tables,
-      'meta': await _metaForBackup(),
-      // REC-8, should-fix (adversary review P6): recipes whose photo file
-      // was already missing when this backup was made, so a merge can tell
-      // that apart from "the user removed the photo" and leave a winning
-      // local photo alone instead of nulling it out.
-      'photosMissingAtBackup': exported.missingPhotoIds,
-    };
-    archive.addFile(ArchiveFile.string('backup.json', jsonEncode(json)));
-    return ZipEncoder().encodeBytes(archive);
+      final json = {
+        'app': appId,
+        'appVersion': _appVersion,
+        'schemaVersion': DBHelper.version,
+        'createdAt': _clock().toIso8601String(), // BAK-5
+        'tables': tables,
+        'meta': await _metaForBackup(),
+        // REC-8, should-fix (adversary review P6): recipes whose photo file
+        // was already missing when this backup was made, so a merge can
+        // tell that apart from "the user removed the photo" and leave a
+        // winning local photo alone instead of nulling it out.
+        'photosMissingAtBackup': exported.missingPhotoIds,
+      };
+      encoder.addArchiveFile(
+        ArchiveFile.string('backup.json', jsonEncode(json)),
+      );
+      await encoder.close();
+      return await scratchFile.readAsBytes();
+    } finally {
+      try {
+        if (await scratchFile.exists()) await scratchFile.delete();
+      } catch (_) {
+        // Best effort: a lingering scratch file never reaches the zip's own
+        // contract (BAK-6's file names), so it's cleanup, not correctness.
+      }
+    }
   }
 
   /// Rewrites each live row's `photo_path` to `photos/<file name>` inside
-  /// the zip (REC-8) and adds the file's bytes to [archive]. A recipe whose
-  /// photo file is missing on disk is backed up with no photo, rather than
-  /// failing the whole backup, and its id is returned in `missingPhotoIds`
-  /// so a merge doesn't read the missing photo as an intentional removal.
-  /// A trashed row (`deleted_at` set) is reduced to a tombstone: no title,
-  /// no photo, nothing else a merge doesn't need to propagate the deletion.
+  /// the zip (REC-8) and streams the file straight into [encoder] from
+  /// disk, never through Dart memory. A recipe whose photo file is missing
+  /// on disk is backed up with no photo, rather than failing the whole
+  /// backup, and its id is returned in `missingPhotoIds` so a merge doesn't
+  /// read the missing photo as an intentional removal — [sweptIds] adds to
+  /// that same list the recipes whose `photo_path` the ORG-6/BAK-9 sweep
+  /// (`RecipeRepository.forgetMissingPhotos`) already nulled out before
+  /// this backup ever ran, so those don't come out looking like the user
+  /// removed the photo either (must-fix, review). A trashed row
+  /// (`deleted_at` set) is reduced to a tombstone: no title, no photo,
+  /// nothing else a merge doesn't need to propagate the deletion.
   Future<({List<Map<String, Object?>> rows, List<String> missingPhotoIds})>
-  _exportRecipeRows(List<Map<String, Object?>> rows, Archive archive) async {
+  _exportRecipeRows(
+    List<Map<String, Object?>> rows,
+    ZipFileEncoder encoder,
+    Set<String> sweptIds,
+  ) async {
     final usedNames = <String>{};
     final out = <Map<String, Object?>>[];
     final missing = <String>[];
@@ -343,6 +400,7 @@ class BackupService {
       final path = row['photo_path'] as String?;
       if (path == null) {
         out.add(row);
+        if (sweptIds.contains(row['id'])) missing.add(row['id']! as String);
         continue;
       }
       final file = File(path);
@@ -352,12 +410,30 @@ class BackupService {
         continue;
       }
       final name = _uniqueZipName(p.basename(path), usedNames);
-      archive.addFile(
-        ArchiveFile.bytes('photos/$name', await file.readAsBytes()),
-      );
+      await encoder.addFile(file, 'photos/$name');
       out.add({...row, 'photo_path': 'photos/$name'});
     }
     return (rows: out, missingPhotoIds: missing);
+  }
+
+  /// The recipe ids the ORG-6/BAK-9 sweep (`RecipeRepository.
+  /// forgetMissingPhotos`) has ever cleared a photo for on this phone — the
+  /// other half of the must-fix above; kept as a plain meta row, the same
+  /// way [_metaForBackup] reads `settings` and `install_id`, so this stays
+  /// a device-local fact a merge's own `meta` handling never touches.
+  Future<Set<String>> _sweptPhotoIds() async {
+    final rows = await _db.query(
+      'meta',
+      where: 'key = ?',
+      whereArgs: ['photos_swept'],
+    );
+    if (rows.isEmpty) return {};
+    try {
+      final decoded = jsonDecode(rows.single['value']! as String);
+      return decoded is List ? decoded.cast<String>().toSet() : {};
+    } catch (_) {
+      return {};
+    }
   }
 
   String _uniqueZipName(String base, Set<String> used) {
@@ -444,6 +520,20 @@ class BackupService {
   /// into a temporary database opened at the backup's own schema version,
   /// which is then reopened at the current version so the app's own schema
   /// steps run on it, exactly as a real upgrade would (BAK-4).
+  ///
+  /// BAK-6's "built and read whole in memory" is only half fixed here
+  /// (should-fix, review, left as is for now): [bytes] itself is still one
+  /// whole file in memory (this method's own signature, and [_extractPhotos]
+  /// writing a second full copy of it to `source.zip` before decoding),
+  /// and [createBackup]'s own scratch file is still read back whole for
+  /// [_writeAutoBackup] just above. Peak device storage during a restore is
+  /// the automatic backup plus `source.zip` plus the extracted photos plus
+  /// their final copies — roughly triple a naive extract, for a very large
+  /// photo library. What's actually fixed: photo bytes no longer stay
+  /// cached on an in-memory `Archive` for the rest of the restore, on
+  /// either side. Finishing this needs [createBackup] and this method to
+  /// pass each other a file path instead of bytes, which is a wider change
+  /// than this round made.
   Future<RestoreResult> restore(
     List<int> bytes, {
     required RestoreMode mode,
@@ -470,46 +560,60 @@ class BackupService {
 
     final autoPath = await _writeAutoBackup();
 
-    final copiedPhotos = <String>[];
-    final obsoletePhotos = <String>[];
+    // BAK-6: every `photos/` entry [bytes] holds, extracted to a scratch
+    // folder one at a time instead of decoded whole into memory (must-fix,
+    // review — a large photo library's decompressed bytes used to stay
+    // cached on the zip's own entries for the rest of the restore, since
+    // nothing ever freed them). _withMaterializedPhoto reads a recipe's
+    // photo from here instead of from the zip directly; the whole folder
+    // is removed below, whether the restore below succeeds or not.
+    final extractedPhotos = await _extractPhotos(bytes);
     try {
-      final result = await _db.transaction(
-        (tx) => mode == RestoreMode.replace
-            ? _replaceInto(
-                tx,
-                tables,
-                meta,
-                opened.archive,
-                copiedPhotos,
-                obsoletePhotos,
-              )
-            : _mergeInto(
-                tx,
-                tables,
-                opened.archive,
-                copiedPhotos,
-                obsoletePhotos,
-                missingPhotoIds,
-              ),
-      );
-      await _pruneAutoBackups();
-      // should-fix, adversary review (probe P8): the photo files a replace
-      // or a losing merge row left behind. Only deleted on success — on
-      // failure the transaction rolled back, so these paths are still what
-      // the (unchanged) database points at.
-      for (final path in obsoletePhotos) {
-        final f = File(path);
+      final copiedPhotos = <String>[];
+      final obsoletePhotos = <String>[];
+      try {
+        final result = await _db.transaction(
+          (tx) => mode == RestoreMode.replace
+              ? _replaceInto(
+                  tx,
+                  tables,
+                  meta,
+                  extractedPhotos,
+                  copiedPhotos,
+                  obsoletePhotos,
+                )
+              : _mergeInto(
+                  tx,
+                  tables,
+                  extractedPhotos,
+                  copiedPhotos,
+                  obsoletePhotos,
+                  missingPhotoIds,
+                ),
+        );
+        await _pruneAutoBackups();
+        // should-fix, adversary review (probe P8): the photo files a
+        // replace or a losing merge row left behind. Only deleted on
+        // success — on failure the transaction rolled back, so these paths
+        // are still what the (unchanged) database points at.
+        for (final path in obsoletePhotos) {
+          final f = File(path);
+          if (await f.exists()) await f.delete();
+        }
+        return result;
+      } catch (_) {
+        for (final path in copiedPhotos) {
+          final f = File(path);
+          if (await f.exists()) await f.delete();
+        }
+        final f = File(autoPath);
         if (await f.exists()) await f.delete();
+        rethrow;
       }
-      return result;
-    } catch (_) {
-      for (final path in copiedPhotos) {
-        final f = File(path);
-        if (await f.exists()) await f.delete();
+    } finally {
+      if (await extractedPhotos.exists()) {
+        await extractedPhotos.delete(recursive: true);
       }
-      final f = File(autoPath);
-      if (await f.exists()) await f.delete();
-      rethrow;
     }
   }
 
@@ -523,7 +627,7 @@ class BackupService {
     Transaction tx,
     Map<String, List<Map<String, Object?>>> tables,
     Map<String, Object?> meta,
-    Archive archive,
+    Directory extractedPhotos,
     List<String> copiedPhotos,
     List<String> obsoletePhotos,
   ) async {
@@ -544,7 +648,7 @@ class BackupService {
       var updated = 0;
       for (final raw in rows) {
         final row = table == 'recipes'
-            ? await _withMaterializedPhoto(raw, archive, copiedPhotos)
+            ? await _withMaterializedPhoto(raw, extractedPhotos, copiedPhotos)
             : raw;
         await tx.insert(table, row);
         // DEL-1: a tombstone that arrives with nothing local to replace it
@@ -578,6 +682,16 @@ class BackupService {
   /// the later `updated_at` wins, deletions included (DEL-1). Merge never
   /// touches `meta`, so this phone's settings and install ID stay.
   ///
+  /// `sections`, `ingredient_lines` and `steps` are the exception: a
+  /// recipe's content moves as one unit (must-fix, review — two phones
+  /// that each edited the same recipe's ingredients or steps used to have
+  /// those rows merged one by one by id, mixing both edits into a recipe
+  /// neither phone ever had). [recipeBackupWins] and [recipeLocalWins],
+  /// filled while `recipes` — first in [_tableOrder] — is processed below,
+  /// record which side's `recipes` row won for each id present on both
+  /// sides; [_mergeRecipeContentTable] then applies that same verdict to
+  /// every row of a recipe's content instead of comparing row by row.
+  ///
   /// `tags`, `grocery_items` and `aisle_choices` also match by their
   /// natural key (a normalized name) when the id is unknown here, because
   /// two installs give the same conceptual tag, item or aisle choice
@@ -590,7 +704,7 @@ class BackupService {
   Future<RestoreResult> _mergeInto(
     Transaction tx,
     Map<String, List<Map<String, Object?>>> tables,
-    Archive archive,
+    Directory extractedPhotos,
     List<String> copiedPhotos,
     List<String> obsoletePhotos,
     Set<String> missingPhotoIds,
@@ -598,8 +712,32 @@ class BackupService {
     final counts = <String, TableMergeCount>{};
     final tagIdRemap = <String, String>{};
     final itemIdRemap = <String, String>{};
+    // BAK-3: recipe ids present on both sides, sorted by which side's
+    // `recipes` row won; read by _mergeRecipeContent once `recipes` (first
+    // in _tableOrder) has filled them in.
+    final recipeBackupWins = <String>{};
+    final recipeLocalWins = <String>{};
 
     for (final table in _tableOrder) {
+      if (table == 'sections') {
+        // sections, ingredient_lines and steps merge together, as one
+        // recipe-shaped unit (BAK-3), rather than table by table: a
+        // parent-then-child insert and a child-then-parent delete only
+        // make sense across all three at once, or the foreign keys from
+        // ingredient_lines/steps to sections trip mid-swap.
+        counts.addAll(
+          await _mergeRecipeContent(
+            tx,
+            tables,
+            recipeBackupWins,
+            recipeLocalWins,
+          ),
+        );
+        continue;
+      }
+      if (table == 'ingredient_lines' || table == 'steps') {
+        continue; // handled above, together with 'sections'.
+      }
       var added = 0;
       var updated = 0;
       var unchanged = 0;
@@ -658,7 +796,11 @@ class BackupService {
 
           if (localId == null) {
             final row = table == 'recipes'
-                ? await _withMaterializedPhoto(raw, archive, copiedPhotos)
+                ? await _withMaterializedPhoto(
+                    raw,
+                    extractedPhotos,
+                    copiedPhotos,
+                  )
                 : raw;
             await tx.insert(table, row);
             if (table == 'tags') tagIdRemap[id] = id;
@@ -699,7 +841,12 @@ class BackupService {
 
         final localUpdated = existing.single['updated_at']! as int;
         final backupUpdated = raw['updated_at']! as int;
-        if (backupUpdated > localUpdated) {
+        final backupWins = backupUpdated > localUpdated;
+        // BAK-3: a tie keeps the local side, same as the `else` below.
+        if (table == 'recipes') {
+          (backupWins ? recipeBackupWins : recipeLocalWins).add(id);
+        }
+        if (backupWins) {
           Map<String, Object?> row;
           if (table == 'recipes') {
             final oldPhoto = existing.single['photo_path'] as String?;
@@ -714,7 +861,11 @@ class BackupService {
               // phone still actually has.
               row = {...raw, 'photo_path': oldPhoto};
             } else {
-              row = await _withMaterializedPhoto(raw, archive, copiedPhotos);
+              row = await _withMaterializedPhoto(
+                raw,
+                extractedPhotos,
+                copiedPhotos,
+              );
               final newPhoto = row['photo_path'] as String?;
               if (oldPhoto != null && oldPhoto != newPhoto) {
                 obsoletePhotos.add(oldPhoto);
@@ -748,6 +899,127 @@ class BackupService {
       await _trashUntouchedSample(tx);
     }
     return RestoreResult(counts, RestoreMode.merge);
+  }
+
+  /// The three record tables under a recipe — `sections`, `ingredient_lines`
+  /// and `steps` — parents before children, matching `_tableOrder`.
+  static const _recipeContentTables = ['sections', 'ingredient_lines', 'steps'];
+
+  /// BAK-3: merges `sections`, `ingredient_lines` and `steps` together, a
+  /// whole recipe at a time rather than row by row, so a recipe edited on
+  /// both phones never comes out as a blend of both edits. The three move
+  /// together (not one call per table) because a parent-then-child insert
+  /// and a child-then-parent delete only make sense across all of them at
+  /// once — deleting just `sections` first, for instance, would trip the
+  /// foreign key from a `steps` row this same swap hasn't deleted yet.
+  ///
+  /// - A recipe in [recipeBackupWins] (its own `recipes` row was strictly
+  ///   newer in the backup): every local row of these tables for that
+  ///   recipe is dropped and replaced with the backup's complete set for
+  ///   it, even when that set is empty — the newer side's content, whole,
+  ///   with nothing of the losing side left behind.
+  /// - A recipe in [recipeLocalWins] (older in the backup, or tied): the
+  ///   backup's rows for it are never written; one that happens to match a
+  ///   row already here just counts as unchanged, so a restore of an
+  ///   unchanged recipe still reports its content as unchanged rather than
+  ///   silently skipped.
+  /// - Any other recipe id is new to this phone (there was no `recipes`
+  ///   row to compare it against), so there's nothing local to blend with
+  ///   and every row for it is simply added.
+  Future<Map<String, TableMergeCount>> _mergeRecipeContent(
+    Transaction tx,
+    Map<String, List<Map<String, Object?>>> tables,
+    Set<String> recipeBackupWins,
+    Set<String> recipeLocalWins,
+  ) async {
+    final tally = {for (final t in _recipeContentTables) t: _Tally()};
+    final byTableRecipe = <String, Map<String, List<Map<String, Object?>>>>{};
+    for (final table in _recipeContentTables) {
+      final byRecipe = <String, List<Map<String, Object?>>>{};
+      for (final row in tables[table] ?? const []) {
+        byRecipe.putIfAbsent(row['recipe_id']! as String, () => []).add(row);
+      }
+      byTableRecipe[table] = byRecipe;
+    }
+
+    for (final recipeId in recipeBackupWins) {
+      // Snapshotted before anything is deleted, purely for the
+      // added/updated/unchanged counts below.
+      final localByTable = <String, Map<String, Map<String, Object?>>>{
+        for (final table in _recipeContentTables)
+          table: {
+            for (final r in await tx.query(
+              table,
+              where: 'recipe_id = ?',
+              whereArgs: [recipeId],
+            ))
+              r['id']! as String: r,
+          },
+      };
+      // Children before parents, exactly like a replace's _deleteOrder.
+      for (final table in _recipeContentTables.reversed) {
+        await tx.delete(table, where: 'recipe_id = ?', whereArgs: [recipeId]);
+      }
+      // Parents before children, exactly like _tableOrder.
+      for (final table in _recipeContentTables) {
+        final backupRows = byTableRecipe[table]![recipeId] ?? const [];
+        final localRows = localByTable[table]!;
+        final t = tally[table]!;
+        for (final raw in backupRows) {
+          await tx.insert(table, raw);
+          final local = localRows[raw['id']];
+          if (local == null) {
+            t.added++;
+          } else if ((raw['updated_at']! as int) >
+              (local['updated_at']! as int)) {
+            t.updated++;
+          } else {
+            t.unchanged++;
+          }
+        }
+      }
+    }
+
+    for (final recipeId in recipeLocalWins) {
+      for (final table in _recipeContentTables) {
+        final backupRows = byTableRecipe[table]![recipeId];
+        if (backupRows == null) continue;
+        final localIds = {
+          for (final r in await tx.query(
+            table,
+            columns: ['id'],
+            where: 'recipe_id = ?',
+            whereArgs: [recipeId],
+          ))
+            r['id'] as String,
+        };
+        final t = tally[table]!;
+        for (final raw in backupRows) {
+          // Anything else — an id only the backup has, or one it changed —
+          // is dropped: the recipe's own row lost, so its content doesn't
+          // move here either.
+          if (localIds.contains(raw['id'])) t.unchanged++;
+        }
+      }
+    }
+
+    for (final table in _recipeContentTables) {
+      final t = tally[table]!;
+      for (final entry in byTableRecipe[table]!.entries) {
+        if (recipeBackupWins.contains(entry.key) ||
+            recipeLocalWins.contains(entry.key)) {
+          continue;
+        }
+        for (final raw in entry.value) {
+          await tx.insert(table, raw);
+          t.added++;
+        }
+      }
+    }
+
+    return {
+      for (final table in _recipeContentTables) table: tally[table]!.result,
+    };
   }
 
   /// Moves this phone's still-untouched sample recipe (RUN-6) to the
@@ -814,22 +1086,28 @@ class BackupService {
     return rows.isEmpty ? null : rows.single['id']! as String;
   }
 
-  /// Copies [row]'s photo (if any) into the photos folder under a fresh
-  /// name and returns the row with `photo_path` pointing at it. A photo the
-  /// zip doesn't have leaves `photo_path` null rather than dangling.
+  /// Copies [row]'s photo (if any) from [extractedPhotos] (BAK-6,
+  /// [_extractPhotos]'s scratch folder, already extracted to disk) into
+  /// the photos folder under a fresh name, and returns the row with
+  /// `photo_path` pointing at it. A photo the zip doesn't have leaves
+  /// `photo_path` null rather than dangling.
   Future<Map<String, Object?>> _withMaterializedPhoto(
     Map<String, Object?> row,
-    Archive archive,
+    Directory extractedPhotos,
     List<String> copiedPhotos,
   ) async {
     final inZip = row['photo_path'] as String?;
     if (inZip == null) return row;
-    final entry = archive.files.where((f) => f.name == inZip).firstOrNull;
-    if (entry == null) return {...row, 'photo_path': null};
+    final source = File(p.join(extractedPhotos.path, inZip));
+    if (!await source.exists()) return {...row, 'photo_path': null};
     await _photosDir.create(recursive: true);
     final name = '${_ids()}${p.extension(inZip)}';
     final file = File(p.join(_photosDir.path, name));
-    await file.writeAsBytes(entry.content);
+    // A plain file copy, never through Dart memory (BAK-6): unlike the
+    // in-memory Archive this replaced, the source here is already a real
+    // file on disk (_extractPhotos wrote it there streaming, one entry at
+    // a time), so there's nothing left to read into a buffer first.
+    await source.copy(file.path);
     copiedPhotos.add(file.path);
     return {...row, 'photo_path': file.path};
   }
@@ -978,7 +1256,12 @@ class BackupService {
     };
   }
 
-  ({Map<String, Object?> json, Archive archive, int schemaVersion}) _openBackup(
+  /// Reads and validates `backup.json` only (BAK-4, BAK-7) — [inspect]'s
+  /// whole job, and [restore]'s before it turns to the photos separately
+  /// (BAK-6, [_extractPhotos]). `backup.json` is plain text with no
+  /// photos in it, so decoding it from [bytes] in memory here is never the
+  /// large-library memory risk BAK-6 is about.
+  ({Map<String, Object?> json, int schemaVersion}) _openBackup(
     List<int> bytes,
   ) {
     // ZipDecoder doesn't throw for bytes with no "end of central
@@ -1025,7 +1308,56 @@ class BackupService {
     if (json['tables'] is! Map || json['createdAt'] is! String) {
       throw const BackupError(BackupErrorKind.damagedJson);
     }
-    return (json: json, archive: archive, schemaVersion: schemaVersion);
+    return (json: json, schemaVersion: schemaVersion);
+  }
+
+  /// BAK-6: every `photos/` entry in [bytes], written straight to a fresh
+  /// scratch folder under [_backupsDir] instead of decoded into memory —
+  /// [InputFileStream] only reads from a real file, so [bytes] (already in
+  /// memory; [BackupFiles] hands a restore its whole file) is written out
+  /// once first. Each entry is then decompressed straight to its own file
+  /// with [ArchiveFile.writeContent]'s `freeMemory`, so a large photo
+  /// library is never held whole. [restore] deletes the returned folder
+  /// once it's done with it, success or failure.
+  Future<Directory> _extractPhotos(List<int> bytes) async {
+    await _backupsDir.create(recursive: true);
+    // A fixed name (restore isn't reentrant on one BackupService either):
+    // cleared first in case a previous restore's cleanup itself never got
+    // to run (a killed process), so its leftover photos can never be
+    // mistaken for this backup's.
+    final scratchDir = Directory(p.join(_backupsDir.path, 'restore-scratch'));
+    if (await scratchDir.exists()) await scratchDir.delete(recursive: true);
+    await scratchDir.create(recursive: true);
+
+    final zipFile = File(p.join(scratchDir.path, 'source.zip'));
+    await zipFile.writeAsBytes(bytes);
+
+    final input = InputFileStream(zipFile.path);
+    try {
+      final archive = ZipDecoder().decodeStream(input);
+      final scratchRoot = p.canonicalize(scratchDir.path);
+      for (final entry in archive.files) {
+        if (!entry.isFile || !entry.name.startsWith('photos/')) continue;
+        final target = p.join(scratchDir.path, entry.name);
+        // must-fix, review (zip slip): an entry name like
+        // `photos/../../databases/wasfati.db` would otherwise resolve
+        // outside scratchDir — OutputFileStream creates missing
+        // directories and truncates an existing file with no containment
+        // check of its own. Skip anything that would land outside
+        // scratchDir, the same guard archive's own extractArchiveToDisk
+        // uses (_isWithinOutputPath) for exactly this reason.
+        if (!p.isWithin(scratchRoot, p.canonicalize(target))) continue;
+        final output = OutputFileStream(target);
+        try {
+          entry.writeContent(output, freeMemory: true);
+        } finally {
+          await output.close();
+        }
+      }
+    } finally {
+      await input.close();
+    }
+    return scratchDir;
   }
 
   // ---------------------------------------------------------------------

@@ -7,6 +7,8 @@ import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../services/backup.dart';
 import '../widgets/content_direction.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/pressable_slab.dart';
 import 'groceries_screen.dart';
 import 'import_screen.dart';
 import 'library_view.dart';
@@ -106,10 +108,14 @@ class LibraryHome extends StatelessWidget {
         ),
         floatingActionButton: empty
             ? null
-            : FloatingActionButton.extended(
-                onPressed: () => openEditor(context),
-                icon: const Icon(Icons.add),
-                label: Text(l10n.recipesAdd),
+            // LOOK-7: "أضف وصفة" is one of Saffron's three ledge actions; a
+            // no-op in Ink (Decor.ledgeDepth 0).
+            : PressableSlab(
+                child: FloatingActionButton.extended(
+                  onPressed: () => openEditor(context),
+                  icon: const Icon(Icons.add),
+                  label: Text(l10n.recipesAdd),
+                ),
               ),
         body: !state.loaded
             ? const Center(child: CircularProgressIndicator())
@@ -326,18 +332,22 @@ class _CookbooksTab extends StatelessWidget {
       if (name != null) await state.saveCookbook(name);
     }
 
+    if (state.cookbooks.isEmpty) {
+      return EmptyState(
+        title: l10n.cookbooksEmpty,
+        actions: [
+          OutlinedButton.icon(
+            onPressed: create,
+            icon: const Icon(Icons.add),
+            label: Text(l10n.cookbookNew),
+          ),
+        ],
+      );
+    }
+
     return ListView(
       padding: const EdgeInsetsDirectional.only(bottom: 96),
       children: [
-        if (state.cookbooks.isEmpty)
-          Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(24, 32, 24, 8),
-            child: Text(
-              l10n.cookbooksEmpty,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-          ),
         for (final c in state.cookbooks)
           ListTile(
             leading: const Icon(Icons.menu_book_outlined),
@@ -448,42 +458,26 @@ class _Empty extends StatelessWidget {
   final AppLocalizations l10n;
 
   @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsetsDirectional.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              l10n.recipesEmptyTitle,
-              style: text.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.recipesEmptyBody,
-              style: text.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () => openEditor(context),
-              icon: const Icon(Icons.add),
-              label: Text(l10n.recipesAdd),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () => Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const ImportScreen())),
-              icon: const Icon(Icons.link),
-              label: Text(l10n.importTitle),
-            ),
-          ],
+  Widget build(BuildContext context) => EmptyState(
+    title: l10n.recipesEmptyTitle,
+    body: l10n.recipesEmptyBody,
+    actions: [
+      // LOOK-7: "أضف وصفة" is one of Saffron's three ledge actions; a
+      // no-op in Ink (Decor.ledgeDepth 0).
+      PressableSlab(
+        child: FilledButton.icon(
+          onPressed: () => openEditor(context),
+          icon: const Icon(Icons.add),
+          label: Text(l10n.recipesAdd),
         ),
       ),
-    );
-  }
+      OutlinedButton.icon(
+        onPressed: () =>
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const ImportScreen())),
+        icon: const Icon(Icons.link),
+        label: Text(l10n.importTitle),
+      ),
+    ],
+  );
 }

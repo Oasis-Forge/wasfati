@@ -12,6 +12,7 @@ import 'db/grocery_repository.dart';
 import 'db/plan_repository.dart';
 import 'db/recipe_repository.dart';
 import 'models/settings.dart';
+import 'providers/backup_state.dart';
 import 'providers/grocery_state.dart';
 import 'providers/plan_state.dart';
 import 'providers/recipes_state.dart';
@@ -58,6 +59,10 @@ Future<void> main() async {
   for (final path in await repo.purgeTrash()) {
     await photos.delete(path);
   }
+  // ORG-6, BAK-9: after the purge (a photo row it just removed needs no
+  // sweeping), forget any photo_path whose file didn't survive a device
+  // backup restore — photos/ is excluded from that backup on purpose.
+  await repo.forgetMissingPhotos(photos);
   await planRepo.purgeTrash();
   await groceryRepo.purgeTrash();
   const shareStorage = DeviceShareStorage();
@@ -79,6 +84,14 @@ Future<void> main() async {
     appVersion: packageInfo.version,
   );
   const backupFiles = DeviceBackupFiles();
+  const sharer = DeviceSharer();
+  final backupState = BackupState(
+    backup: backup,
+    files: backupFiles,
+    sharer: sharer,
+    shareStorage: shareStorage,
+    settings: settings,
+  );
   final recipes = RecipesState(repo);
   await recipes.load();
   final groceries = GroceryState(groceryRepo);
@@ -101,10 +114,11 @@ Future<void> main() async {
       screenAwake: const DeviceScreenAwake(),
       importer: Importer(DeviceFetcher(), repo),
       shareInbox: const DeviceShareInbox(),
-      sharer: const DeviceSharer(),
+      sharer: sharer,
       shareStorage: shareStorage,
       backup: backup,
       backupFiles: backupFiles,
+      backupState: backupState,
     ),
   );
 }

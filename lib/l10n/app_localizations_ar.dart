@@ -236,6 +236,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsTheme => 'المظهر';
 
   @override
+  String get settingsLook => 'الطراز';
+
+  @override
+  String get lookInk => 'حبر';
+
+  @override
+  String get lookSaffron => 'زعفران';
+
+  @override
   String get themeSystem => 'حسب الجهاز';
 
   @override

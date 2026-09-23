@@ -12,7 +12,10 @@ import '../providers/grocery_state.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../services/sharer.dart';
+import '../widgets/amount_line.dart';
 import '../widgets/content_direction.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/rail_heading.dart';
 
 // First-strong and pop directional isolates, so a name reads in its own
 // direction inside the app's "من:" line (should-fix, UI review) without
@@ -189,29 +192,9 @@ class _EmptyGroceries extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsetsDirectional.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              l10n.groceriesEmptyTitle,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.groceriesEmptyBody,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return EmptyState(
+      title: l10n.groceriesEmptyTitle,
+      body: l10n.groceriesEmptyBody,
     );
   }
 }
@@ -252,7 +235,6 @@ class _AddFieldState extends State<_AddField> {
               controller: _controller,
               decoration: InputDecoration(
                 hintText: l10n.groceriesAddHint,
-                border: const OutlineInputBorder(),
                 isDense: true,
               ),
               textInputAction: TextInputAction.done,
@@ -277,10 +259,10 @@ class _AisleHeading extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsetsDirectional.only(top: 12, bottom: 4),
-    child: Text(
+    child: RailHeading(
       text,
-      style: Theme.of(context).textTheme.titleSmall
-          ?.copyWith(color: Theme.of(context).colorScheme.primary),
+      railHeight: 14,
+      style: Theme.of(context).textTheme.titleSmall,
     ),
   );
 }
@@ -372,7 +354,7 @@ class _ItemRow extends StatelessWidget {
                     // No maxLines/overflow here (should-fix, UI review): the
                     // item's name, not the amount, is what the shopper
                     // needs, and an ellipsis used to be able to hide it.
-                    ContentText(
+                    AmountLine(
                       text,
                       source: item.name,
                       style: Theme.of(context).textTheme.bodyLarge,
@@ -569,14 +551,17 @@ class _RecipeGroup extends StatelessWidget {
                 top: 4,
                 bottom: 4,
               ),
-              child: ContentText(() {
-                final amt = groceryAmountText(
-                  amounts,
-                  name: item.name,
-                  formatAmount: format,
-                );
-                return amt.isEmpty ? item.name : '$amt ${item.name}';
-              }(), source: item.name),
+              child: AmountLine(
+                (() {
+                  final amt = groceryAmountText(
+                    amounts,
+                    name: item.name,
+                    formatAmount: format,
+                  );
+                  return amt.isEmpty ? item.name : '$amt ${item.name}';
+                })(),
+                source: item.name,
+              ),
             ),
         ],
       ),

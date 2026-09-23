@@ -70,14 +70,26 @@ Future<void> openSettings(WidgetTester tester) async {
   await settle(tester);
 }
 
-/// Keeps calling [settle] until [finder] shows up, up to [max] times: a
-/// restore's own chain of awaits (reloading every state, BAK-8's
-/// lastBackupAt, the automatic-backups list) can outlast one [settle] pass.
-Future<void> waitFor(WidgetTester tester, Finder finder, {int max = 6}) async {
-  for (var i = 0; i < max && finder.evaluate().isEmpty; i++) {
+/// Keeps calling [settle] until [check] is true, up to [max] times
+/// (must-fix, review: `createBackup()`'s real filesystem awaits — creating
+/// `_backupsDir`, closing the zip encoder, reading and deleting the scratch
+/// file — and `restore()`'s own extra ones on top routinely outlast a
+/// handful of [settle] passes, since none of save, share or restore ever
+/// shows a `CircularProgressIndicator` for [settle]'s own break condition
+/// to key off; only [check] itself says when the app is actually done).
+Future<void> waitUntil(
+  WidgetTester tester,
+  bool Function() check, {
+  int max = 20,
+}) async {
+  for (var i = 0; i < max && !check(); i++) {
     await settle(tester);
   }
 }
+
+/// [waitUntil] for the common case of waiting on a finder.
+Future<void> waitFor(WidgetTester tester, Finder finder, {int max = 20}) =>
+    waitUntil(tester, () => finder.evaluate().isNotEmpty, max: max);
 
 void main() {
   testWidgets('BAK-1, BAK-6, BAK-8: save a backup hands the fake a .zip and '
@@ -88,7 +100,7 @@ void main() {
     expect(settings.settings.lastBackupAt, isNull);
 
     await tester.tap(find.text('احفظ نسخة احتياطية'));
-    await settle(tester);
+    await waitUntil(tester, () => backupFiles.saved.isNotEmpty);
 
     expect(backupFiles.saved, hasLength(1));
     expect(backupFiles.saved.single.name, endsWith('.zip'));
@@ -408,7 +420,15 @@ void main() {
       await openSettings(tester);
       await scrollTo(tester, find.text('مشاركة النسخة'));
       await tester.tap(find.text('مشاركة النسخة'));
-      await settle(tester);
+      // BackupState.share() awaits the sharer, then a separate settings
+      // write that sets lastBackupAt (BAK-8) — waiting on the sharer alone
+      // races that second, still-pending await (should-fix: this test file
+      // already wraps its own direct settings writes for the same reason).
+      await waitUntil(tester, () => sharer.filePaths.isNotEmpty);
+      await waitUntil(
+        tester,
+        () => settingsState.settings.lastBackupAt != null,
+      );
 
       expect(sharer.filePaths, hasLength(1));
       expect(sharer.filePaths.single.single, endsWith('.zip'));
@@ -466,7 +486,7 @@ void main() {
     await openSettings(tester);
     await scrollTo(tester, find.text('احفظ نسخة احتياطية'));
     await tester.tap(find.text('احفظ نسخة احتياطية'));
-    await settle(tester);
+    await waitFor(tester, find.text('تعذّر حفظ النسخة الاحتياطية.'));
     expect(find.text('تعذّر حفظ النسخة الاحتياطية.'), findsOneWidget);
   });
 
@@ -488,7 +508,7 @@ void main() {
       expect(find.text('لم تحفظ نسخة احتياطية بعد'), findsOneWidget);
 
       await tester.tap(find.text('احفظ الآن'));
-      await settle(tester);
+      await waitFor(tester, find.text('تعذّر حفظ النسخة الاحتياطية.'));
       expect(find.text('تعذّر حفظ النسخة الاحتياطية.'), findsOneWidget);
       final button = tester.widget<FilledButton>(
         find.widgetWithText(FilledButton, 'احفظ الآن'),
@@ -509,7 +529,7 @@ void main() {
       await openSettings(tester);
       await scrollTo(tester, find.text('مشاركة النسخة'));
       await tester.tap(find.text('مشاركة النسخة'));
-      await settle(tester);
+      await waitFor(tester, find.text('تعذّر مشاركة النسخة الاحتياطية.'));
       expect(find.text('تعذّر مشاركة النسخة الاحتياطية.'), findsOneWidget);
     },
   );

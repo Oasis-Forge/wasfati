@@ -134,9 +134,9 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
 - [x] **Backup, restore, export** (BAK-1–BAK-10; v0.12.0): after the last schema step, so the format covers every table. A backup file with photos, merge or replace, a monthly reminder, Android's device backup without photos, and a text export.
 
 ## Phase 3: Store readiness (alongside 2c)
-- [ ] Display name "وصفاتي" (Arabic) and "Wasfati" (English) on every platform: launcher label, bundle names.
-- [ ] Launcher icons and splash screen, generated from one committed source.
-- [ ] **Two looks** (LOOK-*, Decision 14; `/spec look` first): "حبر / Ink" and "زعفران / Saffron", each with its own light and dark, picked in Settings and carried in backups. Replaces today's stock Material look. Specified in `docs/research/design-styles.md`; about 1,300–2,000 lines per style, no new packages or fonts.
+- [x] Display name "وصفاتي" (Arabic) and "Wasfati" (English) on every platform: launcher label, bundle names (LOOK-9).
+- [x] Launcher icons and splash screen, generated from one committed source (LOOK-9).
+- [x] **Two looks** (LOOK-1–LOOK-9, Decision 14; `/spec look` first): "حبر / Ink" and "زعفران / Saffron", each with its own light and dark, picked in Settings and carried in backups. Replaces today's stock Material look. Specified in `docs/research/design-styles.md`; about 1,300–2,000 lines per style, no new packages or fonts.
 - [ ] Store IDs, permanent after the first upload and free of personal names: `com.oasisforge.wasfati`.
 - [ ] Privacy policy published, and updated for every feature that touches user data.
 - [ ] The release build declares only the permissions the store listing admits to; the release workflow dumps the built artifact's permissions and fails on any it doesn't expect (RUN-2). Write the list against a real build, not from memory, and check both directions: a permission the app needs and lost is as much a bug as one a plugin added. Today: INTERNET, POST_NOTIFICATIONS and VIBRATE. Ads add ACCESS_NETWORK_STATE and AD_ID, and purchases add BILLING (Roadmap impact in `docs/PRODUCT_RULES.md`). No camera permission: photos come through the system camera and picker.
@@ -174,8 +174,4 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
 
 ## Known bugs
 <!-- Found and not fixed yet: what, where, and the rule it breaks. -->
-- With the language on "حسب الجهاز", a change of the phone's own language while Wasfati is open applies at the next launch, not at once (LANG-1): `lib/app.dart` resolves the locale when the settings change, not on the platform's locale change.
-- Merging two phones that both edited the same recipe can mix its ingredient lines and steps from each side, because rows merge one by one instead of as one recipe (BAK-3). `lib/services/backup.dart`.
-- A backup is built and read whole in memory, so a very large photo library could run out of memory (BAK-6). `lib/services/backup.dart`.
-- The library's "بصورة" filter still lists a recipe whose photo file is missing after an Android device-backup restore (BAK-9, ORG-6). `lib/models/library.dart`.
-- The backup flow's logic sits in the Settings screen rather than a state class (CLAUDE.md: screens stay presentational). `lib/screens/settings_screen.dart`.
+- `Decor.cardShape`, `Decor.rowHairline` and `Decor.groupedRowFill` (LOOK-6) are built for both looks but read nowhere yet — no hand-built widget uses a grouped-row fill or hairline on the settings groups or the plan's day cards, or the hand-rolled card shape. `lib/widgets/digit_box.dart` (`DigitBox`, for the timer clock, the step numeral and a ×factor readout, LOOK-5) is likewise unused and untested outside its own widget test: `app_test.dart` and `groceries_test.dart` already match cook mode's/the plan's numbers by exact text, so wiring it in now would mean updating those matches too. Deferred rather than wired in or deleted (platform review, `feat/looks-and-branding`) — pick this up with its own screen-by-screen pass and a driven-by-hand check, not as a drive-by. `lib/theme/decor.dart`, `lib/theme/app_theme.dart`, `lib/widgets/digit_box.dart`.

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'l10n/app_localizations.dart';
 import 'models/settings.dart' show appLanguage;
+import 'providers/backup_state.dart';
 import 'providers/grocery_state.dart';
 import 'providers/plan_state.dart';
 import 'providers/recipes_state.dart';
@@ -18,6 +19,7 @@ import 'services/photo_store.dart';
 import 'services/recipe_pages.dart' show ShareStorage;
 import 'services/sharer.dart';
 import 'services/web_import.dart';
+import 'theme/app_theme.dart';
 import 'widgets/share_router.dart';
 
 // Also the fixed light scheme for the share images (SHARE-3,
@@ -44,6 +46,7 @@ class WasfatiApp extends StatelessWidget {
     required this.shareStorage,
     required this.backup,
     required this.backupFiles,
+    required this.backupState,
   });
 
   final RecipesState recipes;
@@ -78,6 +81,13 @@ class WasfatiApp extends StatelessWidget {
   /// fake should fail loudly, never quietly write into the real cache.
   final ShareStorage shareStorage;
 
+  /// The Settings screen's backup, restore and export flow (BAK-1–BAK-10):
+  /// busy, the last result, the last error, and the calls into [backup] and
+  /// [backupFiles]. No default, like every other state here (CLAUDE.md):
+  /// built once by the caller (`main.dart`, or a test's `pumpApp`), never
+  /// rebuilt on every frame, so it keeps its state across rebuilds.
+  final BackupState backupState;
+
   static final navigatorKey = GlobalKey<NavigatorState>();
 
   @override
@@ -97,49 +107,21 @@ class WasfatiApp extends StatelessWidget {
         Provider<ShareStorage>.value(value: shareStorage),
         Provider<BackupService>.value(value: backup),
         Provider<BackupFiles>.value(value: backupFiles),
+        ChangeNotifierProvider.value(value: backupState),
       ],
       child: _RamadanSync(
         settings: settings,
         plan: plan,
-        child: Consumer<SettingsState>(
-          builder: (context, s, _) => MaterialApp(
-            onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-            // LANG-1, RUN-6 (should-fix, review): resolved by the same
-            // appLanguage main.dart uses for the sample recipe, so the two
-            // never disagree on what language the app actually starts in.
-            // A concrete `locale:` (never null), not
-            // localeListResolutionCallback, so a language change in
-            // Settings still applies at once: WidgetsApp only re-resolves
-            // through the callback path when supportedLocales itself
-            // changes, but re-resolves a non-null `locale` on every build.
-            locale: appLanguage(
-              s.settings.language,
-              WidgetsBinding.instance.platformDispatcher.locales,
-            ),
-            supportedLocales: AppLocalizations.supportedLocales,
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            themeMode: s.themeMode,
-            theme: _theme(Brightness.light),
-            darkTheme: _theme(Brightness.dark),
-            navigatorKey: navigatorKey,
-            builder: (context, child) =>
-                ShareRouter(navigator: navigatorKey, child: child!),
-            home: const HomeScreen(),
-          ),
-        ),
+        // LANG-1: rebuilds the MaterialApp below whenever the PHONE's own
+        // locales change while Wasfati is already open (didChangeLocales),
+        // so its `locale:` is re-resolved at once instead of only at the
+        // next launch. A Settings change already rebuilds it through
+        // Consumer<SettingsState>; this covers the other half — the device
+        // language changing underneath a running app on "حسب الجهاز".
+        child: const _LocaleObserver(),
       ),
     );
   }
-
-  static ThemeData _theme(Brightness b) => ThemeData(
-    fontFamily: fontFamily,
-    colorScheme: ColorScheme.fromSeed(seedColor: seedColor, brightness: b),
-  );
 }
 
 /// Keeps [PlanState] in step with Settings' Ramadan fields regardless of
@@ -188,4 +170,87 @@ class _RamadanSyncState extends State<_RamadanSync> {
 
   @override
   Widget build(BuildContext context) => widget.child;
+}
+
+/// LANG-1 (must-fix, review): builds the [MaterialApp], rebuilding it fresh
+/// on the platform's own locale change, not just on a Settings change.
+/// `locale:` below is resolved fresh on every rebuild (its own comment), but
+/// nothing used to *cause* a rebuild when the PHONE's language changed
+/// while "حسب الجهاز" (LanguagePref.system) was on and Wasfati stayed open —
+/// Flutter only tells [WidgetsBindingObserver.didChangeLocales], it doesn't
+/// rebuild anything on its own. `setState` here (with no state to change)
+/// is only ever a trigger, exactly like [_RamadanSyncState] triggers off a
+/// listener.
+///
+/// Builds [MaterialApp] itself, rather than taking it as a `child` widget
+/// built by the caller once: a `child` field is the SAME widget instance on
+/// every `setState`, and Flutter's element diffing skips rebuilding an
+/// identical child widget entirely (the usual `AnimatedBuilder`-style
+/// optimization) — so `didChangeLocales`'s `setState` would trigger, but
+/// never actually reach `MaterialApp` to re-resolve its `locale:` (must-fix,
+/// review: caught only by the widget test that changes
+/// `tester.platformDispatcher.localesTestValue` after the app is already
+/// running, not by anything that stops at the Settings screen's own
+/// language change).
+class _LocaleObserver extends StatefulWidget {
+  const _LocaleObserver();
+
+  @override
+  State<_LocaleObserver> createState() => _LocaleObserverState();
+}
+
+class _LocaleObserverState extends State<_LocaleObserver>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeLocales(List<Locale>? locales) {
+    setState(() {}); // re-resolve appLanguage(...) below, at once
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Consumer<SettingsState>(
+    builder: (context, s, _) => MaterialApp(
+      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+      // LANG-1, RUN-6 (should-fix, review): resolved by the same
+      // appLanguage main.dart uses for the sample recipe, so the two never
+      // disagree on what language the app actually starts in. A concrete
+      // `locale:` (never null), not localeListResolutionCallback, so a
+      // language change in Settings still applies at once: WidgetsApp only
+      // re-resolves through the callback path when supportedLocales itself
+      // changes, but re-resolves a non-null `locale` on every build — which
+      // this State's own rebuilds (Settings, or didChangeLocales above)
+      // both now reach.
+      locale: appLanguage(
+        s.settings.language,
+        WidgetsBinding.instance.platformDispatcher.locales,
+      ),
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      themeMode: s.themeMode,
+      // LOOK-1: the look (Ink/Saffron) is independent of light/dark, and
+      // applies at once because Settings changes reach this Consumer.
+      theme: wasfatiTheme(s.settings.style, Brightness.light),
+      darkTheme: wasfatiTheme(s.settings.style, Brightness.dark),
+      navigatorKey: WasfatiApp.navigatorKey,
+      builder: (context, child) =>
+          ShareRouter(navigator: WasfatiApp.navigatorKey, child: child!),
+      home: const HomeScreen(),
+    ),
+  );
 }

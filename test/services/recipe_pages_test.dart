@@ -13,7 +13,9 @@ import 'package:wasfati/models/quantity/format.dart';
 import 'package:wasfati/models/quantity/rational.dart';
 import 'package:wasfati/models/recipe.dart';
 import 'package:wasfati/models/recipe_share.dart';
+import 'package:wasfati/models/settings.dart' show AppStyle;
 import 'package:wasfati/services/recipe_pages.dart';
+import 'package:wasfati/theme/colors.dart' show wasfatiColorScheme;
 
 import '../helpers.dart';
 
@@ -51,6 +53,12 @@ List<int> _pixel(({int width, Uint8List rgba}) png, int x, int y) {
 bool _differs(List<int> a, List<int> b) =>
     List.generate(4, (i) => (a[i] - b[i]).abs()).any((d) => d > 10);
 
+/// An opaque [Color]'s bytes, in the same `[r, g, b, a]` 0-255 shape
+/// [_pixel] decodes from a PNG (`Color`'s own `.r`/`.g`/`.b`/`.a` are
+/// normalized 0.0-1.0 doubles).
+List<int> _rgba(Color c) =>
+    [c.r, c.g, c.b, c.a].map((v) => (v * 255).round()).toList();
+
 /// The left- and rightmost x where row [y] isn't the page's own background
 /// (sampled at a known-blank corner), or null if the row is blank.
 (int, int)? _inkRange(({int width, Uint8List rgba}) png, int y) {
@@ -83,6 +91,7 @@ void main() {
         view: UnitView.asWritten,
         digits: DigitStyle.western,
         uiDirection: TextDirection.rtl,
+        style: AppStyle.ink,
         ingredientsHeading: 'المقادير',
         stepsHeading: 'الطريقة',
         notScaledMark: _notScaledMark,
@@ -130,6 +139,7 @@ void main() {
         view: UnitView.asWritten,
         digits: DigitStyle.western,
         uiDirection: TextDirection.rtl,
+        style: AppStyle.ink,
         ingredientsHeading: 'المقادير',
         stepsHeading: 'الطريقة',
         notScaledMark: _notScaledMark,
@@ -161,6 +171,7 @@ void main() {
           view: UnitView.asWritten,
           digits: DigitStyle.western,
           uiDirection: TextDirection.rtl,
+          style: AppStyle.ink,
           ingredientsHeading: 'المقادير',
           stepsHeading: 'الطريقة',
           notScaledMark: _notScaledMark,
@@ -193,6 +204,7 @@ void main() {
           view: UnitView.asWritten,
           digits: DigitStyle.western,
           uiDirection: TextDirection.rtl,
+          style: AppStyle.ink,
           ingredientsHeading: 'المقادير',
           stepsHeading: 'الطريقة',
           notScaledMark: _notScaledMark,
@@ -224,6 +236,7 @@ void main() {
           view: UnitView.asWritten,
           digits: DigitStyle.western,
           uiDirection: TextDirection.rtl,
+          style: AppStyle.ink,
           ingredientsHeading: 'المقادير',
           stepsHeading: 'الطريقة',
           notScaledMark: _notScaledMark,
@@ -345,6 +358,7 @@ void main() {
             view: UnitView.asWritten,
             digits: DigitStyle.western,
             uiDirection: uiDirection,
+            style: AppStyle.ink,
             ingredientsHeading: 'المقادير',
             stepsHeading: 'الطريقة',
             notScaledMark: _notScaledMark,
@@ -383,6 +397,52 @@ void main() {
         // The two must actually differ: the RTL run's ink shouldn't
         // start where the LTR run's does.
         expect(rtlInk.$1, greaterThan(ltrInk.$1 + 200));
+      });
+    });
+  });
+
+  group('LOOK-1/SHARE-3: the page takes the chosen look\'s light palette', () {
+    testWidgets('a Saffron page\'s background is Saffron light, not Ink '
+        'light or a fixed seed', (tester) async {
+      await tester.runAsync(() async {
+        final (repo, _, _) = await testRepo();
+        final dir = await Directory.systemTemp.createTemp(
+          'wasfati_pages_style_test',
+        );
+        addTearDown(() {
+          if (dir.existsSync()) dir.deleteSync(recursive: true);
+        });
+
+        final paths = await renderSharePages(
+          kabsa(repo),
+          factor: Rational.one,
+          view: UnitView.asWritten,
+          digits: DigitStyle.western,
+          uiDirection: TextDirection.rtl,
+          style: AppStyle.saffron,
+          ingredientsHeading: 'المقادير',
+          stepsHeading: 'الطريقة',
+          notScaledMark: _notScaledMark,
+          unscaledLineText: _unscaledLineText,
+          servingsLabel: (n) => '$n حصص',
+          prepTimeLabel: (m) => 'التحضير $m دقيقة',
+          cookTimeLabel: (m) => 'الطبخ $m دقيقة',
+          brand: 'وصفاتي',
+          storage: FakeShareStorage(dir),
+        );
+        expect(paths, isNotNull);
+
+        final png = await _decodePixels(paths!.first);
+        // A corner well clear of any text or the photo band: the page's
+        // own background fill.
+        final bg = _pixel(png, 4, 4);
+        final saffron = wasfatiColorScheme(AppStyle.saffron, Brightness.light);
+        final ink = wasfatiColorScheme(AppStyle.ink, Brightness.light);
+        // The two looks' light surfaces are genuinely different colours,
+        // so a match against Saffron's below isn't Ink's palette by
+        // coincidence.
+        expect(saffron.surface, isNot(ink.surface));
+        expect(bg, _rgba(saffron.surface));
       });
     });
   });

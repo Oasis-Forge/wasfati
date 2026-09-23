@@ -8,7 +8,9 @@ import '../models/library.dart';
 import '../models/recipe.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
+import '../theme/decor.dart';
 import '../widgets/content_direction.dart';
+import '../widgets/empty_state.dart';
 import 'home_screen.dart';
 
 /// Search, sort, filters and results (ORG-3–ORG-6). With [cookbookId] it
@@ -308,32 +310,16 @@ class _NoResults extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final text = Theme.of(context).textTheme;
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsetsDirectional.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              searching
-                  ? l10n.noResults
-                  : cookbook
-                  ? l10n.cookbookEmpty
-                  : l10n.recipesEmptyTitle,
-              style: text.titleMedium,
-              textAlign: TextAlign.center,
-            ),
-            if (searching) ...[
-              const SizedBox(height: 16),
-              OutlinedButton(
-                onPressed: onClear,
-                child: Text(l10n.clearFilters),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return EmptyState(
+      title: searching
+          ? l10n.noResults
+          : cookbook
+          ? l10n.cookbookEmpty
+          : l10n.recipesEmptyTitle,
+      actions: [
+        if (searching)
+          OutlinedButton(onPressed: onClear, child: Text(l10n.clearFilters)),
+      ],
     );
   }
 }
@@ -422,8 +408,13 @@ class RecipeThumb extends StatelessWidget {
             errorBuilder: (_, _, _) => placeholder(),
           );
     if (size == null) return child;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+    return ClipPath(
+      // LOOK-6: the thumbnail takes its shape from Decor (a plain rounded
+      // rect in Ink, Saffron's chamfered corner) instead of a fixed radius.
+      clipper: ShapeBorderClipper(
+        shape: Decor.of(context).thumbnailShape,
+        textDirection: Directionality.of(context),
+      ),
       child: SizedBox.square(dimension: size, child: child),
     );
   }
