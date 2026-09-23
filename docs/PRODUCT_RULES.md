@@ -117,14 +117,14 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
   | | Free | Pro (one-time) | Premium (subscription) |
   |---|---|---|---|
   | Banners (ADS-9) | Yes | None | None |
-  | AI imports a month: social links, pasted text, photos and translations (IMP-7, IMP-16) | 10 | 10 | 300, fair use (SRV-4) |
+  | AI imports a month: social links, pasted text, photos and translations (IMP-7, IMP-16) | 10 | 10 | 100, fair use (SRV-4) |
   | Everything else: website import, cook mode, scaling and conversion, the plan, Ramadan mode, groceries, sharing, backup and export | Free | Free | Free |
 
   - Nutrition isn't listed or sold until it ships (PAY-3); it's an after-v1 item.
   - Pro and Premium can be owned together; the purchase screen marks what's owned.
 - **PAY-8** Store products (Decision 10). Product IDs are permanent after the first upload, like the app ID:
   - `pro`: a one-time product, AED 14.99.
-  - `premium`: a subscription with two auto-renewing base plans, `monthly` at AED 9.99 and `yearly` at AED 59.99.
+  - `premium`: a subscription with two auto-renewing base plans, `monthly` at AED 9.99 and `yearly` at AED 79.99.
   - These are the Play Console base prices. Other countries get Play's local prices, and the app only ever shows the store's price (PAY-2).
 - **PAY-9** No free trial in v1 (Decision 11): the 10 free AI imports a month are how anyone tries Premium. If a trial is ever added, PAY-5's reminder and two-tap cancel come with it.
 - **PAY-10** The purchase screen opens only from PAY-5's three places. It shows:
@@ -135,7 +135,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
   - No crossed-out prices, countdowns, "most popular" badges or preselected plan, and no ads (ADS-9).
 - **PAY-11** Settings shows a "Subscription" row with the plan and, when Google Play's record gives it (SRV-4), the renewal date. "Manage or cancel" opens Google Play's page for this subscription: two taps from Settings (PAY-5).
   - When the store reports that Premium has ended, banners come back (unless Pro is owned) and the quota drops to 10 at once.
-  - The month's count carries over both ways: 12 imports used stays 12 used, of 300 or of 10.
+  - The month's count carries over both ways: 12 imports used stays 12 used, of 100 or of 10.
   - Everything imported stays (PAY-4).
 
 ## 7. Recipes
@@ -339,7 +339,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 
   Closing the preview discards it after one confirmation. The preview has no ads (principle 4).
 - **IMP-6** The server's result is normalized on the device:
-  - Every ingredient line goes through QTY-1, and the server's own amounts are only a hint.
+  - The server sends verbatim text only, never a parsed amount (SRV-1); every ingredient line goes through QTY-1 on the device.
   - Lines like "مقادير الصلصة: …" or "للتتبيلة" become a named group (REC-4) with one line per item.
   - A step over 400 characters is split at sentence ends (. ، ؛ then، ثم).
   - The original caption or page text is kept in the recipe's notes, collapsed, so nothing is lost.
@@ -375,7 +375,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 - The server is a cost and a privacy surface.
 - It must be cheap per import, keep nothing, and never be abusable as a free AI proxy.
 
-- **SRV-1** The server runs on Cloudflare Workers (Decision 6). It has one endpoint that takes a link, text, or up to 3 images, and returns a recipe in the REC structure (JSON validated against a schema). The same endpoint translates a recipe (SRV-11). The model is Claude Haiku 4.5 to start, with structured output. The model and prompt version come back with each result, for debugging.
+- **SRV-1** The server runs on Cloudflare Workers (Decision 6). It has one endpoint that takes a link, text, or up to 3 images, and returns the recipe's **structure** in the REC shape (JSON validated against a schema): title, section groups, each ingredient line's text copied byte for byte from the source — including any placeholder the site prints — the steps in order, and servings, prep and cook minutes only when the source states them. It never returns parsed amounts or unit IDs: the device parses every line itself under QTY-1 (IMP-6), which measured more accurate than the model's own numbers (Decision 17). The same endpoint translates a recipe (SRV-11). The model is Claude Haiku 4.5, with structured output and prompt caching on for the system prompt and schema. The model and prompt version come back with each result, for debugging.
 - **SRV-2** For a link, the server fetches the public page or post (title, caption or description, and any recipe data) and sends only that text to the model. It never logs into anything, and never fetches a private post.
 - **SRV-10** How the server gets a caption (S3):
   - **TikTok:** the public oEmbed endpoint.
@@ -386,7 +386,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 - **SRV-3** The server keeps no content: no request bodies, captions, images or results in logs. Only aggregate counters are kept (imports, errors, tokens, cost per day). Images are held only in memory for the request.
 - **SRV-4** Abuse and cost:
   - Each request carries an anonymous random install ID (created on first launch, stored on the device, included in backups) and a Play Integrity token. Requests without a valid token are refused.
-  - Limits: 10 AI imports a month for free installs, 300 a month for Premium (fair use), and at most 20 requests per hour per install.
+  - Limits: 10 AI imports a month for free installs, 100 a month for Premium (fair use), and at most 20 requests per hour per install.
   - Premium is checked with Google Play's purchase record, not trusted from the app.
 - **SRV-5** Cache: a successful result for a **public** link is cached by the normalized URL (IMP-9) for 30 days. A cache hit costs us nothing, but still counts for the user, because the quota is about imports, not our cost. Photo and text imports are never cached.
 - **SRV-6** Spending cap: a monthly budget set in the Worker's config. At 80% it sends an alert. At 100%, AI imports pause for everyone with the message "Import is busy, try again later", and website imports (IMP-2) keep working.
@@ -573,6 +573,8 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
     - The store's review prompt comes only after an import and a cooked recipe (RUN-5).
 14. (20 September 2026) The app ships **two looks**, picked in Settings, not one: **حبر / Ink** (cream paper, near-black ink, a deep teal that marks every amount, hairlines instead of boxes, no shadows) and **زعفران / Saffron** (quiet cream page, solid saffron action blocks with near-black text on them, one corner cut at 45°). Each has a hand-tuned light and dark theme. Both keep every existing string, add no package, font or bitmap, and must pass AA for text on every surface in both brightnesses. Ink is the default. The full specification — palettes, type scale, components, per-screen plans — is in `docs/research/design-styles.md`; the rules get IDs with `/spec look` before any of it is built (Phase 3).
 15. (22 September 2026) Merge can bring back an item purged more than 30 days ago (DEL-2): a purge hard-deletes with no tombstone, so a backup made before the purge has no way to tell a merge the item was ever deleted. Accepted for now: purging only ever removes what this device itself deleted and forgot about, and BAK-8's 30-day reminder makes a much-older backup the exception. BAK-3's "the later `updated_at` wins, deletions included" is read as applying to soft-deleted rows still in the database, not to rows already purged. Revisit if this surfaces as a real complaint.
+16. (22 September 2026) A shared recipe image uses the light palette of the look the user picked (LOOK-1), whatever the light/dark setting says, rather than one fixed palette for everyone: the picture then looks like the app the sender actually uses, and it stays readable on a white chat background. The alternative, one fixed look for every share, was rejected because a زعفران user would be sending pictures of an app they don't have.
+17. (23 September 2026) The import server's real cost, measured against five real Arabic posts (Fatafeat, Cookpad, Sayidaty, Atyabtabkha, a TikTok caption) run through both Claude Haiku 4.5 and Claude Sonnet 5: Haiku is the model, not Sonnet. Sonnet invented an ingredient out of a section heading and dropped an ingredient's name from the verbatim text on all 8 lines of one recipe, which IMP-6 forbids; Haiku's mistakes were smaller and recoverable, and speed and token counts were within 6% of each other, so there was no cost reason to prefer Sonnet. Asking the model for amounts as numerator/denominator pairs with a unit ID was wrong 5 times in 64 lines, always by inventing a unit the line never had; asking it only for the verbatim line text and letting the device's own parser read the amounts (QTY-1) agreed with the 5-times-wrong version 58 times out of 64, beat it 5 times, and lost once, for 49% fewer output tokens and half the wall time — so the server now returns structure only (SRV-1). Cost per import is about half a US cent with prompt caching on the ~4,700-token prompt and schema (SRV-1), roughly $0.005 against $0.009 without. At that cost, Premium's 300-import cap would have cost more than the yearly plan pays after the store's fee, so it drops to 100 (PAY-7, SRV-4) — still ten times the free tier and twenty times what ReciMe gives away, and a cap is far easier to raise later than a price is to change. The yearly base plan rises from AED 59.99 to AED 79.99 (PAY-8): a per-use cost eats quietly at a subscription's margin, and it eats hardest on the yearly plan, where one payment has to cover twelve months of importing instead of being re-priced every month.
 
 ## Roadmap impact
 <!-- Rules that change the data model or the build order, and where they land in docs/ROADMAP.md. Schema changes go in Phase 1. -->

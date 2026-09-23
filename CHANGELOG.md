@@ -4,6 +4,11 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-09-23
+
+### Changed
+- The rules behind the coming AI import: what the import server sends back, the model it uses, and what Premium will include. No app changes yet.
+
 ## [0.14.0] - 2026-09-23
 
 ### Added
