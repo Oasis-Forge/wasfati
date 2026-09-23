@@ -109,7 +109,7 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
   - It keeps nothing it receives, and caches results by public post URL.
   - Rate limit per device, Play Integrity check, a monthly spending cap and alerts.
   - A test suite with the S1 and S3 fixtures that fails on regressions.
-  - Check S3b's measured cost per import against Premium's price (PAY-8): a Premium user at the 300 fair-use cap must cost less than the monthly plan pays after the store's fee (about AED 8.49). If not, lower the cap (SRV-4) before launch.
+  - S3b's measured cost per import, checked against Premium's price (PAY-8): about half a US cent per import with prompt caching on, measured 23 September 2026 against five real Arabic posts through Claude Haiku 4.5. The 300 fair-use cap would have cost more than the yearly plan pays after the store's fee, so it's cut to 100 a month (PAY-7, SRV-4, Decision 17). Re-check before launch if the prompt or the model changes.
 - [ ] **Share-sheet import** (IMP-1, IMP-3–IMP-9): TikTok, Instagram, YouTube and Facebook share into Wasfati → progress → **preview to edit before saving** → save. "Report a mistake" sends only the source link and the user's note, and only when they tap it.
 - [ ] **Instagram fallback** (IMP-12, Decision 8): when a caption can't be read, offer paste or screenshot.
 - [ ] **Emulator check of real share payloads** (S4 follow-up): what TikTok, Instagram, YouTube and Facebook put in a share (link only, or caption too). The user logs in to each app on the emulator. If Instagram includes the caption, IMP-12 becomes a rare path.
@@ -146,7 +146,7 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
 - [ ] **Ads, Pro and Premium** (ADS-1–ADS-9, PAY-1–PAY-11; Decisions 1, 10–12):
   - One banner unit on the library, the recipe page, the plan and groceries; never in cook mode, the editor or the import preview. The IDs are in `docs/RELEASING.md` (ADS-8).
   - Pro (`pro`, AED 14.99 one-time) removes ads.
-  - Premium (`premium`, AED 9.99 a month or AED 59.99 a year) removes ads and raises AI imports to 300 a month. No trial (Decision 11).
+  - Premium (`premium`, AED 9.99 a month or AED 79.99 a year) removes ads and raises AI imports to 100 a month. No trial (Decision 11).
   - The purchase screen has a close button from the first frame, and no crossed-out prices or countdowns (PAY-10).
   - Cancelling is two taps from Settings (PAY-11).
   - It rewrites the privacy policy, the data-safety form and the store listing in the same release (ADS-6).
@@ -175,3 +175,4 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
 ## Known bugs
 <!-- Found and not fixed yet: what, where, and the rule it breaks. -->
 - `Decor.cardShape`, `Decor.rowHairline` and `Decor.groupedRowFill` (LOOK-6) are built for both looks but read nowhere yet — no hand-built widget uses a grouped-row fill or hairline on the settings groups or the plan's day cards, or the hand-rolled card shape. `lib/widgets/digit_box.dart` (`DigitBox`, for the timer clock, the step numeral and a ×factor readout, LOOK-5) is likewise unused and untested outside its own widget test: `app_test.dart` and `groceries_test.dart` already match cook mode's/the plan's numbers by exact text, so wiring it in now would mean updating those matches too. Deferred rather than wired in or deleted (platform review, `feat/looks-and-branding`) — pick this up with its own screen-by-screen pass and a driven-by-hand check, not as a drive-by. `lib/theme/decor.dart`, `lib/theme/app_theme.dart`, `lib/widgets/digit_box.dart`.
+- The quantity parser reads a literal "0" as the number zero rather than as "no amount given," which is how some recipe sites print an unspecified quantity (QTY-1). Found while measuring the import server on 23 September 2026. `lib/models/quantity/parser.dart`.
