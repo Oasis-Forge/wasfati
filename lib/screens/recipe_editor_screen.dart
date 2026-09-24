@@ -10,6 +10,7 @@ import '../models/quantity/arabic_text.dart';
 import '../models/recipe.dart';
 import '../models/recipe_text.dart';
 import '../providers/recipes_state.dart';
+import '../providers/settings_state.dart';
 import '../services/photo_store.dart';
 import '../theme/decor.dart';
 import '../widgets/content_direction.dart';
@@ -23,6 +24,7 @@ class RecipeEditorScreen extends StatefulWidget {
     this.recipe,
     this.initialCookbookId,
     this.imported = false,
+    this.usedAiImport = false,
   });
   final Recipe? recipe;
 
@@ -32,6 +34,11 @@ class RecipeEditorScreen extends StatefulWidget {
   /// [recipe] is an unsaved import: this is its preview (IMP-5). Leaving
   /// asks first, and a discarded import's downloaded photo is deleted.
   final bool imported;
+
+  /// [recipe] came from `Importer.fromAi` (IMP-3): saving it is what spends
+  /// the AI quota (IMP-7) — never a cancelled preview, and never a website
+  /// or by-hand import, which cost nothing.
+  final bool usedAiImport;
 
   @override
   State<RecipeEditorScreen> createState() => _RecipeEditorScreenState();
@@ -115,6 +122,11 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   }
 
   Future<void> _save() async {
+    // A second tap before the first save's own async work settles must be
+    // a no-op: the button's disabled look (below) only takes effect once
+    // Flutter rebuilds, which a same-frame double tap can outrun
+    // (should-fix, review) — this guard is checked on entry, not the UI.
+    if (_saving) return;
     if (!_form.currentState!.validate()) return;
     final state = context.read<RecipesState>();
     final repo = state.repository;
@@ -151,8 +163,8 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     setState(() => _saving = true);
     final saved = await state.save(recipe);
     if (!mounted) return;
-    setState(() => _saving = false);
     if (saved == null) {
+      setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context).errorSaveFailed)),
       );
@@ -162,6 +174,15 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     final old = before?.photoPath;
     if (old != null && old != _photo) {
       await context.read<PhotoStore>().delete(old);
+    }
+    if (!mounted) return;
+    // IMP-7: only the save path spends the quota, and only for an AI
+    // import — never a cancelled preview, and never website or by-hand.
+    // _saving stays true (the Save button disabled) through this whole
+    // tail: a double-tap before the upsert settles must never record the
+    // AI quota twice for the one recipe it saves (should-fix, review).
+    if (widget.usedAiImport) {
+      await context.read<SettingsState>().recordAiImportSaved();
     }
     if (mounted) Navigator.of(context).pop(saved.id);
   }

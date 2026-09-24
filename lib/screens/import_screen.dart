@@ -1,33 +1,82 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/recipe.dart';
+import '../models/recipe_import.dart' show normalizeSourceUrl;
+import '../providers/recipes_state.dart';
+import '../providers/settings_state.dart';
+import '../services/ai_import.dart';
 import '../services/importer.dart';
 import '../services/web_import.dart';
 import 'home_screen.dart';
 import 'recipe_editor_screen.dart';
 
-/// Import from a link (IMP-2): read on the device, free and unlimited.
-/// Shows progress (IMP-4), checks for a duplicate (IMP-9), then opens the
-/// preview, where nothing is saved until the user taps Save (IMP-5).
+/// Import from a link (IMP-2) or shared/pasted text (IMP-3): a link is read
+/// on the device first, free and unlimited; when that fails for any reason
+/// but an invalid link, or for plain text, it goes to the AI server instead
+/// (IMP-1, IMP-3). Shows progress (IMP-4), checks for a duplicate (IMP-9),
+/// then opens the preview, where nothing is saved — and no AI quota spent —
+/// until the user taps Save (IMP-5, IMP-7).
 class ImportScreen extends StatefulWidget {
-  const ImportScreen({super.key, this.initialUrl});
+  const ImportScreen({super.key, this.initialUrl, this.initialText});
 
-  /// A shared link: the import starts at once.
+  /// A shared or pasted link: the import starts at once.
   final String? initialUrl;
+
+  /// Shared or pasted text with no link (IMP-1): goes to AI import at once
+  /// (IMP-3). `Importer.fromText`'s offline heuristic is only the fallback,
+  /// offered as "أضفها بنفسك" if that fails.
+  final String? initialText;
 
   @override
   State<ImportScreen> createState() => _ImportScreenState();
 }
 
-enum _Stage { idle, reading, understanding }
+enum _Stage { idle, reading, understanding, aiConfirm, aiSending }
+
+/// IMP-4: past this long in [_Stage.aiSending], the progress block offers
+/// "Keep waiting" or "Cancel" instead of just sitting on an indeterminate
+/// bar until [DeviceAiImportClient]'s own 60 s timeout.
+const _keepWaitingAfter = Duration(seconds: 45);
 
 class _ImportScreenState extends State<ImportScreen> {
   late final _link = TextEditingController(text: widget.initialUrl ?? '');
+  final _caption = TextEditingController();
   _Stage _stage = _Stage.idle;
   ImportFailure? _failure;
+  AiImportErrorKind? _aiError;
+  bool _outOfQuota = false;
+
+  /// Set once an AI attempt for a link comes back `unreachable` or
+  /// `private_post` (IMP-12): the original link, kept so a pasted caption
+  /// still saves with it as the source (IMP-9).
+  String? _unreadableLink;
+
+  /// Why the paste-caption fallback is showing (IMP-12) — separate from
+  /// [_aiError], which a failed *retry* of the caption itself (e.g. a
+  /// dropped connection) goes on to overwrite. Kept so the fallback box
+  /// stays on screen, with its own reason line unchanged, through a caption
+  /// send that fails for some other reason (should-fix, review).
+  AiImportErrorKind? _captionFallbackReason;
+
+  /// The plain text last sent to AI (a share or a paste), kept only so
+  /// "أضفها بنفسك" can fall back to the offline heuristic on failure.
+  String? _lastText;
+
+  /// IMP-3: text shared in with no user action at all (unlike a typed
+  /// link or a pasted caption, where tapping "استيراد" is itself the
+  /// decision) waits here for [_Stage.aiConfirm] until the user actually
+  /// chooses to spend an AI import.
+  String? _pendingAiText;
+
+  /// IMP-4: shown once [_keepWaitingAfter] passes during [_Stage.aiSending].
+  bool _showKeepWaiting = false;
+  Timer? _keepWaitingTimer;
+
   int _run = 0; // a cancelled run's result is ignored (IMP-4)
 
   @override
@@ -35,12 +84,18 @@ class _ImportScreenState extends State<ImportScreen> {
     super.initState();
     if (widget.initialUrl != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _import());
+    } else if (widget.initialText != null) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _confirmAiSend(widget.initialText!),
+      );
     }
   }
 
   @override
   void dispose() {
+    _keepWaitingTimer?.cancel();
     _link.dispose();
+    _caption.dispose();
     super.dispose();
   }
 
@@ -50,12 +105,28 @@ class _ImportScreenState extends State<ImportScreen> {
     if (data?.text != null) _link.text = data!.text!.trim();
   }
 
+  Future<void> _pasteCaption() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (data?.text != null) _caption.text = data!.text!.trim();
+  }
+
+  /// IMP-12, SRV-10: both the unreachable-link case and any platform the
+  /// server flags `private_post` (Instagram always, per Decision 8) land on
+  /// the same paste-caption fallback.
+  static bool _showsCaptionFallback(AiImportErrorKind kind) =>
+      kind == AiImportErrorKind.unreachable ||
+      kind == AiImportErrorKind.privatePost;
+
   Future<void> _import() async {
     final importer = context.read<Importer>();
     final url = _link.text.trim();
     final run = ++_run;
     setState(() {
       _failure = null;
+      _aiError = null;
+      _outOfQuota = false;
+      _unreadableLink = null;
+      _captionFallbackReason = null;
       _stage = _Stage.reading;
     });
 
@@ -69,19 +140,131 @@ class _ImportScreenState extends State<ImportScreen> {
       setState(() => _stage = _Stage.understanding);
       draft = await importer.fromUrl(url);
     } on ImportException catch (e) {
-      if (mounted && run == _run) {
+      if (!mounted || run != _run) return;
+      if (!needsAiImport(e.failure)) {
         setState(() {
           _stage = _Stage.idle;
           _failure = e.failure;
         });
+        return;
       }
+      // IMP-3: no recipe data, or a page the device couldn't fetch at all
+      // (many social apps block a plain fetch) both go to AI import next,
+      // same as a social link.
+      await _sendToAi(url: url);
       return;
     }
     if (!mounted || run != _run) return;
     setState(() => _stage = _Stage.idle);
+    await _openPreview(draft, usedAiImport: false);
+  }
+
+  /// IMP-3: a share or a plain paste with no link reaches AI import with no
+  /// user action at all — unlike a typed link or a pasted caption, where
+  /// tapping "استيراد" already is the user's decision. This shows the cost
+  /// line first, with a real استيراد/إلغاء choice, before anything is sent.
+  void _confirmAiSend(String text) {
+    final settings = context.read<SettingsState>();
+    if (settings.aiImportsLeft() <= 0) {
+      setState(() {
+        _stage = _Stage.idle;
+        _outOfQuota = true;
+        _lastText = text;
+      });
+      return;
+    }
+    setState(() {
+      _stage = _Stage.aiConfirm;
+      _pendingAiText = text;
+    });
+  }
+
+  void _cancelAiConfirm() => setState(() {
+    _stage = _Stage.idle;
+    _pendingAiText = null;
+  });
+
+  /// IMP-3, SRV-1: sends exactly one of [url] or [text] to the AI server.
+  /// The cost line (IMP-3) and progress (IMP-4) show before anything is
+  /// sent; a quota already at 0 is told to the user instead of trying a
+  /// request the server would only reject (IMP-7).
+  Future<void> _sendToAi({String? url, String? text}) async {
+    final settings = context.read<SettingsState>();
+    if (settings.aiImportsLeft() <= 0) {
+      setState(() {
+        _stage = _Stage.idle;
+        _outOfQuota = true;
+        _aiError = null;
+        _unreadableLink = null;
+        _captionFallbackReason = null;
+        _lastText = text;
+      });
+      return;
+    }
+    final run = ++_run;
+    setState(() {
+      _stage = _Stage.aiSending;
+      _aiError = null;
+      _outOfQuota = false;
+      _lastText = text;
+      _pendingAiText = null;
+      _showKeepWaiting = false;
+    });
+    _keepWaitingTimer?.cancel();
+    _keepWaitingTimer = Timer(_keepWaitingAfter, () {
+      if (mounted && run == _run) setState(() => _showKeepWaiting = true);
+    });
+    final installId = await context.read<RecipesState>().repository.installId();
+    if (!mounted || run != _run) return;
+    final importer = context.read<Importer>();
+    Recipe draft;
+    try {
+      draft = await importer.fromAi(installId: installId, url: url, text: text);
+    } on AiImportException catch (e) {
+      _keepWaitingTimer?.cancel();
+      if (!mounted || run != _run) return;
+      setState(() {
+        _stage = _Stage.idle;
+        _aiError = e.kind;
+        // IMP-12: only a link attempt sets or clears these — a failed
+        // caption send (url is always null there) must never wipe out a
+        // link kept from an earlier unreachable/private_post attempt, or
+        // the paste box, its reason line and the original source all
+        // disappear behind a retry's own, unrelated error (e.g. a dropped
+        // connection) (should-fix, review).
+        if (url != null) {
+          final fallback = _showsCaptionFallback(e.kind);
+          _unreadableLink = fallback ? url : null;
+          _captionFallbackReason = fallback ? e.kind : null;
+        }
+      });
+      return;
+    }
+    _keepWaitingTimer?.cancel();
+    if (!mounted || run != _run) return;
+    setState(() => _stage = _Stage.idle);
+    // IMP-12: a pasted caption still saves with the original link as its
+    // source, so IMP-9's duplicate check and "open original" keep working.
+    if (url == null && text != null) {
+      final original = _unreadableLink;
+      if (original != null) {
+        draft = draft.copyWith(
+          sourceUrl: normalizeSourceUrl(original),
+          sourceType: SourceType.social,
+        );
+      }
+    }
+    await _openPreview(draft, usedAiImport: true);
+  }
+
+  Future<void> _openPreview(Recipe draft, {required bool usedAiImport}) async {
     final saved = await Navigator.of(context).push<String>(
       MaterialPageRoute(
-        builder: (_) => RecipeEditorScreen(recipe: draft, imported: true),
+        builder: (_) => RecipeEditorScreen(
+          recipe: draft,
+          imported: true,
+          usedAiImport: usedAiImport,
+        ),
       ),
     );
     if (saved != null && mounted) {
@@ -120,41 +303,101 @@ class _ImportScreenState extends State<ImportScreen> {
     return false;
   }
 
-  void _cancel() => setState(() {
-    _run++;
-    _stage = _Stage.idle;
-  });
+  void _cancel() {
+    _keepWaitingTimer?.cancel();
+    setState(() {
+      _run++;
+      _stage = _Stage.idle;
+      _showKeepWaiting = false;
+    });
+  }
 
+  /// IMP-4: "Keep waiting" — the request itself is untouched, only the
+  /// prompt is dismissed, with another [_keepWaitingAfter] before it can
+  /// reappear.
+  void _keepWaiting() {
+    final run = _run;
+    _keepWaitingTimer?.cancel();
+    _keepWaitingTimer = Timer(_keepWaitingAfter, () {
+      if (mounted && run == _run) setState(() => _showKeepWaiting = true);
+    });
+    setState(() => _showKeepWaiting = false);
+  }
+
+  /// A blank draft, tagged with whatever source was being tried, for the
+  /// user to fill in themselves (IMP-1's offline heuristic, or a blank
+  /// website-tagged draft when there was only a link).
   Future<void> _addByHand() async {
     final importer = context.read<Importer>();
-    final draft = importer.fromText('');
-    final saved = await Navigator.of(context).push<String>(
-      MaterialPageRoute(
-        builder: (_) => RecipeEditorScreen(
-          recipe: draft.copyWith(
-            sourceUrl: _link.text.trim(),
-            sourceType: SourceType.website,
-          ),
-          imported: true,
-        ),
-      ),
-    );
-    if (saved != null && mounted) {
-      Navigator.of(context).pop();
-      await openRecipe(context, saved);
-    }
+    final text = _lastText;
+    final draft = text != null
+        ? importer.fromText(text)
+        : importer
+              .fromText('')
+              .copyWith(
+                // IMP-9: normalized like every other import path, so a
+                // later re-import of the same link (tracking parameters
+                // and all) still finds this one as a duplicate.
+                sourceUrl: normalizeSourceUrl(_link.text.trim()),
+                sourceType: SourceType.website,
+              );
+    await _openPreview(draft, usedAiImport: false);
   }
+
+  Future<void> _sendCaption() async {
+    final text = _caption.text.trim();
+    if (text.isEmpty) return;
+    await _sendToAi(text: text);
+  }
+
+  void _cancelCaption() => setState(() {
+    _unreadableLink = null;
+    _captionFallbackReason = null;
+    _aiError = null;
+    _caption.clear();
+  });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final settings = context.watch<SettingsState>();
     final busy = _stage != _Stage.idle;
-    final message = switch (_failure) {
+    // IMP-12: stays true — the paste box, its own reason line and the kept
+    // link — through a caption retry that fails for a different reason
+    // (should-fix, review): that failure is a fresh [_aiError], not this.
+    final showingCaptionFallback =
+        _captionFallbackReason != null && _unreadableLink != null;
+
+    String? message = switch (_failure) {
       ImportFailure.invalidUrl => l10n.importInvalidUrl,
-      ImportFailure.unreachable => l10n.importUnreachable,
-      ImportFailure.noRecipe => l10n.importNoRecipe,
-      null => null,
+      ImportFailure.unreachable || ImportFailure.noRecipe || null => null,
     };
+    var showAddByHand = false;
+    if (_outOfQuota) {
+      message = l10n.aiImportsOutLine;
+      showAddByHand = true;
+    } else if (_aiError != null && _aiError != _captionFallbackReason) {
+      message = switch (_aiError!) {
+        AiImportErrorKind.badRequest => l10n.aiImportErrorBadRequest,
+        AiImportErrorKind.invalidToken => l10n.aiImportErrorInvalidToken,
+        AiImportErrorKind.unreachable => l10n.aiImportErrorUnreachable,
+        AiImportErrorKind.privatePost => l10n.aiImportErrorPrivatePost,
+        AiImportErrorKind.notARecipe => l10n.aiImportErrorNotARecipe,
+        AiImportErrorKind.limitReached => l10n.aiImportErrorLimitReached,
+        AiImportErrorKind.busy => l10n.aiImportErrorBusy,
+        AiImportErrorKind.misconfigured => l10n.aiImportErrorMisconfigured,
+        AiImportErrorKind.unknown => l10n.aiImportErrorUnknown,
+        AiImportErrorKind.network => l10n.aiImportErrorNetwork,
+      };
+      showAddByHand = _aiError == AiImportErrorKind.notARecipe;
+    }
+
+    final left = settings.aiImportsLeft();
+    final quota = SettingsState.freeAiImportsPerMonth;
+    final quotaLine = left > 0
+        ? l10n.aiImportsLeftLine(settings.number(left), settings.number(quota))
+        : l10n.aiImportsOutLine;
+
     return Scaffold(
       appBar: AppBar(title: Text(l10n.importTitle)),
       body: ListView(
@@ -180,25 +423,136 @@ class _ImportScreenState extends State<ImportScreen> {
             l10n.importExplain,
             style: Theme.of(context).textTheme.bodySmall,
           ),
+          const SizedBox(height: 8),
+          // IMP-7, roadmap "counter visible in the header": always shown,
+          // reset date included, and it becomes the out-of-quota line once
+          // the month's AI imports are used up.
+          Text(quotaLine, style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 16),
-          if (!busy)
+          if (!busy && !showingCaptionFallback)
             FilledButton.icon(
               onPressed: _import,
               icon: const Icon(Icons.download),
               label: Text(l10n.importAction),
             )
-          else ...[
-            LinearProgressIndicator(
-              value: _stage == _Stage.reading ? 0.33 : 0.66,
-            ),
-            const SizedBox(height: 8),
+          else if (_stage == _Stage.aiConfirm) ...[
+            // IMP-3: shown before a share or a plain paste is sent to AI
+            // import, with a real choice — the one case nothing else on
+            // this screen already counts as the user's decision.
             Text(
-              _stage == _Stage.reading
-                  ? l10n.importReading
-                  : l10n.importUnderstanding,
+              l10n.aiImportCostLine(
+                settings.number(left),
+                settings.number(quota),
+              ),
+              style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 8),
-            OutlinedButton(onPressed: _cancel, child: Text(l10n.cancel)),
+            Row(
+              children: [
+                FilledButton(
+                  onPressed: () => _sendToAi(text: _pendingAiText),
+                  child: Text(l10n.importAction),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton(
+                  onPressed: _cancelAiConfirm,
+                  child: Text(l10n.cancel),
+                ),
+              ],
+            ),
+          ] else if (_stage != _Stage.idle) ...[
+            LinearProgressIndicator(
+              value: switch (_stage) {
+                _Stage.reading => 0.25,
+                _Stage.understanding => 0.5,
+                _Stage.aiSending => 0.75,
+                _Stage.aiConfirm || _Stage.idle => 1,
+              },
+            ),
+            const SizedBox(height: 8),
+            Text(switch (_stage) {
+              _Stage.reading => l10n.importReading,
+              _Stage.understanding => l10n.importUnderstanding,
+              _Stage.aiSending => l10n.aiImportSending,
+              _Stage.aiConfirm || _Stage.idle => '',
+            }),
+            if (_stage == _Stage.aiSending) ...[
+              const SizedBox(height: 4),
+              // IMP-3: the cost line, shown before the AI request completes.
+              Text(
+                l10n.aiImportCostLine(
+                  settings.number(left),
+                  settings.number(quota),
+                ),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+            const SizedBox(height: 8),
+            // IMP-4: past 45 s, a real choice instead of the bar alone.
+            if (_stage == _Stage.aiSending && _showKeepWaiting) ...[
+              Text(
+                l10n.aiImportKeepWaitingLine,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: _keepWaiting,
+                      child: Text(
+                        l10n.aiImportKeepWaitingAction,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _cancel,
+                      child: Text(l10n.cancel),
+                    ),
+                  ),
+                ],
+              ),
+            ] else
+              OutlinedButton(onPressed: _cancel, child: Text(l10n.cancel)),
+          ],
+          if (showingCaptionFallback) ...[
+            const SizedBox(height: 16),
+            Text(
+              _captionFallbackReason == AiImportErrorKind.privatePost
+                  ? l10n.aiImportErrorPrivatePost
+                  : l10n.aiImportErrorUnreachable,
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _caption,
+              minLines: 3,
+              maxLines: 8,
+              decoration: InputDecoration(
+                hintText: l10n.aiImportPasteHint,
+                suffixIcon: IconButton(
+                  tooltip: l10n.paste,
+                  icon: const Icon(Icons.content_paste),
+                  onPressed: _pasteCaption,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                FilledButton(
+                  onPressed: _sendCaption,
+                  child: Text(l10n.importAction),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton(
+                  onPressed: _cancelCaption,
+                  child: Text(l10n.cancel),
+                ),
+              ],
+            ),
           ],
           if (message != null) ...[
             const SizedBox(height: 16),
@@ -206,7 +560,7 @@ class _ImportScreenState extends State<ImportScreen> {
               message,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
-            if (_failure == ImportFailure.noRecipe)
+            if (showAddByHand)
               Padding(
                 padding: const EdgeInsetsDirectional.only(top: 8),
                 child: OutlinedButton(

@@ -1,12 +1,14 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wasfati/app.dart';
 import 'package:wasfati/models/quantity/format.dart';
 import 'package:wasfati/models/library.dart';
 import 'package:wasfati/models/ramadan.dart';
 import 'package:wasfati/models/recipe.dart';
+import 'package:wasfati/models/recipe_import.dart' show ImportedRecipe;
 import 'package:wasfati/models/recipe_share.dart' show wasfatiPlayStoreUrl;
 import 'package:wasfati/models/settings.dart';
 import 'package:wasfati/db/grocery_repository.dart';
@@ -23,6 +25,7 @@ import 'dart:async';
 
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:wasfati/services/ai_import.dart';
 import 'package:wasfati/services/backup.dart';
 import 'package:wasfati/services/backup_files.dart';
 import 'package:wasfati/services/cook_services.dart';
@@ -104,6 +107,26 @@ class FakeShareInbox implements ShareInbox {
   Future<void> reset() async => resets++;
 }
 
+/// An AI client whose response is held open until [complete] is called, so
+/// a test can inspect the screen while a request is still in flight (IMP-3,
+/// IMP-4) — [NoopAiImportClient] resolves too fast to observe that state.
+class _ControlledAiImportClient implements AiImportClient {
+  final _completer = Completer<AiImportResult>();
+  final requests = <({String installId, String? url, String? text})>[];
+
+  @override
+  Future<AiImportResult> import({
+    required String installId,
+    String? url,
+    String? text,
+  }) {
+    requests.add((installId: installId, url: url, text: text));
+    return _completer.future;
+  }
+
+  void complete(AiImportResult result) => _completer.complete(result);
+}
+
 Future<(RecipesState, SettingsState)> pumpApp(
   WidgetTester tester, {
   LanguagePref language = LanguagePref.ar,
@@ -121,6 +144,7 @@ Future<(RecipesState, SettingsState)> pumpApp(
   // every other test's `backupFiles.saved`/`sharer.texts` keeps working.
   BackupFiles? backupFilesOverride,
   Sharer? sharerOverride,
+  AiImportClient? aiClient,
 }) async {
   late RecipesState recipes;
   late SettingsState settings;
@@ -149,6 +173,7 @@ Future<(RecipesState, SettingsState)> pumpApp(
       FakeFetcher({'https://site.com/kabsa': kabsaPage}),
       repo,
       savePhoto: (_, _) async => null,
+      aiClient: aiClient,
     );
     if (withRecipe) await recipes.save(kabsa(repo));
     await recipes.load();
@@ -687,9 +712,12 @@ void main() {
   testWidgets('import a link: preview, save, then a duplicate (IMP-2/5/9)', (
     tester,
   ) async {
-    final (recipes, _) = await pumpApp(tester);
+    final (recipes, settings) = await pumpApp(tester);
     await tester.tap(find.text('استيراد من رابط'));
     await settle(tester);
+    // IMP-3: a website import parsed on the device never shows a cost
+    // line, because it never touches the AI quota.
+    expect(find.textContaining('استيراد ذكي واحد'), findsNothing);
     await tester.enterText(find.byType(TextField), 'https://site.com/kabsa');
     await tester.tap(find.text('استيراد'));
     await settle(tester);
@@ -698,10 +726,12 @@ void main() {
     expect(find.text('راجع واحفظ'), findsOneWidget);
     expect(find.text('كبسة دجاج'), findsOneWidget);
     expect(recipes.recipes, isEmpty);
+    expect(find.textContaining('استيراد ذكي واحد'), findsNothing);
     await tester.tap(find.text('حفظ'));
     await settle(tester);
     expect(shown('1 كيلو دجاج'), findsOneWidget); // "١ ك دجاج" parsed
     expect(find.text('من site.com'), findsOneWidget);
+    expect(settings.aiImportsUsed, 0); // a free website import spends nothing
 
     // The same page again offers the saved one (IMP-9).
     await tester.binding.handlePopRoute();
@@ -718,36 +748,554 @@ void main() {
     expect(recipes.recipes.length, 1);
   });
 
-  testWidgets('a page without recipe data says so and offers by hand', (
-    tester,
-  ) async {
-    await pumpApp(tester);
+  testWidgets(
+    'a link without recipe data goes to AI import (IMP-3), and offers by '
+    'hand when that finds no recipe either',
+    (tester) async {
+      final ai = NoopAiImportClient()
+        ..nextResult = const AiImportError(AiImportErrorKind.notARecipe);
+      await pumpApp(tester, aiClient: ai);
+      await tester.tap(find.text('استيراد من رابط'));
+      await settle(tester);
+      await tester.enterText(find.byType(TextField), 'https://down.com/x');
+      await tester.tap(find.text('استيراد'));
+      await settle(tester);
+      expect(
+        find.text('لم يجد التطبيق وصفة في هذا المحتوى. يمكنك إضافتها بنفسك.'),
+        findsOneWidget,
+      );
+      expect(ai.requests.single.url, 'https://down.com/x');
+
+      await tester.tap(find.text('أضفها بنفسك'));
+      await settle(tester);
+      expect(find.text('راجع واحفظ'), findsOneWidget);
+    },
+  );
+
+  testWidgets('a link the device could not fetch at all also goes to AI import '
+      '(IMP-3)', (tester) async {
+    final ai = NoopAiImportClient()
+      ..nextResult = const AiImportError(AiImportErrorKind.network);
+    await pumpApp(tester, aiClient: ai);
     await tester.tap(find.text('استيراد من رابط'));
     await settle(tester);
     await tester.enterText(find.byType(TextField), 'https://down.com/x');
     await tester.tap(find.text('استيراد'));
     await settle(tester);
     expect(
-      find.text('تعذّر فتح الصفحة. تأكد من الرابط والاتصال.'),
+      find.text('تعذّر الاتصال. تحقّق من الإنترنت وحاول مرة أخرى.'),
       findsOneWidget,
     );
   });
 
-  testWidgets('Arabic text shared from another app becomes a draft (IMP-13)', (
-    tester,
-  ) async {
-    final (recipes, _) = await pumpApp(tester);
-    shares.add(
-      'كبسة لحم\nالمقادير:\n1 كيلو لحم\nكوبين رز\nالطريقة:\nيسلق اللحم ساعة',
-    );
+  testWidgets(
+    'Arabic text shared from another app goes to AI import (IMP-3), not '
+    'the offline heuristic, but only after the user confirms '
+    '(should-fix, review)',
+    (tester) async {
+      final ai = NoopAiImportClient()
+        ..nextResult = const AiImportSuccess(
+          ImportedRecipe(
+            title: 'كبسة لحم',
+            ingredients: [
+              (null, ['1 كيلو لحم', 'كوبين رز']),
+            ],
+            steps: [
+              (null, ['يسلق اللحم ساعة']),
+            ],
+          ),
+          model: 'haiku',
+          promptVersion: '1',
+          cached: false,
+        );
+      final (recipes, settings) = await pumpApp(tester, aiClient: ai);
+      shares.add(
+        'كبسة لحم\nالمقادير:\n1 كيلو لحم\nكوبين رز\nالطريقة:\nيسلق اللحم ساعة',
+      );
+      await settle(tester);
+      // A share reaches this screen with no tap at all: the cost line and a
+      // real choice show first, and nothing is sent until "استيراد" here.
+      expect(find.textContaining('سيُستخدم استيراد ذكي واحد'), findsOneWidget);
+      expect(ai.requests, isEmpty);
+
+      await tester.tap(find.text('استيراد'));
+      await settle(tester);
+      expect(find.text('راجع واحفظ'), findsOneWidget);
+      expect(ai.requests.single.text, contains('كبسة لحم'));
+      expect(ai.requests.single.url, isNull);
+      await tester.tap(find.text('حفظ'));
+      await settle(tester);
+      expect(find.text('كبسة لحم'), findsOneWidget);
+      expect(shown('2 كوبان رز'), findsOneWidget);
+      expect(recipes.recipes.single.title, 'كبسة لحم');
+      expect(recipes.recipes.single.sourceType, SourceType.written);
+      expect(settings.aiImportsUsed, 1); // IMP-7: saving spent one
+    },
+  );
+
+  testWidgets('a shared caption can be declined instead, spending nothing '
+      '(IMP-3, should-fix, review)', (tester) async {
+    final ai = NoopAiImportClient();
+    final (recipes, settings) = await pumpApp(tester, aiClient: ai);
+    shares.add('نص عشوائي بلا وصفة');
     await settle(tester);
-    expect(find.text('راجع واحفظ'), findsOneWidget);
+    expect(find.textContaining('سيُستخدم استيراد ذكي واحد'), findsOneWidget);
+
+    await tester.tap(find.text('إلغاء'));
+    await settle(tester);
+    expect(ai.requests, isEmpty);
+    expect(recipes.recipes, isEmpty);
+    expect(settings.aiImportsUsed, 0);
+    // Back to the plain import screen, link field enabled again.
+    expect(find.text('استيراد'), findsOneWidget);
+  });
+
+  testWidgets(
+    'an AI import shows the cost line and the count before the request '
+    'completes (IMP-3, IMP-4)',
+    (tester) async {
+      final ai = _ControlledAiImportClient();
+      final (recipes, _) = await pumpApp(tester, aiClient: ai);
+      await tester.tap(find.text('استيراد من رابط'));
+      await settle(tester);
+      await tester.enterText(
+        find.byType(TextField),
+        'https://www.tiktok.com/@a/video/1',
+      );
+      await tester.tap(find.text('استيراد'));
+      await settle(tester); // fromUrl fails locally, then AI is called
+
+      expect(ai.requests.single.url, 'https://www.tiktok.com/@a/video/1');
+      expect(find.textContaining('سيُستخدم استيراد ذكي واحد'), findsOneWidget);
+      expect(find.textContaining('بقي 10 من 10'), findsWidgets);
+
+      ai.complete(
+        const AiImportSuccess(
+          ImportedRecipe(
+            title: 'ريل تيك توك',
+            ingredients: [
+              (null, ['كوب سكر']),
+            ],
+          ),
+          model: 'haiku',
+          promptVersion: '1',
+          cached: false,
+        ),
+      );
+      await settle(tester);
+      expect(find.text('راجع واحفظ'), findsOneWidget);
+      expect(find.text('ريل تيك توك'), findsOneWidget);
+      expect(recipes.recipes, isEmpty); // still just the preview (IMP-5)
+    },
+  );
+
+  testWidgets(
+    "cancelling an AI import's preview leaves the quota untouched (IMP-4, "
+    'IMP-7)',
+    (tester) async {
+      final ai = NoopAiImportClient()
+        ..nextResult = const AiImportSuccess(
+          ImportedRecipe(
+            title: 'ريل تيك توك',
+            ingredients: [
+              (null, ['كوب سكر']),
+            ],
+          ),
+          model: 'haiku',
+          promptVersion: '1',
+          cached: false,
+        );
+      final (recipes, settings) = await pumpApp(tester, aiClient: ai);
+      await tester.tap(find.text('استيراد من رابط'));
+      await settle(tester);
+      await tester.enterText(
+        find.byType(TextField),
+        'https://www.tiktok.com/@a/video/1',
+      );
+      await tester.tap(find.text('استيراد'));
+      await settle(tester);
+      expect(find.text('راجع واحفظ'), findsOneWidget);
+
+      await tester.binding.handlePopRoute(); // system Back out of the preview
+      await settle(tester);
+      expect(find.text('تجاهل التعديلات؟'), findsOneWidget);
+      await tester.tap(find.text('تجاهل'));
+      await settle(tester);
+
+      expect(recipes.recipes, isEmpty);
+      expect(settings.aiImportsUsed, 0); // a cancelled preview spends nothing
+    },
+  );
+
+  testWidgets('saving an AI import spends one (IMP-7)', (tester) async {
+    final ai = NoopAiImportClient()
+      ..nextResult = const AiImportSuccess(
+        ImportedRecipe(
+          title: 'ريل تيك توك',
+          ingredients: [
+            (null, ['كوب سكر']),
+          ],
+        ),
+        model: 'haiku',
+        promptVersion: '1',
+        cached: false,
+      );
+    final (recipes, settings) = await pumpApp(tester, aiClient: ai);
+    await tester.tap(find.text('استيراد من رابط'));
+    await settle(tester);
+    await tester.enterText(
+      find.byType(TextField),
+      'https://www.tiktok.com/@a/video/1',
+    );
+    await tester.tap(find.text('استيراد'));
+    await settle(tester);
     await tester.tap(find.text('حفظ'));
     await settle(tester);
-    expect(find.text('كبسة لحم'), findsOneWidget);
-    expect(shown('2 كوبان رز'), findsOneWidget);
-    expect(recipes.recipes.single.title, 'كبسة لحم');
+
+    expect(recipes.recipes.single.title, 'ريل تيك توك');
+    expect(settings.aiImportsUsed, 1);
+    expect(settings.aiImportsLeft(), 9);
+
+    // The header counter on the import screen reflects the new count too.
+    await tester.binding.handlePopRoute(); // back from the recipe page
+    await settle(tester);
+    // The library has a recipe now, so it's the app bar's icon (not the
+    // empty state's labelled FAB) that opens Import.
+    await tester.tap(find.byTooltip('استيراد من رابط'));
+    await settle(tester);
+    expect(find.textContaining('بقي 9 من 10'), findsOneWidget);
   });
+
+  testWidgets('out of AI imports: the screen says so, and website import still '
+      'works (IMP-7)', (tester) async {
+    final ai = NoopAiImportClient();
+    final (_, settings) = await pumpApp(tester, aiClient: ai);
+    await tester.runAsync(() async {
+      for (var i = 0; i < 10; i++) {
+        await settings.recordAiImportSaved();
+      }
+    });
+    await tester.tap(find.text('استيراد من رابط'));
+    await settle(tester);
+    expect(
+      find.text(
+        'نفدت الاستيرادات الذكية هذا الشهر · تتجدد في الأول من كل شهر. '
+        'استيراد صفحات المواقع يبقى مجانيًا وبلا حدود.',
+      ),
+      findsOneWidget,
+    );
+
+    // A link that would need AI isn't even attempted (IMP-7).
+    await tester.enterText(
+      find.byType(TextField),
+      'https://www.tiktok.com/@a/video/1',
+    );
+    await tester.tap(find.text('استيراد'));
+    await settle(tester);
+    expect(ai.requests, isEmpty);
+    expect(find.text('أضفها بنفسك'), findsOneWidget);
+
+    // A normal website import still works, free (IMP-2).
+    await tester.enterText(find.byType(TextField), 'https://site.com/kabsa');
+    await tester.tap(find.text('استيراد'));
+    await settle(tester);
+    expect(find.text('راجع واحفظ'), findsOneWidget);
+    expect(find.text('كبسة دجاج'), findsOneWidget);
+  });
+
+  testWidgets(
+    'IMP-12: an unreadable link offers to paste the caption, read only on '
+    'tap, and the original link stays the source',
+    (tester) async {
+      final ai = NoopAiImportClient()
+        ..nextResult = const AiImportError(AiImportErrorKind.unreachable);
+      final (recipes, _) = await pumpApp(tester, aiClient: ai);
+
+      var clipboardReads = 0;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.getData') {
+            clipboardReads++;
+            return {'text': 'كبسة دجاج كوب رز'};
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      await tester.tap(find.text('استيراد من رابط'));
+      await settle(tester);
+      await tester.enterText(
+        find.byType(TextField),
+        'https://www.instagram.com/p/abc/',
+      );
+      await tester.tap(find.text('استيراد'));
+      await settle(tester);
+
+      expect(find.text('تعذّر قراءة محتوى هذا الرابط.'), findsOneWidget);
+      expect(clipboardReads, 0); // reaching this screen reads nothing
+
+      ai.nextResult = const AiImportSuccess(
+        ImportedRecipe(
+          title: 'كبسة دجاج',
+          ingredients: [
+            (null, ['كوب رز']),
+          ],
+        ),
+        model: 'haiku',
+        promptVersion: '1',
+        cached: false,
+      );
+      await tester.tap(find.byIcon(Icons.content_paste).last);
+      await settle(tester);
+      expect(clipboardReads, 1); // read only now, on the tap
+      expect(find.text('كبسة دجاج كوب رز'), findsOneWidget); // in the box
+
+      await tester.tap(find.text('استيراد'));
+      await settle(tester);
+      expect(find.text('راجع واحفظ'), findsOneWidget);
+      expect(ai.requests.last.text, 'كبسة دجاج كوب رز');
+      expect(ai.requests.last.url, isNull);
+
+      await tester.tap(find.text('حفظ'));
+      await settle(tester);
+      // IMP-9/IMP-12: the original link stays as the source.
+      expect(find.text('من instagram.com'), findsOneWidget);
+      expect(recipes.recipes.single.sourceType, SourceType.social);
+      await tester.runAsync(() async {
+        expect(
+          await recipes.repository.findBySourceUrl(
+            'https://instagram.com/p/abc',
+          ),
+          recipes.recipes.single.id,
+        );
+      });
+    },
+  );
+
+  testWidgets(
+    'SRV-7 private_post also offers the paste-caption fallback, with the '
+    'original link kept as the source (IMP-12, must-fix, review)',
+    (tester) async {
+      final ai = NoopAiImportClient()
+        ..nextResult = const AiImportError(AiImportErrorKind.privatePost);
+      final (recipes, _) = await pumpApp(tester, aiClient: ai);
+
+      await tester.tap(find.text('استيراد من رابط'));
+      await settle(tester);
+      await tester.enterText(
+        find.byType(TextField),
+        'https://www.instagram.com/p/xyz/',
+      );
+      await tester.tap(find.text('استيراد'));
+      await settle(tester);
+
+      // The paste box shows, not the generic "unexpected error" message.
+      expect(find.text('حدث خطأ غير متوقع. حاول مرة أخرى.'), findsNothing);
+      expect(find.byType(TextField), findsNWidgets(2)); // link + caption
+
+      ai.nextResult = const AiImportSuccess(
+        ImportedRecipe(
+          title: 'وصفة خاصة',
+          ingredients: [
+            (null, ['كوب سكر']),
+          ],
+        ),
+        model: 'haiku',
+        promptVersion: '1',
+        cached: false,
+      );
+      await tester.enterText(find.byType(TextField).last, 'وصفة خاصة كوب سكر');
+      await tester.tap(find.text('استيراد'));
+      await settle(tester);
+      expect(find.text('راجع واحفظ'), findsOneWidget);
+
+      await tester.tap(find.text('حفظ'));
+      await settle(tester);
+      expect(find.text('من instagram.com'), findsOneWidget); // IMP-9/IMP-12
+      expect(recipes.recipes.single.sourceType, SourceType.social);
+    },
+  );
+
+  testWidgets(
+    'a failed caption send keeps the paste box and the caption on screen, '
+    'and a retry still saves with the original link (IMP-9, IMP-12, '
+    'should-fix, review)',
+    (tester) async {
+      final ai = NoopAiImportClient()
+        ..nextResult = const AiImportError(AiImportErrorKind.unreachable);
+      final (recipes, _) = await pumpApp(tester, aiClient: ai);
+
+      await tester.tap(find.text('استيراد من رابط'));
+      await settle(tester);
+      await tester.enterText(
+        find.byType(TextField),
+        'https://www.instagram.com/p/abc/',
+      );
+      await tester.tap(find.text('استيراد'));
+      await settle(tester);
+      expect(find.text('تعذّر قراءة محتوى هذا الرابط.'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField).last, 'كبسة دجاج كوب رز');
+      // The caption send itself fails, e.g. Wi-Fi dropped for a second.
+      ai.nextResult = const AiImportError(AiImportErrorKind.network);
+      await tester.tap(find.text('استيراد'));
+      await settle(tester);
+
+      // The paste box and the pasted text must still be on screen — not
+      // wiped out along with the (unrelated) original link.
+      expect(
+        find.text('تعذّر الاتصال. تحقّق من الإنترنت وحاول مرة أخرى.'),
+        findsOneWidget,
+      );
+      expect(find.text('كبسة دجاج كوب رز'), findsOneWidget);
+      expect(find.byType(TextField), findsNWidgets(2));
+
+      ai.nextResult = const AiImportSuccess(
+        ImportedRecipe(
+          title: 'كبسة دجاج',
+          ingredients: [
+            (null, ['كوب رز']),
+          ],
+        ),
+        model: 'haiku',
+        promptVersion: '1',
+        cached: false,
+      );
+      await tester.tap(find.text('استيراد'));
+      await settle(tester);
+      expect(find.text('راجع واحفظ'), findsOneWidget);
+
+      await tester.tap(find.text('حفظ'));
+      await settle(tester);
+      // The original link, not the caption, is still the saved source.
+      expect(find.text('من instagram.com'), findsOneWidget);
+      expect(recipes.recipes.single.sourceType, SourceType.social);
+    },
+  );
+
+  testWidgets(
+    '"أضفها بنفسك" normalizes the link, so re-importing it later is still '
+    'caught as a duplicate (IMP-9, should-fix, review)',
+    (tester) async {
+      final ai = NoopAiImportClient();
+      final (recipes, settings) = await pumpApp(tester, aiClient: ai);
+      await tester.runAsync(() async {
+        for (var i = 0; i < 10; i++) {
+          await settings.recordAiImportSaved();
+        }
+      });
+      await tester.tap(find.text('استيراد من رابط'));
+      await settle(tester);
+      await tester.enterText(
+        find.byType(TextField),
+        'https://www.tiktok.com/@a/video/9?is_from_webapp=1',
+      );
+      await tester.tap(find.text('استيراد')); // out of quota: no AI attempt
+      await settle(tester);
+      await tester.tap(find.text('أضفها بنفسك'));
+      await settle(tester);
+      await tester.enterText(find.byType(TextFormField).first, 'ريل بلا حصة');
+      await tester.tap(find.text('حفظ'));
+      await settle(tester);
+      await tester.runAsync(() async {
+        expect(
+          await recipes.repository.findBySourceUrl(
+            'https://tiktok.com/@a/video/9',
+          ),
+          recipes.recipes.single.id,
+        );
+      });
+    },
+  );
+
+  testWidgets(
+    'a double tap on Save before it settles spends the AI quota once, not '
+    'twice (IMP-7, should-fix, review)',
+    (tester) async {
+      final ai = NoopAiImportClient()
+        ..nextResult = const AiImportSuccess(
+          ImportedRecipe(
+            title: 'ريل تيك توك',
+            ingredients: [
+              (null, ['كوب سكر']),
+            ],
+          ),
+          model: 'haiku',
+          promptVersion: '1',
+          cached: false,
+        );
+      final (recipes, settings) = await pumpApp(tester, aiClient: ai);
+      await tester.tap(find.text('استيراد من رابط'));
+      await settle(tester);
+      await tester.enterText(
+        find.byType(TextField),
+        'https://www.tiktok.com/@a/video/1',
+      );
+      await tester.tap(find.text('استيراد'));
+      await settle(tester);
+
+      // Two taps with nothing pumped in between, as a fast double tap
+      // would land before the first one's own async work is done.
+      await tester.tap(find.text('حفظ'));
+      await tester.tap(find.text('حفظ'));
+      await settle(tester);
+
+      expect(recipes.recipes.single.title, 'ريل تيك توك');
+      expect(recipes.recipes.length, 1); // one recipe, not a second copy
+      expect(settings.aiImportsUsed, 1);
+    },
+  );
+
+  testWidgets(
+    'IMP-4: past 45 seconds, AI import offers "Keep waiting" or "Cancel"',
+    (tester) async {
+      final ai = _ControlledAiImportClient();
+      await pumpApp(tester, aiClient: ai);
+      await tester.tap(find.text('استيراد من رابط'));
+      await settle(tester);
+      await tester.enterText(
+        find.byType(TextField),
+        'https://www.tiktok.com/@a/video/1',
+      );
+      await tester.tap(find.text('استيراد'));
+      await settle(tester); // fromUrl fails locally, then AI is called
+      expect(find.text('جارٍ الاستيراد بالذكاء الاصطناعي…'), findsOneWidget);
+      expect(find.text('متابعة الانتظار'), findsNothing);
+
+      await tester.pump(const Duration(seconds: 46));
+      expect(find.text('متابعة الانتظار'), findsOneWidget);
+      expect(find.text('يستغرق هذا وقتًا أطول من المعتاد.'), findsOneWidget);
+
+      // "Keep waiting" dismisses the prompt; the request is still in flight.
+      await tester.tap(find.text('متابعة الانتظار'));
+      await tester.pump();
+      expect(find.text('متابعة الانتظار'), findsNothing);
+      expect(ai.requests, hasLength(1)); // never re-sent
+
+      ai.complete(
+        const AiImportSuccess(
+          ImportedRecipe(
+            title: 'ريل تيك توك',
+            ingredients: [
+              (null, ['كوب سكر']),
+            ],
+          ),
+          model: 'haiku',
+          promptVersion: '1',
+          cached: false,
+        ),
+      );
+      await settle(tester);
+      expect(find.text('راجع واحفظ'), findsOneWidget);
+    },
+  );
 
   testWidgets('the title is required (REC-3)', (tester) async {
     await pumpApp(tester);

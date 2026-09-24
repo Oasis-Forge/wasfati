@@ -23,19 +23,24 @@
 
 <section id="en" dir="ltr">
   <h1>Privacy Policy — “Wasfati”</h1>
-  <p class="meta">Developer: Oasis Forge · Effective date: 22 September 2026 · Contact:
+  <p class="meta">Developer: Oasis Forge · Effective date: 24 September 2026 · Contact:
     <a href="mailto:oasisforge.support@gmail.com">oasisforge.support@gmail.com</a></p>
 
   <p>Oasis Forge respects your privacy. This policy explains what data the “Wasfati” app
     handles and how it is used. By using the app, you agree to the following.</p>
 
   <h2>1. Data we collect</h2>
-  <p>We do not collect any personal data. The app requires no sign-in and no account, and it
-    sends no information about you to our servers — because we run no server. Your recipes,
-    photos, cookbooks, tags, notes and settings are stored only in the app's private storage
-    on your device, and they are erased when the app is removed or its data is cleared.</p>
-  <p>The app also keeps a random install ID on your device. It identifies no one, and it leaves
-    the device only inside a backup file you choose to save or share (section 6).</p>
+  <p>We do not collect any personal data. The app requires no sign-in and no account. Your
+    recipes, photos, cookbooks, tags, notes and settings are stored only in the app's private
+    storage on your device, and they are erased when the app is removed or its data is
+    cleared.</p>
+  <p>Most of what the app does never leaves your device — including every link you import,
+    which your phone reads directly from the website itself (section 2). The one exception is
+    AI import (section 3): when your phone can't read a page on its own, we send only what you
+    asked it to import to our import server, which never keeps it.</p>
+  <p>The app also keeps a random install ID on your device. It identifies no one — no name,
+    email or account stands behind it. It leaves the device only inside a backup file you
+    choose to save or share (section 7), or with an AI import request (section 3).</p>
   <p><strong>Android backup:</strong> if backup is turned on for your Google account, Android
     may include your recipes and settings — not their photos — in your device backup, which
     Google stores and which you control from your device settings. We cannot access that
@@ -46,26 +51,48 @@
     <strong>directly from the recipe's website</strong>, exactly as a browser would. That
     website sees the request and your device's IP address, as it would for any visitor.
     Nothing reaches us, and no server of ours is involved. Text you share into Wasfati stays
-    on your device.</p>
+    on your device. If the page doesn't hold the recipe data the app needs, it offers AI
+    import instead (section 3).</p>
 
-  <h2>3. Photos</h2>
+  <h2>3. Importing with AI</h2>
+  <p>Some sources need help understanding — a social post whose page your phone can't read on
+    its own (TikTok or Instagram, for example), a caption you paste in, or, in a later update,
+    a photo of a cookbook page. When you ask the app to import one of these, it sends what
+    you're actually importing — the link or the text itself — together with the app's install
+    ID (section 1), to our import server.</p>
+  <p>Our server sends that text to <strong>Claude, Anthropic's AI model</strong>, which turns
+    it into a recipe, and sends the structured result back to your phone. The server keeps
+    nothing it is sent: no recipe text, no caption, no log of what you imported. The one
+    exception is a public post's link: the server keeps the recipe it produced for that link
+    for 30 days, so importing the same public post again doesn't cost a second AI call. That's
+    a saved copy of something already public — the recipe itself — never of a caption you
+    pasted or a photo you send.</p>
+  <p>The recipe that comes back opens for you to review and edit before anything is saved. Once
+    it's on your device, it stays there like any other recipe (section 1) — it leaves again
+    only if you back it up, share it, or ask to translate it.</p>
+  <p>Translating a recipe into Arabic or English works the same way: it sends only that
+    recipe's words to the same server, and — unlike an import — the result is never cached;
+    nothing about a translation is kept afterward either.</p>
+
+  <h2>4. Photos</h2>
   <p>Photos you add come from your camera or gallery through your phone's own picker, so the
     app never browses your photo library. They are kept in the app's private storage and
     leave your device only if you send them somewhere yourself.</p>
 
-  <h2>4. Cook timers and notifications</h2>
+  <h2>5. Cook timers and notifications</h2>
   <p>Timers in cook mode are scheduled on your device, and nothing is sent anywhere.
     Notification permission is asked the first time you start a timer. If you refuse, timers
     still ring while the app is open.</p>
 
-  <h2>5. Permissions</h2>
+  <h2>6. Permissions</h2>
   <ul>
-    <li><strong>Internet:</strong> to download the recipe pages you choose to import.</li>
+    <li><strong>Internet:</strong> to download the recipe pages you choose to import (section
+      2), and to reach our import server when AI import is needed (section 3).</li>
     <li><strong>Notifications:</strong> to alert you when a cook timer ends.</li>
     <li><strong>Vibrate:</strong> for that same timer alert.</li>
   </ul>
 
-  <h2>6. Backups and exports</h2>
+  <h2>7. Backups and exports</h2>
   <p>A backup is a file the app makes only when you ask. It holds your recipes and their
     photos, cookbooks, tags, your meal plan, your grocery list, your settings and the app's
     random install ID. A recipe you deleted crosses only as a deletion, never its content or
@@ -74,13 +101,12 @@
     keeps an automatic copy of what was on your phone, on your phone. An export is a plain
     text file of your recipes, saved the same way.</p>
 
-  <h2>7. Ads, purchases and analytics</h2>
+  <h2>8. Ads, purchases and analytics</h2>
   <p>This version has no ads, no purchases and no analytics or tracking of any kind. Wasfati
-    will later add ads, optional purchases, and recipe import through our own server. Each of
-    those updates this page <em>before</em> the version that adds it is released, so this
-    policy always describes the app you have.</p>
+    will later add ads and optional purchases. Each of those updates this page <em>before</em>
+    the version that adds it is released, so this policy always describes the app you have.</p>
 
-  <h2>8. Deleting your information</h2>
+  <h2>9. Deleting your information</h2>
   <p>Delete a recipe in the app: it stays in the trash for 30 days, then it and its photo are
     removed for good from the app's own storage. From the moment you delete it, any backup you
     make afterward carries only the fact that it was deleted, never its content or photo. A
@@ -88,15 +114,15 @@
     keeps holding it until you remove that saved file yourself. Uninstalling the app removes
     everything it stored.</p>
 
-  <h2>9. Children</h2>
+  <h2>10. Children</h2>
   <p>The app is intended for a general audience and is not directed at children under 13, and
     we do not knowingly collect any data from them.</p>
 
-  <h2>10. Changes to this policy</h2>
+  <h2>11. Changes to this policy</h2>
   <p>We may update this policy as the app gains features. Any change appears on this page with
     an updated effective date.</p>
 
-  <h2>11. Contact</h2>
+  <h2>12. Contact</h2>
   <p>For any privacy question, email us at
     <a href="mailto:oasisforge.support@gmail.com">oasisforge.support@gmail.com</a>. Email is
     our only support channel.</p>
@@ -106,18 +132,23 @@
 
 <section id="ar" dir="rtl" lang="ar">
   <h1>سياسة الخصوصية — تطبيق «وصفاتي»</h1>
-  <p class="meta">المطوّر: Oasis Forge · تاريخ السريان: ٢٢ سبتمبر ٢٠٢٦ · للتواصل:
+  <p class="meta">المطوّر: Oasis Forge · تاريخ السريان: ٢٤ سبتمبر ٢٠٢٦ · للتواصل:
     <a href="mailto:oasisforge.support@gmail.com">oasisforge.support@gmail.com</a></p>
 
   <p>تحترم Oasis Forge خصوصيتك. توضّح هذه السياسة البيانات التي يتعامل معها تطبيق «وصفاتي»
     وكيفية استخدامها. باستخدامك للتطبيق فأنت توافق على ما يلي.</p>
 
   <h2>١. البيانات التي نجمعها</h2>
-  <p>لا نجمع أي بيانات شخصية. التطبيق لا يطلب تسجيل دخول ولا حساباً، ولا يرسل أي معلومات عنك
-    إلى خوادمنا — لأننا لا نملك خادماً. وصفاتك وصورها وكتب الطبخ والوسوم والملاحظات والإعدادات
-    تُحفظ في مساحة التطبيق الخاصة على جهازك فقط، وتُحذف عند إزالة التطبيق أو مسح بياناته.</p>
-  <p>يحفظ التطبيق أيضاً معرّفاً عشوائياً للتثبيت على جهازك. هذا المعرّف لا يدل على أي شخص،
-    ولا يغادر جهازك إلا داخل ملف نسخة احتياطية تختار أنت حفظه أو مشاركته (البند ٦).</p>
+  <p>لا نجمع أي بيانات شخصية. التطبيق لا يطلب تسجيل دخول ولا حساباً. تُحفظ وصفاتك وصورها وكتب
+    الطبخ والوسوم والملاحظات والإعدادات في مساحة التطبيق الخاصة على جهازك فقط، وتُحذف عند إزالة
+    التطبيق أو مسح بياناته.</p>
+  <p>معظم ما يفعله التطبيق لا يغادر جهازك أبداً — بما في ذلك كل رابط تستورده، الذي يقرأه هاتفك
+    مباشرة من الموقع نفسه (البند ٢). الاستثناء الوحيد هو الاستيراد بالذكاء الاصطناعي (البند ٣):
+    حين لا يستطيع هاتفك قراءة صفحة بنفسه، نرسل إلى خادم الاستيراد لدينا فقط ما طلبتَ استيراده،
+    وهو خادم لا يحتفظ بشيء منه أبداً.</p>
+  <p>يحفظ التطبيق أيضاً معرّفاً عشوائياً للتثبيت على جهازك. هذا المعرّف لا يدل على أي شخص — لا
+    اسم ولا بريد إلكتروني ولا حساب خلفه. لا يغادر جهازك إلا داخل ملف نسخة احتياطية تختار أنت
+    حفظه أو مشاركته (البند ٧)، أو مع طلب استيراد بالذكاء الاصطناعي (البند ٣).</p>
   <p><strong>النسخ الاحتياطي في أندرويد:</strong> إن كان النسخ الاحتياطي مفعّلاً لحساب Google
     على جهازك، فقد يُضمِّن أندرويد وصفاتك وإعداداتك — دون صورها — في النسخة الاحتياطية للجهاز،
     التي تحفظها Google وتتحكم بها أنت من إعدادات جهازك. لا يمكننا الوصول إلى هذه النسخة.</p>
@@ -126,24 +157,44 @@
   <p>عند لصق رابط وصفة أو مشاركته مع التطبيق، ينزّل هاتفك تلك الصفحة وصورتها
     <strong>مباشرة من موقع الوصفة</strong>، تماماً كما يفعل المتصفح. يرى ذلك الموقع الطلب
     وعنوان IP الخاص بجهازك، كما يرى أي زائر. لا يصلنا نحن شيء، ولا يتدخّل أي خادم لنا في
-    العملية. والنص الذي تشاركه مع «وصفاتي» يبقى على جهازك.</p>
+    العملية. والنص الذي تشاركه مع «وصفاتي» يبقى على جهازك. وإن لم تحمل الصفحة بيانات الوصفة
+    التي يحتاجها التطبيق، يعرض عليك الاستيراد بالذكاء الاصطناعي بدلاً من ذلك (البند ٣).</p>
 
-  <h2>٣. الصور</h2>
+  <h2>٣. الاستيراد بالذكاء الاصطناعي</h2>
+  <p>بعض المصادر تحتاج مساعدة لفهمها — منشور اجتماعي لا يستطيع هاتفك قراءة صفحته بنفسه (مثل
+    TikTok أو Instagram)، أو نص تلصقه بنفسك، أو — في تحديث لاحق — صورة لصفحة من كتاب طبخ. حين
+    تطلب من التطبيق استيراد واحد من هذه، يرسل ما تستورده فعلاً — الرابط أو النص نفسه — مع معرّف
+    التثبيت الخاص بالتطبيق (البند ١)، إلى خادم الاستيراد لدينا.</p>
+  <p>يرسل خادمنا ذلك النص إلى <strong>Claude، نموذج الذكاء الاصطناعي من Anthropic</strong>،
+    الذي يحوّله إلى وصفة، ثم يعيد النتيجة المُهيكلة إلى هاتفك. لا يحتفظ الخادم بشيء مما يُرسَل
+    إليه: لا نص الوصفة، ولا التعليق المنسوخ، ولا سجل لما استوردتَه. الاستثناء الوحيد هو رابط
+    منشور عام: يحتفظ الخادم بالوصفة التي أنتجها لذلك الرابط مدة ٣٠ يوماً، لئلا يكلّف استيراد
+    المنشور العام نفسه مرة أخرى نداءً آخر للذكاء الاصطناعي. وهذه نسخة محفوظة من شيء عام أصلاً —
+    الوصفة نفسها — لا من نص لصقته أو صورة أرسلتها أبداً.</p>
+  <p>تُفتح الوصفة التي تعود إليك للمراجعة والتعديل قبل أن تُحفظ في أي مكان. وبمجرد أن تصل إلى
+    جهازك، تبقى هناك كأي وصفة أخرى (البند ١) — ولا تغادره مرة أخرى إلا إن نسخته احتياطياً أو
+    شاركته أو طلبت ترجمته.</p>
+  <p>وترجمة الوصفة إلى العربية أو الإنجليزية تعمل بالطريقة نفسها: تُرسَل فقط كلمات تلك الوصفة
+    إلى الخادم نفسه، وخلافاً للاستيراد، لا تُحفظ نتيجة الترجمة أبداً — لا يُحتفظ بشيء منها
+    لاحقاً أيضاً.</p>
+
+  <h2>٤. الصور</h2>
   <p>تأتي الصور التي تضيفها من الكاميرا أو المعرض عبر منتقي الصور في هاتفك، فالتطبيق لا يتصفّح
     مكتبة صورك. تُحفظ الصور في مساحة التطبيق الخاصة، ولا تغادر جهازك إلا إذا أرسلتها أنت.</p>
 
-  <h2>٤. مؤقتات الطبخ والإشعارات</h2>
+  <h2>٥. مؤقتات الطبخ والإشعارات</h2>
   <p>مؤقتات وضع الطبخ تُجدول على جهازك، ولا يُرسل شيء إلى أي جهة. يُطلب إذن الإشعارات عند أول
     مؤقت تشغّله، وإذا رفضته يستمر المؤقت في التنبيه ما دام التطبيق مفتوحاً.</p>
 
-  <h2>٥. الأذونات</h2>
+  <h2>٦. الأذونات</h2>
   <ul>
-    <li><strong>الإنترنت:</strong> لتنزيل صفحات الوصفات التي تختار استيرادها.</li>
+    <li><strong>الإنترنت:</strong> لتنزيل صفحات الوصفات التي تختار استيرادها (البند ٢)،
+      وللوصول إلى خادم الاستيراد حين يلزم الاستيراد بالذكاء الاصطناعي (البند ٣).</li>
     <li><strong>الإشعارات:</strong> لتنبيهك عند انتهاء مؤقت الطبخ.</li>
     <li><strong>الاهتزاز:</strong> لتنبيه المؤقت نفسه.</li>
   </ul>
 
-  <h2>٦. النسخ الاحتياطي والتصدير</h2>
+  <h2>٧. النسخ الاحتياطي والتصدير</h2>
   <p>النسخة الاحتياطية ملف لا يصنعه التطبيق إلا عندما تطلبه، ويضم وصفاتك وصورها وكتب الطبخ
     والوسوم وخطة وجباتك وقائمة مشترياتك وإعداداتك ومعرّف التثبيت العشوائي الخاص بالتطبيق. أما
     الوصفة التي حذفتها فتُنقل كحذف فقط، دون محتواها أو صورتها. أنت تختار أين يُحفظ الملف —
@@ -151,25 +202,25 @@
     الاستعادة أي شيء، يحتفظ التطبيق بنسخة تلقائية مما كان على هاتفك، على هاتفك نفسه. والتصدير
     ملف نصي بوصفاتك يُحفظ بالطريقة نفسها.</p>
 
-  <h2>٧. الإعلانات والمشتريات والتحليلات</h2>
+  <h2>٨. الإعلانات والمشتريات والتحليلات</h2>
   <p>لا يحتوي هذا الإصدار على إعلانات ولا مشتريات ولا أي أدوات تحليل أو تتبّع. سيضيف «وصفاتي»
-    لاحقاً إعلانات ومشتريات اختيارية واستيراداً للوصفات عبر خادمنا، وستُحدَّث هذه الصفحة
-    <em>قبل</em> إصدار النسخة التي تضيف كلاً منها، لتبقى السياسة واصفة للتطبيق الذي بين يديك.</p>
+    لاحقاً إعلانات ومشتريات اختيارية، وستُحدَّث هذه الصفحة <em>قبل</em> إصدار النسخة التي تضيف
+    كلاً منها، لتبقى السياسة واصفة للتطبيق الذي بين يديك.</p>
 
-  <h2>٨. حذف بياناتك</h2>
+  <h2>٩. حذف بياناتك</h2>
   <p>احذف الوصفة من داخل التطبيق: تبقى في سلة المحذوفات ٣٠ يوماً، ثم تُحذف هي وصورتها نهائياً من
     مساحة تخزين التطبيق. ومنذ لحظة حذفها، لا تحمل أي نسخة احتياطية تصنعها بعد ذلك سوى واقعة
     الحذف، دون محتواها أو صورتها. أما نسخة احتياطية حفظتها قبل حذفها فقد صُنعت والوصفة ما زالت
     موجودة، وتبقى محتفظة بها إلى أن تحذف أنت ذلك الملف بنفسك. وإزالة التطبيق تحذف كل ما حفظه.</p>
 
-  <h2>٩. الأطفال</h2>
+  <h2>١٠. الأطفال</h2>
   <p>التطبيق موجّه للجمهور العام وليس للأطفال دون ١٣ عاماً، ولا نجمع عن علم أي بيانات منهم.</p>
 
-  <h2>١٠. تغييرات هذه السياسة</h2>
+  <h2>١١. تغييرات هذه السياسة</h2>
   <p>قد نُحدّث هذه السياسة كلما أضاف التطبيق ميزات جديدة. يظهر أي تغيير على هذه الصفحة مع
     تاريخ سريان جديد.</p>
 
-  <h2>١١. التواصل</h2>
+  <h2>١٢. التواصل</h2>
   <p>لأي سؤال عن الخصوصية، راسلنا على
     <a href="mailto:oasisforge.support@gmail.com">oasisforge.support@gmail.com</a>.
     البريد الإلكتروني هو قناة الدعم الوحيدة لدينا.</p>

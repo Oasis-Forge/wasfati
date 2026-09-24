@@ -992,6 +992,108 @@ abstract class AppLocalizations {
   /// **'Check and save'**
   String get importedRecipe;
 
+  /// IMP-7: the always-visible quota counter, with the reset date.
+  ///
+  /// In en, this message translates to:
+  /// **'{shown} of {quota} AI imports left this month · resets on the 1st'**
+  String aiImportsLeftLine(String shown, String quota);
+
+  /// IMP-7: shown instead of aiImportsLeftLine once the quota runs out.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI imports left this month · resets on the 1st. Website imports still work, free.'**
+  String get aiImportsOutLine;
+
+  /// IMP-3: shown before an import is sent to the AI server, next to the progress indicator.
+  ///
+  /// In en, this message translates to:
+  /// **'Uses one AI import · {shown} of {quota} left'**
+  String aiImportCostLine(String shown, String quota);
+
+  /// IMP-4: the progress message while Importer.fromAi is in flight.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing with AI…'**
+  String get aiImportSending;
+
+  /// IMP-4: shown once the 45-second keep-waiting prompt appears during an AI import.
+  ///
+  /// In en, this message translates to:
+  /// **'This is taking longer than usual.'**
+  String get aiImportKeepWaitingLine;
+
+  /// IMP-4: the button that dismisses the keep-waiting prompt without cancelling the import.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep waiting'**
+  String get aiImportKeepWaitingAction;
+
+  /// SRV-7 400 bad_request.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong with this request. Try again.'**
+  String get aiImportErrorBadRequest;
+
+  /// SRV-7 403 invalid_integrity_token.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t verify this device. Try again later.'**
+  String get aiImportErrorInvalidToken;
+
+  /// SRV-7 422 unreachable; also the reason line above IMP-12's paste fallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read this link\'s content.'**
+  String get aiImportErrorUnreachable;
+
+  /// SRV-7 422 private_post: a platform the server can't read at all (Instagram always, Decision 8); also the reason line above IMP-12's paste fallback.
+  ///
+  /// In en, this message translates to:
+  /// **'This account or post is private, so its content can\'t be read.'**
+  String get aiImportErrorPrivatePost;
+
+  /// SRV-7 422 not_a_recipe.
+  ///
+  /// In en, this message translates to:
+  /// **'No recipe was found in this content. You can add it by hand.'**
+  String get aiImportErrorNotARecipe;
+
+  /// SRV-7 429 limit_reached (IMP-7): the server's own confirmation that the quota is out.
+  ///
+  /// In en, this message translates to:
+  /// **'No AI imports left this month. Website imports still work, free.'**
+  String get aiImportErrorLimitReached;
+
+  /// SRV-7 503 busy (SRV-6's spending cap or load).
+  ///
+  /// In en, this message translates to:
+  /// **'AI import is busy right now. Try again later.'**
+  String get aiImportErrorBusy;
+
+  /// SRV-7 503 misconfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'AI import isn\'t available right now. Try again later.'**
+  String get aiImportErrorMisconfigured;
+
+  /// An error code this build doesn't recognize yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Something unexpected happened. Try again.'**
+  String get aiImportErrorUnknown;
+
+  /// The request never reached the server, or its answer couldn't be read.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t connect. Check your internet and try again.'**
+  String get aiImportErrorNetwork;
+
+  /// IMP-12: the text box in the paste-caption fallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the recipe\'s text or caption here'**
+  String get aiImportPasteHint;
+
   /// The meal plan screen and its navigation destination (PLAN-1)
   ///
   /// In en, this message translates to:

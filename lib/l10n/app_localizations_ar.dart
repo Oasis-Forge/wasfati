@@ -538,6 +538,68 @@ class AppLocalizationsAr extends AppLocalizations {
   String get importedRecipe => 'راجع واحفظ';
 
   @override
+  String aiImportsLeftLine(String shown, String quota) {
+    return 'بقي $shown من $quota استيرادات ذكية هذا الشهر · تتجدد في الأول من كل شهر';
+  }
+
+  @override
+  String get aiImportsOutLine =>
+      'نفدت الاستيرادات الذكية هذا الشهر · تتجدد في الأول من كل شهر. استيراد صفحات المواقع يبقى مجانيًا وبلا حدود.';
+
+  @override
+  String aiImportCostLine(String shown, String quota) {
+    return 'سيُستخدم استيراد ذكي واحد الآن · بقي $shown من $quota';
+  }
+
+  @override
+  String get aiImportSending => 'جارٍ الاستيراد بالذكاء الاصطناعي…';
+
+  @override
+  String get aiImportKeepWaitingLine => 'يستغرق هذا وقتًا أطول من المعتاد.';
+
+  @override
+  String get aiImportKeepWaitingAction => 'متابعة الانتظار';
+
+  @override
+  String get aiImportErrorBadRequest => 'تعذّر إرسال هذا الطلب. حاول مرة أخرى.';
+
+  @override
+  String get aiImportErrorInvalidToken =>
+      'تعذّر التحقق من هذا الجهاز. حاول لاحقًا.';
+
+  @override
+  String get aiImportErrorUnreachable => 'تعذّر قراءة محتوى هذا الرابط.';
+
+  @override
+  String get aiImportErrorPrivatePost =>
+      'هذا الحساب أو المنشور خاص، فلا يمكن قراءة محتواه.';
+
+  @override
+  String get aiImportErrorNotARecipe =>
+      'لم يجد التطبيق وصفة في هذا المحتوى. يمكنك إضافتها بنفسك.';
+
+  @override
+  String get aiImportErrorLimitReached =>
+      'نفدت الاستيرادات الذكية هذا الشهر. استيراد صفحات المواقع يبقى مجانيًا.';
+
+  @override
+  String get aiImportErrorBusy => 'الاستيراد الذكي مشغول الآن. حاول لاحقًا.';
+
+  @override
+  String get aiImportErrorMisconfigured =>
+      'الاستيراد الذكي غير متاح الآن. حاول لاحقًا.';
+
+  @override
+  String get aiImportErrorUnknown => 'حدث خطأ غير متوقع. حاول مرة أخرى.';
+
+  @override
+  String get aiImportErrorNetwork =>
+      'تعذّر الاتصال. تحقّق من الإنترنت وحاول مرة أخرى.';
+
+  @override
+  String get aiImportPasteHint => 'الصق نص الوصفة أو الوصف هنا';
+
+  @override
   String get planTitle => 'الخطة';
 
   @override
