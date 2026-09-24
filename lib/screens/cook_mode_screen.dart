@@ -15,6 +15,7 @@ import '../services/cook_services.dart';
 import '../theme/type.dart' show cookStep;
 import '../widgets/amount_line.dart';
 import '../widgets/content_direction.dart';
+import '../widgets/digit_box.dart';
 import '../widgets/pressable_slab.dart';
 
 /// Cook mode (COOK-1–COOK-6): free, no ads, one step per page in large
@@ -327,7 +328,9 @@ class _StepPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
+          // LOOK-5: the step numeral steps in place, so its digits are
+          // boxed; the sentence itself reads as before.
+          DigitBox(
             l10n.stepOf(s.number(index + 1), s.number(total)),
             style: theme.textTheme.labelLarge?.copyWith(
               color: theme.colorScheme.primary,
@@ -413,7 +416,9 @@ class _TimersBar extends StatelessWidget {
               for (final t in timers.running)
                 InputChip(
                   avatar: const Icon(Icons.timer_outlined),
-                  label: Text(
+                  // LOOK-5: the countdown ticks every second; boxed
+                  // digits keep the chip from twitching as it does.
+                  label: DigitBox(
                     '${_clock(s, t.remaining(now))} · ${l10n.stepN(s.number(t.step))}',
                   ),
                   deleteButtonTooltipMessage: l10n.timerStop,

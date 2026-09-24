@@ -360,6 +360,11 @@ ThemeData wasfatiTheme(AppStyle style, Brightness brightness) {
     colorScheme: cs,
     textTheme: textTheme,
     scaffoldBackgroundColor: cs.surface,
+    // LOOK-3: what a disabled ListTile (Settings' backup rows while a backup
+    // runs) and any other widget without its own disabled theme paints its
+    // text in. Unset, it's Material's black/white at 38%, 2.62:1 on the
+    // grouped-row fill in light.
+    disabledColor: disabledColor,
     // LOOK-7: no shadow, elevation or surface tint anywhere — Saffron's
     // one press ledge is Decor data for a widget to draw, never Material
     // elevation (see the class doc comment above).

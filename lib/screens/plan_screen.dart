@@ -12,6 +12,7 @@ import '../providers/grocery_state.dart';
 import '../providers/plan_state.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
+import '../theme/decor.dart';
 import '../widgets/content_direction.dart';
 import '../widgets/empty_state.dart';
 import 'home_screen.dart';
@@ -437,53 +438,81 @@ class _DayCard extends StatelessWidget {
       month: ramadanMonth,
       withEntries: plan.slotsWithEntries(day),
     );
+    final decor = Decor.of(context);
     return Padding(
       padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 0),
-      child: Card(
-        elevation: 0,
-        color: isToday
-            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.45)
-            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-        child: Padding(
-          padding: const EdgeInsetsDirectional.symmetric(vertical: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+      // LOOK-6: the look's grouped-row fill and card shape, in place of a
+      // Card washed with a translucent tint; a Material, so each entry's
+      // ink still paints on it. Today keeps its bold date and "اليوم", and
+      // gains the look's rail down its reading edge. The Semantics container
+      // is the one Card added, so a screen reader still reads each day as
+      // one group: its date, "اليوم", its meals, then its add buttons.
+      child: Semantics(
+        container: true,
+        child: Material(
+          color: decor.groupedRowFill,
+          shape: decor.cardShape,
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
             children: [
               Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(16, 4, 16, 4),
-                child: Row(
+                padding: const EdgeInsetsDirectional.symmetric(vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        16,
+                        4,
+                        16,
+                        4,
+                      ),
+                      child: Row(
                         children: [
-                          Text(
-                            label,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: isToday ? FontWeight.bold : null,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  label,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: isToday
+                                        ? FontWeight.bold
+                                        : null,
+                                  ),
+                                ),
+                                if (hijriLabel != null)
+                                  Text(
+                                    hijriLabel,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
-                          if (hijriLabel != null)
+                          if (isToday)
                             Text(
-                              hijriLabel,
-                              style: theme.textTheme.labelSmall?.copyWith(
+                              l10n.planToday,
+                              style: theme.textTheme.labelMedium?.copyWith(
                                 color: theme.colorScheme.primary,
                               ),
                             ),
                         ],
                       ),
                     ),
-                    if (isToday)
-                      Text(
-                        l10n.planToday,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
+                    for (final slot in slots) _SlotRow(day: day, slot: slot),
                   ],
                 ),
               ),
-              for (final slot in slots) _SlotRow(day: day, slot: slot),
+              if (isToday && decor.railWidth > 0)
+                PositionedDirectional(
+                  start: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: decor.railWidth,
+                  child: ColoredBox(color: decor.railColor),
+                ),
             ],
           ),
         ),

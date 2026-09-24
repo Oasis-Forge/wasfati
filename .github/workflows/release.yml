@@ -107,20 +107,31 @@ jobs:
           flutter build apk --release
 
       # RUN-2: the store listing's data-safety answers depend on the permissions.
-      # List the ones the app may declare; any other fails the release.
+      # ALLOWED is exactly what the app declares, checked both ways: one outside
+      # it fails the release, and so does one missing from the build (a feature
+      # that lost what it needs). The app's own signature-level permissions
+      # (${PACKAGE_NAME}.*, from AndroidX) are neither.
       - name: Check the APK's permissions
         env:
-          # IMP-2: website import. COOK-5: timer notifications; VIBRATE comes with them.
+          # INTERNET: website import (IMP-2), AI import and translation (IMP-1,
+          # IMP-14). POST_NOTIFICATIONS: cook timers (COOK-5); VIBRATE comes with
+          # them. Checked against a real release build on 24 September 2026.
           ALLOWED: 'android.permission.INTERNET android.permission.POST_NOTIFICATIONS android.permission.VIBRATE'
         run: |
           aapt2=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -n 1)
           "$aapt2" dump permissions build/app/outputs/flutter-apk/app-release.apk | tee permissions.txt
-          unexpected=$(sed -nE "s/^uses-permission(-sdk-23)?: name='([^']+)'.*/\2/p" permissions.txt \
-            | grep -v "^${PACKAGE_NAME}\." | grep -vxF -f <(printf '%s\n' $ALLOWED) || true)
+          declared=$(sed -nE "s/^uses-permission(-sdk-23)?: name='([^']+)'.*/\2/p" permissions.txt \
+            | grep -v "^${PACKAGE_NAME}\." | LC_ALL=C sort -u || true)
+          allowed=$(printf '%s\n' $ALLOWED | LC_ALL=C sort -u)
+          unexpected=$(LC_ALL=C comm -23 <(echo "$declared") <(echo "$allowed") | grep . || true)
+          missing=$(LC_ALL=C comm -13 <(echo "$declared") <(echo "$allowed") | grep . || true)
           if [ -n "$unexpected" ]; then
             echo "::error::The release APK declares permissions outside the allowed list (RUN-2): $unexpected"
-            exit 1
           fi
+          if [ -n "$missing" ]; then
+            echo "::error::The release APK lacks permissions the app needs (RUN-2): $missing"
+          fi
+          [ -z "$unexpected" ] && [ -z "$missing" ]
 
       - name: Name the files after the version
         run: |

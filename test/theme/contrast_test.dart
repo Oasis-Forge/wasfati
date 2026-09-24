@@ -1,10 +1,12 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wasfati/models/settings.dart' show AppStyle;
 import 'package:wasfati/theme/app_theme.dart';
 import 'package:wasfati/theme/colors.dart';
+import 'package:wasfati/theme/decor.dart';
 
 /// LOOK-3: computes the WCAG 2.1 contrast ratio of every text/surface and
 /// boundary/surface pair each of the four themes (Ink/Saffron x
@@ -193,6 +195,57 @@ void main() {
             );
           });
         }
+
+        // LOOK-3: a disabled ListTile (Settings' backup rows while a backup
+        // runs) takes its text colour from ThemeData.disabledColor, not
+        // from any colour composited above. This reads the colour the tile
+        // actually paints its title, subtitle and leading icon in, on the
+        // grouped-row fill those rows now sit on (LOOK-6). Unset, it was
+        // Material's 38%: 2.62:1 in Ink light.
+        testWidgets('a disabled ListTile on the grouped-row fill '
+            '>= $disabledMin:1', (tester) async {
+          final theme = wasfatiTheme(style, brightness);
+          final fill = theme.extension<Decor>()!.groupedRowFill;
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: theme,
+              home: Material(
+                color: fill,
+                child: const ListTile(
+                  enabled: false,
+                  leading: Icon(Icons.save_outlined),
+                  title: Text('حفظ نسخة احتياطية'),
+                  subtitle: Text('جارٍ النسخ'),
+                ),
+              ),
+            ),
+          );
+          Color painted(String text) => tester
+              .renderObject<RenderParagraph>(find.text(text))
+              .text
+              .style!
+              .color!;
+          final iconColor = tester
+              .widget<RichText>(
+                find.descendant(
+                  of: find.byIcon(Icons.save_outlined),
+                  matching: find.byType(RichText),
+                ),
+              )
+              .text
+              .style!
+              .color!;
+          for (final color in [
+            painted('حفظ نسخة احتياطية'),
+            painted('جارٍ النسخ'),
+            iconColor,
+          ]) {
+            expect(
+              contrastRatio(Color.alphaBlend(color, fill), fill),
+              greaterThanOrEqualTo(disabledMin),
+            );
+          }
+        });
 
         // LOOK-3: hint text at full onSurfaceVariant, never faded — checked
         // against the field fill it actually sits on.
