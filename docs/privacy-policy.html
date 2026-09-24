@@ -56,13 +56,15 @@
 
   <h2>3. Importing with AI</h2>
   <p>Some sources need help understanding — a social post whose page your phone can't read on
-    its own (TikTok or Instagram, for example), a caption you paste in, or, in a later update,
-    a photo of a cookbook page. When you ask the app to import one of these, it sends what
-    you're actually importing — the link or the text itself — together with the app's install
+    its own (TikTok or Instagram, for example), a caption you paste in, or photos you take or
+    pick: a cookbook page, a handwritten recipe, or a screenshot of a post. When you ask the
+    app to import one of these, it sends what you're actually importing — the link, the text,
+    or up to 4 photos, each first made smaller on your phone — together with the app's install
     ID (section 1), to our import server.</p>
-  <p>Our server sends that text to <strong>Claude, Anthropic's AI model</strong>, which turns
+  <p>Our server sends that to <strong>Claude, Anthropic's AI model</strong>, which turns
     it into a recipe, and sends the structured result back to your phone. The server keeps
-    nothing it is sent: no recipe text, no caption, no log of what you imported. The one
+    nothing it is sent: no recipe text, no caption, no photo, no log of what you imported.
+    Photos are held only in memory while the request is answered, then discarded. The one
     exception is a public post's link: the server keeps the recipe it produced for that link
     for 30 days, so importing the same public post again doesn't cost a second AI call. That's
     a saved copy of something already public — the recipe itself — never of a caption you
@@ -71,13 +73,23 @@
     it's on your device, it stays there like any other recipe (section 1) — it leaves again
     only if you back it up, share it, or ask to translate it.</p>
   <p>Translating a recipe into Arabic or English works the same way: it sends only that
-    recipe's words to the same server, and — unlike an import — the result is never cached;
-    nothing about a translation is kept afterward either.</p>
+    recipe's words — its title, ingredient names and steps, never its amounts or its photo —
+    to the same server, and — unlike an import — the result is never cached; nothing about a
+    translation is kept afterward either. The translation is saved as a new recipe beside the
+    original, on your phone.</p>
+  <p>“Report a mistake”, in that review screen, opens your own mail app with a message to
+    <a href="mailto:oasisforge.support@gmail.com">oasisforge.support@gmail.com</a> holding
+    only the recipe's source link and the note you write. A photo or text you import on its own
+    has no link, so the message holds only your note; when a post's link can't be read and you
+    paste its caption or pick a screenshot of it instead, the recipe keeps that post's link, and
+    the message carries it. You see the message and send it yourself; it never goes through our server, and it never
+    includes the recipe or its photos.</p>
 
   <h2>4. Photos</h2>
   <p>Photos you add come from your camera or gallery through your phone's own picker, so the
-    app never browses your photo library. They are kept in the app's private storage and
-    leave your device only if you send them somewhere yourself.</p>
+    app never browses your photo library, and it needs no camera permission. They are kept in
+    the app's private storage and leave your device only if you send them somewhere yourself,
+    such as a photo you import with AI (section 3).</p>
 
   <h2>5. Cook timers and notifications</h2>
   <p>Timers in cook mode are scheduled on your device, and nothing is sent anywhere.
@@ -162,25 +174,35 @@
 
   <h2>٣. الاستيراد بالذكاء الاصطناعي</h2>
   <p>بعض المصادر تحتاج مساعدة لفهمها — منشور اجتماعي لا يستطيع هاتفك قراءة صفحته بنفسه (مثل
-    TikTok أو Instagram)، أو نص تلصقه بنفسك، أو — في تحديث لاحق — صورة لصفحة من كتاب طبخ. حين
-    تطلب من التطبيق استيراد واحد من هذه، يرسل ما تستورده فعلاً — الرابط أو النص نفسه — مع معرّف
+    TikTok أو Instagram)، أو نص تلصقه بنفسك، أو صور تلتقطها أو تختارها: صفحة من كتاب طبخ، أو
+    وصفة مكتوبة بخط اليد، أو صورة لشاشة منشور. حين تطلب من التطبيق استيراد واحد من هذه، يرسل ما
+    تستورده فعلاً — الرابط أو النص أو حتى ٤ صور يُصغَّر حجم كل منها على هاتفك أولاً — مع معرّف
     التثبيت الخاص بالتطبيق (البند ١)، إلى خادم الاستيراد لدينا.</p>
-  <p>يرسل خادمنا ذلك النص إلى <strong>Claude، نموذج الذكاء الاصطناعي من Anthropic</strong>،
+  <p>يرسل خادمنا ذلك إلى <strong>Claude، نموذج الذكاء الاصطناعي من Anthropic</strong>،
     الذي يحوّله إلى وصفة، ثم يعيد النتيجة المُهيكلة إلى هاتفك. لا يحتفظ الخادم بشيء مما يُرسَل
-    إليه: لا نص الوصفة، ولا التعليق المنسوخ، ولا سجل لما استوردتَه. الاستثناء الوحيد هو رابط
+    إليه: لا نص الوصفة، ولا التعليق المنسوخ، ولا الصور، ولا سجل لما استوردتَه. تبقى الصور في
+    الذاكرة فقط ريثما يُجاب الطلب، ثم تُحذف. الاستثناء الوحيد هو رابط
     منشور عام: يحتفظ الخادم بالوصفة التي أنتجها لذلك الرابط مدة ٣٠ يوماً، لئلا يكلّف استيراد
     المنشور العام نفسه مرة أخرى نداءً آخر للذكاء الاصطناعي. وهذه نسخة محفوظة من شيء عام أصلاً —
     الوصفة نفسها — لا من نص لصقته أو صورة أرسلتها أبداً.</p>
   <p>تُفتح الوصفة التي تعود إليك للمراجعة والتعديل قبل أن تُحفظ في أي مكان. وبمجرد أن تصل إلى
     جهازك، تبقى هناك كأي وصفة أخرى (البند ١) — ولا تغادره مرة أخرى إلا إن نسخته احتياطياً أو
     شاركته أو طلبت ترجمته.</p>
-  <p>وترجمة الوصفة إلى العربية أو الإنجليزية تعمل بالطريقة نفسها: تُرسَل فقط كلمات تلك الوصفة
-    إلى الخادم نفسه، وخلافاً للاستيراد، لا تُحفظ نتيجة الترجمة أبداً — لا يُحتفظ بشيء منها
-    لاحقاً أيضاً.</p>
+  <p>وترجمة الوصفة إلى العربية أو الإنجليزية تعمل بالطريقة نفسها: تُرسَل فقط كلمات تلك الوصفة —
+    عنوانها وأسماء مكوّناتها وخطواتها، لا مقاديرها ولا صورتها أبداً — إلى الخادم نفسه، وخلافاً
+    للاستيراد، لا تُحفظ نتيجة الترجمة أبداً — لا يُحتفظ بشيء منها لاحقاً أيضاً. وتُحفظ الترجمة
+    وصفةً جديدة بجانب الأصلية، على هاتفك.</p>
+  <p>زر «أبلغ عن خطأ» في شاشة المراجعة تلك يفتح تطبيق البريد لديك برسالة إلى
+    <a href="mailto:oasisforge.support@gmail.com">oasisforge.support@gmail.com</a> لا تحمل
+    إلا رابط مصدر الوصفة والملاحظة التي تكتبها. والصورة أو النص الذي تستورده وحده بلا رابط، فلا
+    تحمل الرسالة إلا ملاحظتك؛ أما إذا تعذّرت قراءة رابط منشور فألصقت نصّه أو اخترت لقطة شاشة له
+    بدلاً منه، فتحتفظ الوصفة برابط ذلك المنشور، وتحمله الرسالة. ترى الرسالة وترسلها
+    أنت بنفسك؛ لا تمر بخادمنا أبداً، ولا تتضمن الوصفة ولا صورها.</p>
 
   <h2>٤. الصور</h2>
   <p>تأتي الصور التي تضيفها من الكاميرا أو المعرض عبر منتقي الصور في هاتفك، فالتطبيق لا يتصفّح
-    مكتبة صورك. تُحفظ الصور في مساحة التطبيق الخاصة، ولا تغادر جهازك إلا إذا أرسلتها أنت.</p>
+    مكتبة صورك ولا يحتاج إذن الكاميرا. تُحفظ الصور في مساحة التطبيق الخاصة، ولا تغادر جهازك إلا
+    إذا أرسلتها أنت، كصورة تستوردها بالذكاء الاصطناعي (البند ٣).</p>
 
   <h2>٥. مؤقتات الطبخ والإشعارات</h2>
   <p>مؤقتات وضع الطبخ تُجدول على جهازك، ولا يُرسل شيء إلى أي جهة. يُطلب إذن الإشعارات عند أول

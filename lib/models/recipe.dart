@@ -31,6 +31,7 @@ class Recipe {
     this.cookbookIds = const [],
     this.tags = const [],
     this.unitView = UnitView.asWritten,
+    this.translatedFrom,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -66,6 +67,11 @@ class Recipe {
 
   /// How amounts are shown, remembered per recipe (SCALE-5).
   final UnitView unitView;
+
+  /// The recipe this one is a translated copy of (IMP-14), or null. Only a
+  /// link: the original may since be in the trash or purged, and then the
+  /// link just doesn't show.
+  final String? translatedFrom;
 
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -114,6 +120,7 @@ class Recipe {
     List<String>? cookbookIds,
     List<String>? tags,
     UnitView? unitView,
+    Object? translatedFrom = _keep,
     DateTime? updatedAt,
     Object? deletedAt = _keep,
   }) => Recipe(
@@ -136,6 +143,9 @@ class Recipe {
     cookbookIds: cookbookIds ?? this.cookbookIds,
     tags: tags ?? this.tags,
     unitView: unitView ?? this.unitView,
+    translatedFrom: translatedFrom == _keep
+        ? this.translatedFrom
+        : translatedFrom as String?,
     createdAt: createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt == _keep ? this.deletedAt : deletedAt as DateTime?,
@@ -155,6 +165,11 @@ class Recipe {
     'cooked_count': cookedCount,
     'last_cooked_at': lastCookedAt?.millisecondsSinceEpoch,
     'unit_view': unitView == UnitView.asWritten ? null : unitView.name,
+    // Schema step 6 (IMP-14). Left out when null: the repository writes a
+    // recipe row whole (insert or replace), so a missing column is null
+    // anyway, and a recipe with no link still saves into a database from
+    // before step 6 (the upgrade tests build one).
+    'translated_from': ?translatedFrom,
     'created_at': createdAt.millisecondsSinceEpoch,
     'updated_at': updatedAt.millisecondsSinceEpoch,
     'deleted_at': deletedAt?.millisecondsSinceEpoch,
@@ -187,6 +202,7 @@ class Recipe {
     unitView:
         UnitView.values.where((v) => v.name == m['unit_view']).firstOrNull ??
         UnitView.asWritten,
+    translatedFrom: m['translated_from'] as String?,
     createdAt: _date(m['created_at'])!,
     updatedAt: _date(m['updated_at'])!,
     deletedAt: _date(m['deleted_at']),

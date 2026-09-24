@@ -79,19 +79,48 @@ class DeviceFetcher implements PageFetcher {
 
 /// Resizes to at most 1600 px on the long side and encodes JPEG 85 (REC-8),
 /// in a background isolate so the screen doesn't stall.
-Future<Uint8List?> resizeForRecipe(Uint8List bytes) => Isolate.run(() {
-  final decoded = img.decodeImage(bytes);
-  if (decoded == null) return null;
-  final long = decoded.width > decoded.height ? decoded.width : decoded.height;
-  final out = long > 1600
-      ? img.copyResize(
-          decoded,
-          width: decoded.width >= decoded.height ? 1600 : null,
-          height: decoded.height > decoded.width ? 1600 : null,
-        )
-      : decoded;
-  return Uint8List.fromList(img.encodeJpg(out, quality: 85));
-});
+Future<Uint8List?> resizeForRecipe(Uint8List bytes) =>
+    _resizeToJpeg(bytes, quality: 85);
+
+/// A photo import's picture before it leaves the device (IMP-10): at most
+/// 1600 px on the long side, JPEG quality 80. Null when [bytes] isn't an
+/// image the device can read, so nothing is sent.
+Future<Uint8List?> resizeForImport(Uint8List bytes) =>
+    _resizeToJpeg(bytes, quality: 80);
+
+Future<Uint8List?> _resizeToJpeg(Uint8List bytes, {required int quality}) =>
+    Isolate.run(() {
+      img.Image? decoded;
+      try {
+        decoded = img.decodeImage(bytes);
+      } catch (_) {
+        // A few bytes that aren't an image can throw inside a format
+        // sniffer rather than return null; either way it's "not an image".
+        return null;
+      }
+      if (decoded == null) return null;
+      // A camera photo is often stored sideways with an EXIF turn; the
+      // pixels are turned upright here, so the server reads the page the
+      // right way up and the recipe photo never depends on the tag.
+      final upright = img.bakeOrientation(decoded);
+      final long = upright.width > upright.height
+          ? upright.width
+          : upright.height;
+      final out = long > 1600
+          ? img.copyResize(
+              upright,
+              width: upright.width >= upright.height ? 1600 : null,
+              height: upright.height > upright.width ? 1600 : null,
+            )
+          : upright;
+      // IMP-10, SRV-9: nothing but the pixels leaves the device or reaches
+      // a saved recipe photo. A camera photo's EXIF can carry where it was
+      // taken (GPS) and the phone's make and model, and the decoder hands
+      // it through to the encoder; the turn it held is already in the
+      // pixels above, so dropping it loses nothing.
+      out.exif = img.ExifData();
+      return Uint8List.fromList(img.encodeJpg(out, quality: quality));
+    });
 
 /// Saves an imported photo into the app's private photo folder (REC-8).
 Future<String?> saveImportedPhoto(String recipeId, Uint8List bytes) async {

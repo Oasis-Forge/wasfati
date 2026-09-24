@@ -1,14 +1,20 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
 import '../models/recipe_import.dart';
+import '../models/recipe_translation.dart' show TranslationItem;
 
 /// The import server's base URL (SRV-1, Decision 6). Deployed from the
 /// `Oasis-Forge/wasfati-import` repo (Cloudflare Workers) — this app never
 /// builds or runs that server, only calls it.
 const aiImportServerUrl = 'https://wasfati-import.thepromptkitchen.workers.dev';
+
+/// The most photos one photo import sends (IMP-1, IMP-10, SRV-1): the
+/// server answers `too_large` to more.
+const maxImportImages = 4;
 
 /// Why an AI import failed (SRV-7). Each case gets its own translated
 /// message (LANG-2) — the UI never shows the server's raw text.
@@ -40,6 +46,19 @@ enum AiImportErrorKind {
 
   /// 503 misconfigured: the server itself is broken, not the request.
   misconfigured,
+
+  /// 413 too_large: more than [maxImportImages] photos, or a request body
+  /// over 6 MB (IMP-10).
+  tooLarge,
+
+  /// A picked photo the device itself couldn't read to resize (IMP-10), so
+  /// nothing was sent at all. Never a server answer.
+  unreadablePhoto,
+
+  /// 502 bad_translation, or a translation the app itself found incomplete:
+  /// an ID sent that didn't come back exactly once (IMP-15, SRV-11). Nothing
+  /// changes, and "Try again" costs nothing (SRV-7).
+  badTranslation,
 
   /// A server error code the app doesn't recognize yet (forward
   /// compatible with a code shipped after this build).
@@ -92,38 +111,118 @@ class AiImportError extends AiImportResult {
   final String? message;
 }
 
+/// What a translate request (SRV-11) gave back: either every item the
+/// server returned, still unchecked, or a typed reason it failed.
+sealed class AiTranslateResult {
+  const AiTranslateResult();
+}
+
+/// The server's items exactly as sent back, duplicates and all: whether
+/// every ID came back exactly once, and whether each text kept its
+/// numbers, is the app's to check (`applyTranslation`, IMP-15) — the app,
+/// not the server, is the authority on numbers.
+class AiTranslateSuccess extends AiTranslateResult {
+  const AiTranslateSuccess(
+    this.items, {
+    required this.model,
+    required this.promptVersion,
+  });
+
+  final List<TranslationItem> items;
+
+  /// The model and prompt version that produced this, for debugging (SRV-1).
+  final String model;
+  final String promptVersion;
+}
+
+class AiTranslateError extends AiTranslateResult {
+  const AiTranslateError(this.kind, {this.message});
+  final AiImportErrorKind kind;
+
+  /// The server's own message, for logs only (SRV-7, LANG-2).
+  final String? message;
+}
+
 /// The client side of AI import (SRV-1–SRV-11): one request per call. It
 /// never retries and never caches on its own (caching is the server's job,
 /// SRV-5) and never spends the quota itself — that only happens when the
 /// caller later saves what comes back (IMP-7).
 abstract interface class AiImportClient {
-  /// Sends exactly one of [url] or [text] (IMP-1, IMP-3) for [installId]
-  /// (SRV-4, `RecipeRepository.installId()`). Never throws for a server
-  /// error or a network failure — both come back as [AiImportError], so
-  /// the caller never needs a try/catch to read the result.
+  /// Sends exactly one of [url], [text] or [images] (IMP-1, IMP-3, IMP-10)
+  /// for [installId] (SRV-4, `RecipeRepository.installId()`). [images] are
+  /// 1 to [maxImportImages] JPEGs, already resized on the device (IMP-10).
+  /// Never throws for a server error or a network failure — both come back
+  /// as [AiImportError], so the caller never needs a try/catch to read the
+  /// result.
   Future<AiImportResult> import({
     required String installId,
     String? url,
     String? text,
+    List<Uint8List>? images,
+  });
+
+  /// Sends one recipe's words, keyed by ID, for translation into [target]
+  /// (`ar` or `en`) (IMP-14, IMP-15, SRV-11): never an amount or a unit, only
+  /// words. Like [import], it never throws, never retries, and never spends
+  /// the quota itself: only saving the translated copy does (IMP-16).
+  Future<AiTranslateResult> translate({
+    required String installId,
+    required String target,
+    required List<TranslationItem> items,
   });
 }
+
+/// One request an [AiImportClient] fake was asked to send.
+typedef AiImportRequest = ({
+  String installId,
+  String? url,
+  String? text,
+  List<Uint8List>? images,
+});
+
+/// One translate request an [AiImportClient] fake was asked to send.
+typedef AiTranslateRequest = ({
+  String installId,
+  String target,
+  List<TranslationItem> items,
+});
 
 /// The default in tests: never touches the network. [nextResult] is
 /// returned for every call unless [queue] has entries, which are returned
 /// in order and removed, one per call. Every request made is recorded in
-/// [requests].
+/// [requests]. A translate call answers with [translator] when it's set
+/// (a fake server), else [nextTranslateResult]; each is recorded in
+/// [translateRequests].
 class NoopAiImportClient implements AiImportClient {
   AiImportResult nextResult = const AiImportError(AiImportErrorKind.network);
   final queue = <AiImportResult>[];
-  final requests = <({String installId, String? url, String? text})>[];
+  final requests = <AiImportRequest>[];
+
+  AiTranslateResult nextTranslateResult = const AiTranslateError(
+    AiImportErrorKind.network,
+  );
+  AiTranslateResult Function(AiTranslateRequest request)? translator;
+  final translateRequests = <AiTranslateRequest>[];
+
+  @override
+  Future<AiTranslateResult> translate({
+    required String installId,
+    required String target,
+    required List<TranslationItem> items,
+  }) async {
+    final request = (installId: installId, target: target, items: items);
+    translateRequests.add(request);
+    return translator?.call(request) ?? nextTranslateResult;
+  }
 
   @override
   Future<AiImportResult> import({
     required String installId,
     String? url,
     String? text,
+    List<Uint8List>? images,
   }) async {
-    requests.add((installId: installId, url: url, text: text));
+    requests.add((installId: installId, url: url, text: text, images: images));
     return queue.isNotEmpty ? queue.removeAt(0) : nextResult;
   }
 }
@@ -144,10 +243,15 @@ class DeviceAiImportClient implements AiImportClient {
     required String installId,
     String? url,
     String? text,
+    List<Uint8List>? images,
   }) async {
     assert(
-      (url == null) != (text == null),
-      'AiImportClient.import needs exactly one of url or text',
+      [url, text, images].where((v) => v != null).length == 1,
+      'AiImportClient.import needs exactly one of url, text or images',
+    );
+    assert(
+      images == null || images.isNotEmpty && images.length <= maxImportImages,
+      'a photo import sends 1 to $maxImportImages images',
     );
     http.Response response;
     try {
@@ -159,6 +263,10 @@ class DeviceAiImportClient implements AiImportClient {
               'install_id': installId,
               'url': ?url,
               'text': ?text,
+              // IMP-10: plain base64, no `data:` prefix. Never cached by
+              // the server (SRV-5), and discarded after the answer (SRV-3).
+              if (images != null)
+                'images': [for (final i in images) base64Encode(i)],
             }),
           )
           .timeout(_timeout);
@@ -172,7 +280,13 @@ class DeviceAiImportClient implements AiImportClient {
       if (decoded is! Map) throw const FormatException('not an object');
       body = decoded.cast<String, Object?>();
     } catch (_) {
-      return const AiImportError(AiImportErrorKind.network);
+      // A 413 can come from Cloudflare itself, before the Worker writes
+      // its own JSON: it's still "too large", not a dropped connection.
+      return AiImportError(
+        response.statusCode == 413
+            ? AiImportErrorKind.tooLarge
+            : AiImportErrorKind.network,
+      );
     }
 
     if (response.statusCode == 200) {
@@ -190,6 +304,73 @@ class DeviceAiImportClient implements AiImportClient {
       message: body['message'] as String?,
     );
   }
+
+  @override
+  Future<AiTranslateResult> translate({
+    required String installId,
+    required String target,
+    required List<TranslationItem> items,
+  }) async {
+    assert(target == 'ar' || target == 'en', 'SRV-11 targets ar or en');
+    http.Response response;
+    try {
+      response = await _client
+          .post(
+            Uri.parse('$aiImportServerUrl/v1/translate'),
+            headers: const {'content-type': 'application/json'},
+            // IMP-15: words only, keyed by ID. Never cached by the server,
+            // and nothing kept (SRV-11, SRV-3).
+            body: jsonEncode({
+              'install_id': installId,
+              'target': target,
+              'items': [
+                for (final i in items) {'id': i.id, 'text': i.text},
+              ],
+            }),
+          )
+          .timeout(_timeout);
+    } catch (_) {
+      return const AiTranslateError(AiImportErrorKind.network);
+    }
+
+    Map<String, Object?> body;
+    try {
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      if (decoded is! Map) throw const FormatException('not an object');
+      body = decoded.cast<String, Object?>();
+    } catch (_) {
+      return AiTranslateError(
+        response.statusCode == 413
+            ? AiImportErrorKind.tooLarge
+            : AiImportErrorKind.network,
+      );
+    }
+
+    if (response.statusCode == 200) {
+      final raw = body['items'];
+      if (raw is! List) {
+        return const AiTranslateError(AiImportErrorKind.badTranslation);
+      }
+      final out = <TranslationItem>[];
+      for (final item in raw) {
+        if (item is! Map || item['id'] is! String || item['text'] is! String) {
+          // A malformed item can't be matched to what was sent: the whole
+          // answer is incomplete, never half used (IMP-15).
+          return const AiTranslateError(AiImportErrorKind.badTranslation);
+        }
+        out.add((id: item['id']! as String, text: item['text']! as String));
+      }
+      return AiTranslateSuccess(
+        out,
+        model: body['model'] as String? ?? '',
+        promptVersion: body['prompt_version'] as String? ?? '',
+      );
+    }
+    return AiTranslateError(
+      _kindFor(body['error'] as String?),
+      message: body['message'] as String?,
+    );
+  }
 }
 
 AiImportErrorKind _kindFor(String? code) => switch (code) {
@@ -201,6 +382,8 @@ AiImportErrorKind _kindFor(String? code) => switch (code) {
   'limit_reached' => AiImportErrorKind.limitReached,
   'busy' => AiImportErrorKind.busy,
   'misconfigured' => AiImportErrorKind.misconfigured,
+  'too_large' => AiImportErrorKind.tooLarge,
+  'bad_translation' => AiImportErrorKind.badTranslation,
   _ => AiImportErrorKind.unknown,
 };
 

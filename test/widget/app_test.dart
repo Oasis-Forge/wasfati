@@ -9,6 +9,7 @@ import 'package:wasfati/models/library.dart';
 import 'package:wasfati/models/ramadan.dart';
 import 'package:wasfati/models/recipe.dart';
 import 'package:wasfati/models/recipe_import.dart' show ImportedRecipe;
+import 'package:wasfati/models/recipe_translation.dart' show TranslationItem;
 import 'package:wasfati/models/recipe_share.dart' show wasfatiPlayStoreUrl;
 import 'package:wasfati/models/settings.dart';
 import 'package:wasfati/db/grocery_repository.dart';
@@ -30,7 +31,9 @@ import 'package:wasfati/services/backup.dart';
 import 'package:wasfati/services/backup_files.dart';
 import 'package:wasfati/services/cook_services.dart';
 import 'package:wasfati/services/importer.dart';
-import 'package:wasfati/services/photo_store.dart' show NoopPhotoStore;
+import 'package:wasfati/services/import_photos.dart';
+import 'package:wasfati/services/mail.dart';
+import 'package:wasfati/services/photo_store.dart';
 import 'package:wasfati/services/recipe_pages.dart';
 import 'package:wasfati/services/sharer.dart';
 import 'package:wasfati/services/web_import.dart';
@@ -95,6 +98,39 @@ late NoopBackupFiles backupFiles;
 /// [sharer] and [shareStorage].
 late BackupState backupState;
 
+/// The mail drafts the last [pumpApp] opened (IMP-8, Decision 19).
+late NoopMailComposer mail;
+
+/// The camera and photo picker of the last [pumpApp] (IMP-1, IMP-10): set
+/// its `next` before tapping a photo button.
+late NoopImportPhotoPicker importPhotos;
+
+/// The recipe photo store of the last [pumpApp]: records deletes (REC-8).
+late RecordingPhotoStore photoStore;
+
+/// Like [NoopPhotoStore], but records every photo it was asked to delete,
+/// so a test can see a removed or discarded import photo go (IMP-10), and
+/// every copy it made — each one a new path, `<path>.copy-<recipeId>`, so
+/// a test can tell a translated copy's photo from the original's (IMP-14).
+class RecordingPhotoStore implements PhotoStore {
+  final deleted = <String>[];
+  final copies = <String>[];
+
+  @override
+  Future<String?> pickFromGallery(String recipeId) async => null;
+  @override
+  Future<void> delete(String path) async => deleted.add(path);
+  @override
+  Future<String?> copy(String path, String recipeId) async {
+    final copy = '$path.copy-$recipeId';
+    copies.add(copy);
+    return copy;
+  }
+
+  @override
+  Future<bool> exists(String path) async => true;
+}
+
 class FakeShareInbox implements ShareInbox {
   FakeShareInbox(this.stream);
   final Stream<String> stream;
@@ -112,19 +148,27 @@ class FakeShareInbox implements ShareInbox {
 /// IMP-4) — [NoopAiImportClient] resolves too fast to observe that state.
 class _ControlledAiImportClient implements AiImportClient {
   final _completer = Completer<AiImportResult>();
-  final requests = <({String installId, String? url, String? text})>[];
+  final requests = <AiImportRequest>[];
 
   @override
   Future<AiImportResult> import({
     required String installId,
     String? url,
     String? text,
+    List<Uint8List>? images,
   }) {
-    requests.add((installId: installId, url: url, text: text));
+    requests.add((installId: installId, url: url, text: text, images: images));
     return _completer.future;
   }
 
   void complete(AiImportResult result) => _completer.complete(result);
+
+  @override
+  Future<AiTranslateResult> translate({
+    required String installId,
+    required String target,
+    required List<TranslationItem> items,
+  }) async => const AiTranslateError(AiImportErrorKind.network);
 }
 
 Future<(RecipesState, SettingsState)> pumpApp(
@@ -145,12 +189,18 @@ Future<(RecipesState, SettingsState)> pumpApp(
   BackupFiles? backupFilesOverride,
   Sharer? sharerOverride,
   AiImportClient? aiClient,
+  // IMP-10: where an imported photo lands. The default saves nothing, so a
+  // draft has no photo unless a test asks for one.
+  Future<String?> Function(String id, Uint8List bytes)? savePhoto,
+  // More made-up recipe pages for website import (IMP-2), beside the kabsa.
+  Map<String, String> pages = const {},
 }) async {
   late RecipesState recipes;
   late SettingsState settings;
   late Importer importer;
   late CountingIds ids;
   late RecipeRepository repository;
+  photoStore = RecordingPhotoStore();
   await tester.runAsync(() async {
     final (repo, fakeClock, idSource) = await testRepo();
     repository = repo;
@@ -170,10 +220,11 @@ Future<(RecipesState, SettingsState)> pumpApp(
     );
     recipes = RecipesState(repo);
     importer = Importer(
-      FakeFetcher({'https://site.com/kabsa': kabsaPage}),
+      FakeFetcher({'https://site.com/kabsa': kabsaPage, ...pages}),
       repo,
-      savePhoto: (_, _) async => null,
+      savePhoto: savePhoto ?? (_, _) async => null,
       aiClient: aiClient,
+      photos: photoStore,
     );
     if (withRecipe) await recipes.save(kabsa(repo));
     await recipes.load();
@@ -203,6 +254,8 @@ Future<(RecipesState, SettingsState)> pumpApp(
     ids: ids.call,
   );
   backupFiles = NoopBackupFiles();
+  mail = NoopMailComposer();
+  importPhotos = NoopImportPhotoPicker();
   backupState = BackupState(
     backup: backup,
     files: backupFilesOverride ?? backupFiles,
@@ -229,6 +282,9 @@ Future<(RecipesState, SettingsState)> pumpApp(
         backup: backup,
         backupFiles: backupFilesOverride ?? backupFiles,
         backupState: backupState,
+        mail: mail,
+        importPhotos: importPhotos,
+        photos: photoStore,
       ),
     ),
   );

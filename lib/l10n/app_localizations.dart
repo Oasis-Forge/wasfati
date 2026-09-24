@@ -992,6 +992,48 @@ abstract class AppLocalizations {
   /// **'Check and save'**
   String get importedRecipe;
 
+  /// IMP-8: a quiet action in the import preview (IMP-5).
+  ///
+  /// In en, this message translates to:
+  /// **'Report a mistake'**
+  String get reportMistake;
+
+  /// IMP-8, Decision 19: what a report holds, for an import with a source link.
+  ///
+  /// In en, this message translates to:
+  /// **'Your mail app opens with just the source link and your note. You send it.'**
+  String get reportMistakeExplainLink;
+
+  /// IMP-8, Decision 19: what a report holds, for an import with no link (a photo or pasted text).
+  ///
+  /// In en, this message translates to:
+  /// **'Your mail app opens with just your note. You send it.'**
+  String get reportMistakeExplainNoLink;
+
+  /// IMP-8: the optional note field in the report dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s wrong? (optional)'**
+  String get reportMistakeNoteHint;
+
+  /// IMP-8: opens the user's mail app with the report draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get reportMistakeSend;
+
+  /// IMP-8, Decision 19: the subject line of the report mail draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Wasfati: a mistake in an imported recipe'**
+  String get reportMistakeSubject;
+
+  /// IMP-8: no app could open the report draft. {email} is the support address.
+  ///
+  /// In en, this message translates to:
+  /// **'No mail app on this device. Write to us at {email}'**
+  String reportMistakeNoMailApp(String email);
+
   /// IMP-7: the always-visible quota counter, with the reset date.
   ///
   /// In en, this message translates to:
@@ -1088,11 +1130,119 @@ abstract class AppLocalizations {
   /// **'Couldn\'t connect. Check your internet and try again.'**
   String get aiImportErrorNetwork;
 
+  /// SRV-7: the server answered 413 too_large to a photo import.
+  ///
+  /// In en, this message translates to:
+  /// **'These photos are too large to send. Try fewer photos.'**
+  String get aiImportErrorTooLarge;
+
+  /// IMP-10: the device couldn't read a picked photo to resize it, so nothing was sent.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open this photo. Try another one.'**
+  String get aiImportErrorUnreadablePhoto;
+
   /// IMP-12: the text box in the paste-caption fallback.
   ///
   /// In en, this message translates to:
   /// **'Paste the recipe\'s text or caption here'**
   String get aiImportPasteHint;
+
+  /// IMP-1, IMP-10: above the photo import buttons on the import screen. {max} is the most photos one import can send (4), already in the chosen digit style.
+  ///
+  /// In en, this message translates to:
+  /// **'Or from a photo: a cookbook page or a handwritten recipe, up to {max} photos.'**
+  String importPhotoExplain(String max);
+
+  /// IMP-1: opens the system camera for a photo import.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a photo'**
+  String get importPhotoCamera;
+
+  /// IMP-1: opens the system photo picker for a photo import (up to 4).
+  ///
+  /// In en, this message translates to:
+  /// **'Choose photos'**
+  String get importPhotoGallery;
+
+  /// IMP-1: takes another camera photo for the same recipe, before sending.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a page'**
+  String get importPhotoAddPage;
+
+  /// IMP-1: how many photos are about to be sent, next to their thumbnails.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo} other{{shown} photos}}'**
+  String importPhotoCount(int count, String shown);
+
+  /// IMP-1: the system picker returned more photos than one import can send.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the first {max} photos are used.'**
+  String importPhotoFirstOnly(String max);
+
+  /// IMP-12: in the fallback for a post whose caption can't be read, opens the photo picker for a screenshot of the post.
+  ///
+  /// In en, this message translates to:
+  /// **'Or a screenshot'**
+  String get aiImportScreenshotAction;
+
+  /// IMP-14: the button on a recipe, or an import preview, written mostly in another language. It always names the app's own language.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate to English'**
+  String get translateRecipe;
+
+  /// IMP-16: the confirm button under the cost line, before a recipe's words are sent for translation.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate'**
+  String get translateConfirm;
+
+  /// IMP-14: shown while the translation is on its way back.
+  ///
+  /// In en, this message translates to:
+  /// **'Translating…'**
+  String get translateSending;
+
+  /// IMP-15: the translation changed a number or a timer in some lines or steps, so those kept their original text.
+  ///
+  /// In en, this message translates to:
+  /// **'Some lines kept their original text so their numbers stay right.'**
+  String get translateKeptOriginal;
+
+  /// IMP-15, SRV-7: an ID sent for translation didn't come back exactly once, so nothing changed and no AI import was used.
+  ///
+  /// In en, this message translates to:
+  /// **'The translation came back incomplete, and nothing was counted. Try again.'**
+  String get translateErrorIncomplete;
+
+  /// SRV-11: the recipe has more than 300 pieces of text or 20,000 characters.
+  ///
+  /// In en, this message translates to:
+  /// **'This recipe is too long to translate in one go.'**
+  String get translateErrorTooLarge;
+
+  /// IMP-14: on a translated copy, a link to the recipe it was translated from.
+  ///
+  /// In en, this message translates to:
+  /// **'Translated from: {title}'**
+  String translatedFromLine(String title);
+
+  /// IMP-14: on a recipe that was translated, a link to its translated copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation: {title}'**
+  String translationLine(String title);
+
+  /// A button that sends the same request again, costing nothing (SRV-7).
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgain;
 
   /// The meal plan screen and its navigation destination (PLAN-1)
   ///

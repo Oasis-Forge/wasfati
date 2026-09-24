@@ -1511,4 +1511,75 @@ void main() {
       expect(await f.recipes.get(saved.id), isNotNull);
     });
   });
+
+  group('BAK-6: translation links (IMP-14)', () {
+    test('a translated copy\'s link to its original survives a backup, both '
+        'on a replace and on a merge into another phone', () async {
+      final source = await testBackupFixture();
+      addTearDown(source.dispose);
+      final original = await source.recipes.save(kabsa(source.recipes));
+      final copy = await source.recipes.save(
+        kabsa(
+          source.recipes,
+          title: 'Lamb kabsa',
+        ).copyWith(translatedFrom: original.id),
+      );
+      final bytes = await source.backup.createBackup();
+
+      for (final mode in RestoreMode.values) {
+        final target = await testBackupFixture(idPrefix: 'other');
+        addTearDown(target.dispose);
+        await target.recipes.save(kabsa(target.recipes, title: 'مقلوبة'));
+        await target.backup.restore(bytes, mode: mode);
+        expect(
+          (await target.recipes.get(copy.id))!.translatedFrom,
+          original.id,
+          reason: '$mode',
+        );
+        expect(await target.recipes.translationLinks(original.id), (
+          from: null,
+          translation: (id: copy.id, title: 'Lamb kabsa'),
+        ), reason: '$mode');
+      }
+    });
+
+    test('a backup written at schema 5 restores into schema 6, its recipes '
+        'with no translation link', () async {
+      final oldDb = await memoryDb(upTo: 5);
+      final oldIds = CountingIds();
+      final oldClock = FakeClock();
+      final oldRecipes = RecipeRepository(
+        oldDb,
+        clock: oldClock.call,
+        ids: oldIds.call,
+      );
+      final saved = await oldRecipes.save(kabsa(oldRecipes));
+      final tables = {for (final t in _recordTables) t: await oldDb.query(t)};
+      expect(tables['recipes']!.single.containsKey('translated_from'), isFalse);
+      await oldDb.close();
+
+      final bytes = _zipOf(
+        _minimalJson(
+          schemaVersion: 5,
+          tables: tables,
+          meta: const {'settings': null, 'install_id': 'old-install'},
+          createdAt: oldClock.now.toIso8601String(),
+        ),
+      );
+      final target = await testBackupFixture();
+      addTearDown(target.dispose);
+      final result = await target.backup.restore(
+        bytes,
+        mode: RestoreMode.replace,
+      );
+      expect(result.perTable['recipes'], const TableMergeCount(added: 1));
+      final back = (await target.recipes.get(saved.id))!;
+      expect(back.title, 'كبسة لحم');
+      expect(back.translatedFrom, isNull);
+      expect(
+        (await target.db.query('recipes')).single['translated_from'],
+        isNull,
+      );
+    });
+  });
 }

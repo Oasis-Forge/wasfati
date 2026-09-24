@@ -47,6 +47,12 @@ class RecipesState extends ChangeNotifier {
   int countIn(String cookbookId) =>
       _recipes.where((r) => r.cookbookIds.contains(cookbookId)).length;
 
+  /// IMP-14: the live original recipe [id] was translated from, and its
+  /// newest live translation; either is null when there's none.
+  Future<({RecipeLink? from, RecipeLink? translation})> translationLinks(
+    String id,
+  ) => _repo.translationLinks(id);
+
   Future<void> load() async {
     await _reload();
     _loaded = true;

@@ -525,6 +525,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importedRecipe => 'Check and save';
 
   @override
+  String get reportMistake => 'Report a mistake';
+
+  @override
+  String get reportMistakeExplainLink =>
+      'Your mail app opens with just the source link and your note. You send it.';
+
+  @override
+  String get reportMistakeExplainNoLink =>
+      'Your mail app opens with just your note. You send it.';
+
+  @override
+  String get reportMistakeNoteHint => 'What\'s wrong? (optional)';
+
+  @override
+  String get reportMistakeSend => 'Send';
+
+  @override
+  String get reportMistakeSubject => 'Wasfati: a mistake in an imported recipe';
+
+  @override
+  String reportMistakeNoMailApp(String email) {
+    return 'No mail app on this device. Write to us at $email';
+  }
+
+  @override
   String aiImportsLeftLine(String shown, String quota) {
     return '$shown of $quota AI imports left this month · resets on the 1st';
   }
@@ -587,7 +612,82 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t connect. Check your internet and try again.';
 
   @override
+  String get aiImportErrorTooLarge =>
+      'These photos are too large to send. Try fewer photos.';
+
+  @override
+  String get aiImportErrorUnreadablePhoto =>
+      'Couldn\'t open this photo. Try another one.';
+
+  @override
   String get aiImportPasteHint => 'Paste the recipe\'s text or caption here';
+
+  @override
+  String importPhotoExplain(String max) {
+    return 'Or from a photo: a cookbook page or a handwritten recipe, up to $max photos.';
+  }
+
+  @override
+  String get importPhotoCamera => 'Take a photo';
+
+  @override
+  String get importPhotoGallery => 'Choose photos';
+
+  @override
+  String get importPhotoAddPage => 'Add a page';
+
+  @override
+  String importPhotoCount(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown photos',
+      one: '1 photo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importPhotoFirstOnly(String max) {
+    return 'Only the first $max photos are used.';
+  }
+
+  @override
+  String get aiImportScreenshotAction => 'Or a screenshot';
+
+  @override
+  String get translateRecipe => 'Translate to English';
+
+  @override
+  String get translateConfirm => 'Translate';
+
+  @override
+  String get translateSending => 'Translating…';
+
+  @override
+  String get translateKeptOriginal =>
+      'Some lines kept their original text so their numbers stay right.';
+
+  @override
+  String get translateErrorIncomplete =>
+      'The translation came back incomplete, and nothing was counted. Try again.';
+
+  @override
+  String get translateErrorTooLarge =>
+      'This recipe is too long to translate in one go.';
+
+  @override
+  String translatedFromLine(String title) {
+    return 'Translated from: $title';
+  }
+
+  @override
+  String translationLine(String title) {
+    return 'Translation: $title';
+  }
+
+  @override
+  String get tryAgain => 'Try again';
 
   @override
   String get planTitle => 'Plan';

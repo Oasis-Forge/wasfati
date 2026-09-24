@@ -10,6 +10,7 @@ import '../models/plan.dart';
 import '../models/quantity/convert.dart';
 import '../models/recipe.dart';
 import '../models/recipe_share.dart';
+import '../models/recipe_translation.dart';
 import '../providers/grocery_state.dart';
 import '../providers/plan_state.dart';
 import '../providers/recipes_state.dart';
@@ -23,9 +24,11 @@ import '../widgets/pressable_slab.dart';
 import '../widgets/rail_heading.dart';
 import '../models/quantity/rational.dart';
 import 'cook_mode_screen.dart';
+import 'home_screen.dart' show openRecipe;
 import 'ingredients_section.dart';
 import 'plan_screen.dart';
 import 'recipe_editor_screen.dart';
+import 'translate_flow.dart';
 
 /// One recipe (REC-3–REC-9). Empty fields are hidden, never shown as 0.
 /// Pops `true` when the recipe was deleted, so the list can offer Undo.
@@ -127,6 +130,74 @@ class _RecipeScreenState extends State<RecipeScreen> {
   }
 }
 
+/// IMP-14, IMP-16: translating a saved recipe costs one AI import, with
+/// the cost line first; the copy opens once saved.
+Future<void> _translate(BuildContext context, Recipe r) async {
+  final saved = await translateAndPreview(
+    context,
+    r,
+    free: false,
+    linkToOriginal: true,
+  );
+  if (saved != null && context.mounted) await openRecipe(context, saved);
+}
+
+/// IMP-14: "مترجمة من: <title>" on a translated copy and "الترجمة: <title>"
+/// on its original, each opening the other. A link whose other recipe was
+/// deleted just isn't there.
+class _TranslationLinks extends StatelessWidget {
+  const _TranslationLinks(this.recipeId);
+  final String recipeId;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final recipes = context.watch<RecipesState>();
+    return FutureBuilder(
+      future: recipes.translationLinks(recipeId),
+      builder: (context, snap) {
+        final links = snap.data;
+        if (links == null) return const SizedBox.shrink();
+        // LANG-5: the other title may be in another language, so it's
+        // isolated from the line around it.
+        String isolated(String title) =>
+            '${String.fromCharCode(0x2068)}$title${String.fromCharCode(0x2069)}';
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (links.from case final from?)
+              _LinkRow(
+                text: l10n.translatedFromLine(isolated(from.title)),
+                onTap: () => openRecipe(context, from.id),
+              ),
+            if (links.translation case final translation?)
+              _LinkRow(
+                text: l10n.translationLine(isolated(translation.title)),
+                onTap: () => openRecipe(context, translation.id),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _LinkRow extends StatelessWidget {
+  const _LinkRow({required this.text, required this.onTap});
+  final String text;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: AlignmentDirectional.centerStart,
+    child: TextButton.icon(
+      onPressed: onTap,
+      icon: const Icon(Icons.translate, size: 18),
+      label: Text(text),
+    ),
+  );
+}
+
 /// The next meal this recipe is planned for, if any (PLAN-6).
 class _NextPlanned extends StatelessWidget {
   const _NextPlanned(this.recipeId);
@@ -213,6 +284,21 @@ class _RecipeBody extends StatelessWidget {
             style: text.bodySmall,
           ),
         _NextPlanned(r.id),
+        _TranslationLinks(r.id),
+        // IMP-14: a recipe written mostly in another language than the
+        // app's; the saved copy is a new recipe, and this one never changes.
+        if (offersTranslation(
+          r,
+          arabicApp: Localizations.localeOf(context).languageCode == 'ar',
+        ))
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              onPressed: () => _translate(context, r),
+              icon: const Icon(Icons.translate),
+              label: Text(l10n.translateRecipe),
+            ),
+          ),
         if (facts.isNotEmpty) ...[
           const SizedBox(height: 12),
           Wrap(

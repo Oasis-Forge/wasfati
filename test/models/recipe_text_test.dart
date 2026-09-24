@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wasfati/models/quantity/rational.dart';
+import 'package:wasfati/models/recipe.dart';
 import 'package:wasfati/models/recipe_text.dart';
 import 'package:wasfati/models/settings.dart';
 import 'package:wasfati/models/quantity/format.dart';
@@ -36,6 +37,49 @@ void main() {
       expect(again.first.id, first.first.id);
       expect(again.first.items[0].id, first.first.items[0].id);
       expect(again.first.items[1].id, isNot(first.first.items[1].id));
+    });
+
+    test('an unchanged line keeps what was read from it; an edited one is '
+        'read again (REC-5, IMP-15: a translated copy\'s amounts)', () {
+      final ids = CountingIds();
+      // A translated copy's line: its amount and unit are the original's,
+      // beside words the parser would read differently.
+      final kept = IngredientLine(
+        id: 'line-1',
+        original: '2 كوبان أرز بسمتي',
+        min: Rational(2),
+        unitId: 'cup',
+        name: 'أرز بسمتي',
+      );
+      final odd = IngredientLine(
+        id: 'line-2',
+        original: 'a handful of rice',
+        min: Rational(3),
+        unitId: 'tbsp',
+        name: 'rice',
+      );
+      final before = [
+        Section(id: 's1', items: [kept, odd]),
+      ];
+      final again = ingredientsFromText(
+        '2 كوبان أرز بسمتي\na handful of rice\n1 كوب ماء',
+        before,
+        ids.call,
+      );
+      final lines = again.single.items;
+      expect(lines[0], same(kept));
+      expect(lines[1].min, Rational(3)); // not re-read from its words
+      expect(lines[1].unitId, 'tbsp');
+      expect(lines[2].min, Rational(1)); // new text: parsed
+      expect(lines[2].unitId, 'cup');
+
+      final edited = ingredientsFromText(
+        '2 كوبان أرز بسمتي\na handful of brown rice',
+        before,
+        ids.call,
+      ).single.items;
+      expect(edited[1].id, isNot('line-2'));
+      expect(edited[1].min, isNull); // edited: read again, no amount
     });
 
     test('text → sections → text is stable', () {

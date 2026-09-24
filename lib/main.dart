@@ -22,7 +22,9 @@ import 'services/ai_import.dart';
 import 'services/backup.dart';
 import 'services/backup_files.dart';
 import 'services/cook_services.dart';
+import 'services/import_photos.dart';
 import 'services/importer.dart';
+import 'services/mail.dart';
 import 'services/recipe_pages.dart';
 import 'services/sharer.dart';
 import 'services/web_import.dart';
@@ -117,6 +119,7 @@ Future<void> main() async {
         DeviceFetcher(),
         repo,
         aiClient: DeviceAiImportClient(),
+        photos: photos,
       ),
       shareInbox: const DeviceShareInbox(),
       sharer: sharer,
@@ -124,6 +127,8 @@ Future<void> main() async {
       backup: backup,
       backupFiles: backupFiles,
       backupState: backupState,
+      mail: const DeviceMailComposer(),
+      importPhotos: DeviceImportPhotoPicker(),
     ),
   );
 }

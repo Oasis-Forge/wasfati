@@ -13,6 +13,12 @@ abstract interface class PhotoStore {
   /// Deletes a saved photo; a missing file is not an error.
   Future<void> delete(String path);
 
+  /// Copies the saved photo at [path] into a new file of [recipeId]'s own
+  /// and returns its path, or null when there's no file to copy (BAK-9) or
+  /// it can't be copied. A translated copy gets its own file, so deleting
+  /// either recipe never removes the other's photo (IMP-14, REC-8).
+  Future<String?> copy(String path, String recipeId);
+
   /// Whether the file at [path] still exists (ORG-6, BAK-9): Android's
   /// device backup excludes `photos/` on purpose, so a restore can bring
   /// back a database row whose photo file never came along. The repair
@@ -34,6 +40,8 @@ class NoopPhotoStore implements PhotoStore {
   Future<String?> pickFromGallery(String recipeId) async => null;
   @override
   Future<void> delete(String path) async {}
+  @override
+  Future<String?> copy(String path, String recipeId) async => null;
   @override
   Future<bool> exists(String path) async => !missing.contains(path);
 }
@@ -67,6 +75,19 @@ class DevicePhotoStore implements PhotoStore {
   Future<void> delete(String path) async {
     final f = File(path);
     if (await f.exists()) await f.delete();
+  }
+
+  @override
+  Future<String?> copy(String path, String recipeId) async {
+    try {
+      final source = File(path);
+      if (!await source.exists()) return null;
+      final stamp = DateTime.now().millisecondsSinceEpoch;
+      final target = p.join(source.parent.path, '$recipeId-$stamp.jpg');
+      return (await source.copy(target)).path;
+    } on FileSystemException {
+      return null;
+    }
   }
 
   @override
