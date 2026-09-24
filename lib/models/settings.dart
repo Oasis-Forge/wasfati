@@ -63,6 +63,8 @@ class AppSettings {
     this.lastBackupAt, // BAK-8
     this.backupReminderSnoozedUntil, // BAK-8: "Later", for 30 days
     this.backupReminderOff = false, // BAK-8: the Settings switch
+    this.aiImportsUsed = 0, // IMP-7: AI imports saved in aiImportsMonth
+    this.aiImportsMonth, // 'YYYY-MM', local; null = never used yet
   });
 
   final LanguagePref language;
@@ -106,6 +108,16 @@ class AppSettings {
   /// The Settings switch that turns BAK-8's reminder off for good.
   final bool backupReminderOff;
 
+  /// IMP-7, Decision 4: AI imports saved so far in [aiImportsMonth]. Reads
+  /// as 0 once the calendar month has moved on from [aiImportsMonth] —
+  /// see `SettingsState.aiImportsUsed`, which is rollover-aware and is
+  /// what the app actually reads.
+  final int aiImportsUsed;
+
+  /// The local calendar month (`'YYYY-MM'`) [aiImportsUsed] counts,
+  /// or null if no AI import has ever been saved on this device.
+  final String? aiImportsMonth;
+
   /// The sighting shift that applies to [hijriYear] (RAM-2): [ramadanShift]
   /// when it was set for that year, else 0.
   int ramadanShiftFor(int hijriYear) =>
@@ -128,6 +140,8 @@ class AppSettings {
     DateTime? lastBackupAt,
     DateTime? backupReminderSnoozedUntil,
     bool? backupReminderOff,
+    int? aiImportsUsed,
+    String? aiImportsMonth,
   }) => AppSettings(
     language: language ?? this.language,
     digits: digits ?? this.digits,
@@ -147,6 +161,8 @@ class AppSettings {
     backupReminderSnoozedUntil:
         backupReminderSnoozedUntil ?? this.backupReminderSnoozedUntil,
     backupReminderOff: backupReminderOff ?? this.backupReminderOff,
+    aiImportsUsed: aiImportsUsed ?? this.aiImportsUsed,
+    aiImportsMonth: aiImportsMonth ?? this.aiImportsMonth,
   );
 
   String toJson() => jsonEncode({
@@ -167,6 +183,8 @@ class AppSettings {
     'backupReminderSnoozedUntil':
         backupReminderSnoozedUntil?.millisecondsSinceEpoch,
     'backupReminderOff': backupReminderOff,
+    'aiImportsUsed': aiImportsUsed,
+    'aiImportsMonth': aiImportsMonth,
   });
 
   /// Unknown or missing values fall back to the defaults, so a backup from a
@@ -197,6 +215,8 @@ class AppSettings {
       lastBackupAt: _msToUtc(m['lastBackupAt']),
       backupReminderSnoozedUntil: _msToUtc(m['backupReminderSnoozedUntil']),
       backupReminderOff: m['backupReminderOff'] == true,
+      aiImportsUsed: (m['aiImportsUsed'] as int?) ?? 0,
+      aiImportsMonth: m['aiImportsMonth'] as String?,
     );
   }
 

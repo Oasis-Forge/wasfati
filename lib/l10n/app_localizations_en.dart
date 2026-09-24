@@ -525,6 +525,71 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importedRecipe => 'Check and save';
 
   @override
+  String aiImportsLeftLine(String shown, String quota) {
+    return '$shown of $quota AI imports left this month · resets on the 1st';
+  }
+
+  @override
+  String get aiImportsOutLine =>
+      'No AI imports left this month · resets on the 1st. Website imports still work, free.';
+
+  @override
+  String aiImportCostLine(String shown, String quota) {
+    return 'Uses one AI import · $shown of $quota left';
+  }
+
+  @override
+  String get aiImportSending => 'Importing with AI…';
+
+  @override
+  String get aiImportKeepWaitingLine => 'This is taking longer than usual.';
+
+  @override
+  String get aiImportKeepWaitingAction => 'Keep waiting';
+
+  @override
+  String get aiImportErrorBadRequest =>
+      'Something went wrong with this request. Try again.';
+
+  @override
+  String get aiImportErrorInvalidToken =>
+      'Couldn\'t verify this device. Try again later.';
+
+  @override
+  String get aiImportErrorUnreachable => 'Couldn\'t read this link\'s content.';
+
+  @override
+  String get aiImportErrorPrivatePost =>
+      'This account or post is private, so its content can\'t be read.';
+
+  @override
+  String get aiImportErrorNotARecipe =>
+      'No recipe was found in this content. You can add it by hand.';
+
+  @override
+  String get aiImportErrorLimitReached =>
+      'No AI imports left this month. Website imports still work, free.';
+
+  @override
+  String get aiImportErrorBusy =>
+      'AI import is busy right now. Try again later.';
+
+  @override
+  String get aiImportErrorMisconfigured =>
+      'AI import isn\'t available right now. Try again later.';
+
+  @override
+  String get aiImportErrorUnknown =>
+      'Something unexpected happened. Try again.';
+
+  @override
+  String get aiImportErrorNetwork =>
+      'Couldn\'t connect. Check your internet and try again.';
+
+  @override
+  String get aiImportPasteHint => 'Paste the recipe\'s text or caption here';
+
+  @override
   String get planTitle => 'Plan';
 
   @override

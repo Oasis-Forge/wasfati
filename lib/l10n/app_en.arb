@@ -682,6 +682,90 @@
   "@importedRecipe": {
     "description": "IMP-5. Title of the preview (the editor, prefilled)."
   },
+  "aiImportsLeftLine": "{shown} of {quota} AI imports left this month · resets on the 1st",
+  "@aiImportsLeftLine": {
+    "description": "IMP-7: the always-visible quota counter, with the reset date.",
+    "placeholders": {
+      "shown": {
+        "type": "String"
+      },
+      "quota": {
+        "type": "String"
+      }
+    }
+  },
+  "aiImportsOutLine": "No AI imports left this month · resets on the 1st. Website imports still work, free.",
+  "@aiImportsOutLine": {
+    "description": "IMP-7: shown instead of aiImportsLeftLine once the quota runs out."
+  },
+  "aiImportCostLine": "Uses one AI import · {shown} of {quota} left",
+  "@aiImportCostLine": {
+    "description": "IMP-3: shown before an import is sent to the AI server, next to the progress indicator.",
+    "placeholders": {
+      "shown": {
+        "type": "String"
+      },
+      "quota": {
+        "type": "String"
+      }
+    }
+  },
+  "aiImportSending": "Importing with AI…",
+  "@aiImportSending": {
+    "description": "IMP-4: the progress message while Importer.fromAi is in flight."
+  },
+  "aiImportKeepWaitingLine": "This is taking longer than usual.",
+  "@aiImportKeepWaitingLine": {
+    "description": "IMP-4: shown once the 45-second keep-waiting prompt appears during an AI import."
+  },
+  "aiImportKeepWaitingAction": "Keep waiting",
+  "@aiImportKeepWaitingAction": {
+    "description": "IMP-4: the button that dismisses the keep-waiting prompt without cancelling the import."
+  },
+  "aiImportErrorBadRequest": "Something went wrong with this request. Try again.",
+  "@aiImportErrorBadRequest": {
+    "description": "SRV-7 400 bad_request."
+  },
+  "aiImportErrorInvalidToken": "Couldn't verify this device. Try again later.",
+  "@aiImportErrorInvalidToken": {
+    "description": "SRV-7 403 invalid_integrity_token."
+  },
+  "aiImportErrorUnreachable": "Couldn't read this link's content.",
+  "@aiImportErrorUnreachable": {
+    "description": "SRV-7 422 unreachable; also the reason line above IMP-12's paste fallback."
+  },
+  "aiImportErrorPrivatePost": "This account or post is private, so its content can't be read.",
+  "@aiImportErrorPrivatePost": {
+    "description": "SRV-7 422 private_post: a platform the server can't read at all (Instagram always, Decision 8); also the reason line above IMP-12's paste fallback."
+  },
+  "aiImportErrorNotARecipe": "No recipe was found in this content. You can add it by hand.",
+  "@aiImportErrorNotARecipe": {
+    "description": "SRV-7 422 not_a_recipe."
+  },
+  "aiImportErrorLimitReached": "No AI imports left this month. Website imports still work, free.",
+  "@aiImportErrorLimitReached": {
+    "description": "SRV-7 429 limit_reached (IMP-7): the server's own confirmation that the quota is out."
+  },
+  "aiImportErrorBusy": "AI import is busy right now. Try again later.",
+  "@aiImportErrorBusy": {
+    "description": "SRV-7 503 busy (SRV-6's spending cap or load)."
+  },
+  "aiImportErrorMisconfigured": "AI import isn't available right now. Try again later.",
+  "@aiImportErrorMisconfigured": {
+    "description": "SRV-7 503 misconfigured."
+  },
+  "aiImportErrorUnknown": "Something unexpected happened. Try again.",
+  "@aiImportErrorUnknown": {
+    "description": "An error code this build doesn't recognize yet."
+  },
+  "aiImportErrorNetwork": "Couldn't connect. Check your internet and try again.",
+  "@aiImportErrorNetwork": {
+    "description": "The request never reached the server, or its answer couldn't be read."
+  },
+  "aiImportPasteHint": "Paste the recipe's text or caption here",
+  "@aiImportPasteHint": {
+    "description": "IMP-12: the text box in the paste-caption fallback."
+  },
   "planTitle": "Plan",
   "@planTitle": {
     "description": "The meal plan screen and its navigation destination (PLAN-1)"

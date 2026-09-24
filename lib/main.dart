@@ -18,6 +18,7 @@ import 'providers/plan_state.dart';
 import 'providers/recipes_state.dart';
 import 'providers/settings_state.dart';
 import 'providers/timers_state.dart';
+import 'services/ai_import.dart';
 import 'services/backup.dart';
 import 'services/backup_files.dart';
 import 'services/cook_services.dart';
@@ -112,7 +113,11 @@ Future<void> main() async {
       photos: photos,
       timers: timers,
       screenAwake: const DeviceScreenAwake(),
-      importer: Importer(DeviceFetcher(), repo),
+      importer: Importer(
+        DeviceFetcher(),
+        repo,
+        aiClient: DeviceAiImportClient(),
+      ),
       shareInbox: const DeviceShareInbox(),
       sharer: sharer,
       shareStorage: shareStorage,

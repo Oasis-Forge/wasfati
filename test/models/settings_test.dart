@@ -43,6 +43,19 @@ void main() {
       expect(AppSettings.fromJson(null), const AppSettings());
     });
 
+    test('IMP-7: the AI import count and its month round-trip', () {
+      const s = AppSettings(aiImportsUsed: 7, aiImportsMonth: '2026-09');
+      final back = AppSettings.fromJson(s.toJson());
+      expect(back.aiImportsUsed, 7);
+      expect(back.aiImportsMonth, '2026-09');
+    });
+
+    test('IMP-7: defaults to nothing used and no month yet', () {
+      const s = AppSettings();
+      expect(s.aiImportsUsed, 0);
+      expect(s.aiImportsMonth, isNull);
+    });
+
     test('unknown keys and a missing Ramadan block fall back to defaults '
         '(a backup from an older version)', () {
       final back = AppSettings.fromJson('{"language": "ar", "future": 1}');

@@ -20,6 +20,15 @@ class ImportException implements Exception {
   String toString() => 'ImportException($failure)';
 }
 
+/// IMP-2, IMP-3's routing: whether a device-first failure means the link
+/// should be retried through AI import (`Importer.fromAi`) instead of
+/// shown as a dead end. Only a genuinely invalid link isn't retried —
+/// a page with no recipe data, and one the device couldn't fetch at all
+/// (many social apps block a plain page fetch), both become an AI import
+/// attempt, same as a social link or pasted text (IMP-3).
+bool needsAiImport(ImportFailure failure) =>
+    failure != ImportFailure.invalidUrl;
+
 /// Fetches a page and its photo straight from the recipe's site (IMP-2):
 /// nothing goes through our server.
 abstract interface class PageFetcher {
