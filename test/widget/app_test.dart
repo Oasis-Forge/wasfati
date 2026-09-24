@@ -865,6 +865,7 @@ void main() {
     expect(shown('1 كيلو دجاج'), findsOneWidget); // "١ ك دجاج" parsed
     expect(find.text('من site.com'), findsOneWidget);
     expect(settings.aiImportsUsed, 0); // a free website import spends nothing
+    expect(settings.settings.importSaved, isTrue); // RUN-5: an import saved
 
     // The same page again offers the saved one (IMP-9).
     await tester.binding.handlePopRoute();
@@ -963,6 +964,8 @@ void main() {
       expect(recipes.recipes.single.title, 'كبسة لحم');
       expect(recipes.recipes.single.sourceType, SourceType.written);
       expect(settings.aiImportsUsed, 1); // IMP-7: saving spent one
+      // RUN-5: an import saved, though its tag says written.
+      expect(settings.settings.importSaved, isTrue);
     },
   );
 
@@ -1337,6 +1340,9 @@ void main() {
       await tester.enterText(find.byType(TextFormField).first, 'ريل بلا حصة');
       await tester.tap(find.text('حفظ'));
       await settle(tester);
+      // RUN-5: typed by hand, so no import saved, though tagged with a link.
+      expect(recipes.recipes.single.sourceType, SourceType.website);
+      expect(settings.settings.importSaved, isFalse);
       await tester.runAsync(() async {
         expect(
           await recipes.repository.findBySourceUrl(

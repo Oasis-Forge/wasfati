@@ -23,35 +23,39 @@ class FirstRunFlow extends StatefulWidget {
 
 class _FirstRunFlowState extends State<FirstRunFlow> {
   bool _setupDone = false;
-  bool _busy = false;
+  bool _finishing = false;
 
-  /// RUN-6: the sample is offered as setup ends, in the language setup
-  /// ended in, so the walkthrough ends in a library that already has it.
-  Future<void> _continue() async {
-    if (_busy) return;
-    setState(() => _busy = true);
+  /// RUN-6: the sample is offered as the walkthrough ends (Skip or its last
+  /// button), in the language the first run ends in, just before the
+  /// library it ends in. Never sooner: back from the walkthrough, or a
+  /// relaunch part-way through it, reopens setup, where the language can
+  /// still change, and the sample is offered only once.
+  Future<void> _finish() async {
+    if (_finishing) return; // a double tap offers it once
+    _finishing = true;
     final arabic = Localizations.localeOf(context).languageCode == 'ar';
-    await context.read<RecipesState>().addSampleOnFirstRun(arabic: arabic);
-    if (mounted) {
-      setState(() {
-        _busy = false;
-        _setupDone = true;
-      });
+    final recipes = context.read<RecipesState>();
+    final settings = context.read<SettingsState>();
+    try {
+      await recipes.addSampleOnFirstRun(arabic: arabic);
+      await settings.completeFirstRun();
+    } finally {
+      _finishing = false;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_setupDone) return SetupScreen(onContinue: _continue, busy: _busy);
+    if (!_setupDone) {
+      return SetupScreen(onContinue: () => setState(() => _setupDone = true));
+    }
     // Back from the walkthrough returns to setup, not out of the app.
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) setState(() => _setupDone = false);
       },
-      child: WalkthroughScreen(
-        onDone: () => context.read<SettingsState>().completeFirstRun(),
-      ),
+      child: WalkthroughScreen(onDone: _finish),
     );
   }
 }
@@ -62,10 +66,9 @@ class _FirstRunFlowState extends State<FirstRunFlow> {
 /// review request. Every choice applies at once (LANG-1), so the page
 /// itself switches language as it's tapped.
 class SetupScreen extends StatelessWidget {
-  const SetupScreen({super.key, required this.onContinue, this.busy = false});
+  const SetupScreen({super.key, required this.onContinue});
 
   final VoidCallback onContinue;
-  final bool busy;
 
   @override
   Widget build(BuildContext context) {
@@ -123,7 +126,7 @@ class SetupScreen extends StatelessWidget {
                 width: double.infinity,
                 child: PressableSlab(
                   child: FilledButton(
-                    onPressed: busy ? null : onContinue,
+                    onPressed: onContinue,
                     child: Text(l10n.setupContinue),
                   ),
                 ),

@@ -103,6 +103,9 @@ List<List<Duration>> _timers(Recipe r) => [
     for (final step in s.items) findDurations(step.text),
 ];
 
+/// Settles until [finder] finds something. A recipe page's translation
+/// links (IMP-14) come from a database lookup of their own, which shows no
+/// spinner and can outlast [settle] on a busy machine.
 Future<void> _waitFor(WidgetTester tester, Finder finder) async {
   for (var i = 0; i < 50 && finder.evaluate().isEmpty; i++) {
     await tester.runAsync(
@@ -175,6 +178,7 @@ void main() {
     expect(settings.aiImportsUsed, 1); // IMP-16: one, when saved
     expect(recipes.recipes, hasLength(2));
     // The copy's page, linked to the original.
+    await _waitFor(tester, shown('مترجمة من: Lamb kabsa'));
     expect(shown('مترجمة من: Lamb kabsa'), findsOneWidget);
     expect(shown('لحم ضأن'), findsWidgets);
     expect(shown('Add the rice and cook for 20 minutes.'), findsOneWidget);
@@ -194,6 +198,7 @@ void main() {
     await tester.binding.handlePopRoute(); // system Back
     await settle(tester);
     expect(find.text('Lamb kabsa'), findsOneWidget);
+    await _waitFor(tester, shown('الترجمة: كبسة لحم'));
     expect(shown('الترجمة: كبسة لحم'), findsOneWidget);
     final again = (await tester.runAsync(
       () => recipes.repository.get(original.id),
@@ -209,6 +214,7 @@ void main() {
     // Each link opens the other recipe.
     await tester.tap(shown('الترجمة: كبسة لحم'));
     await settle(tester);
+    await _waitFor(tester, shown('مترجمة من: Lamb kabsa'));
     expect(shown('مترجمة من: Lamb kabsa'), findsOneWidget);
   });
 
@@ -472,6 +478,7 @@ void main() {
     expect(find.text('Lamb kabsa'), findsOneWidget);
     await tester.tap(find.text('Save'));
     await settle(tester);
+    await _waitFor(tester, shown('Translated from: كبسة لحم'));
     expect(shown('Translated from: كبسة لحم'), findsOneWidget);
     expect(shown('1 kg lamb'), findsOneWidget); // English unit, same amount
   });
@@ -541,9 +548,11 @@ void main() {
     expect(find.text('راجع واحفظ'), findsOneWidget);
     await tester.tap(find.text('حفظ'));
     await settle(tester);
+    await _waitFor(tester, shown('مترجمة من: Slow-cooked lamb kabsa'));
     expect(shown('مترجمة من: Slow-cooked lamb kabsa'), findsOneWidget);
     await tester.binding.handlePopRoute();
     await settle(tester);
+    await _waitFor(tester, shown('الترجمة: ترجمة t'));
     expect(shown('الترجمة: ترجمة t'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -577,6 +586,7 @@ void main() {
     expect(back.title, 'نسخة معدلة');
     expect(back.unitView, UnitView.metric);
     expect(back.translatedFrom, original.id);
+    await _waitFor(tester, shown('مترجمة من: Lamb kabsa'));
     expect(shown('مترجمة من: Lamb kabsa'), findsOneWidget);
   });
 

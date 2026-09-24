@@ -99,7 +99,11 @@ void main() {
     });
   });
 
-  group('what counts as a saved import and a cooked recipe', () {
+  // What counts as a saved import is `AppSettings.importSaved`, set by the
+  // import preview's Save (test/widget/app_test.dart and
+  // test/providers/review_prompt_state_test.dart); a recipe's source tag
+  // doesn't decide it.
+  group('what counts as a cooked recipe', () {
     LibraryEntry entry(SourceType source, {int cooked = 0}) => LibraryEntry(
       id: '${source.name}-$cooked',
       title: 'x',
@@ -108,27 +112,8 @@ void main() {
       createdAt: now,
     );
 
-    test('an empty library has neither', () {
-      expect(hasSavedImport(const []), isFalse);
+    test('an empty library has none', () {
       expect(hasMarkedCooked(const []), isFalse);
-    });
-
-    test('a recipe written by hand (the sample is one) is not an import', () {
-      expect(hasSavedImport([entry(SourceType.written)]), isFalse);
-    });
-
-    test('a website, a post or a photo is an import', () {
-      for (final source in [
-        SourceType.website,
-        SourceType.social,
-        SourceType.photo,
-      ]) {
-        expect(
-          hasSavedImport([entry(SourceType.written), entry(source)]),
-          isTrue,
-          reason: source.name,
-        );
-      }
     });
 
     test('cooked once is enough; never cooked is not', () {

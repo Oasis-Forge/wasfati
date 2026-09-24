@@ -94,6 +94,13 @@ class SettingsState extends ChangeNotifier {
     return DateTime(local.year, local.month + 1, 1);
   }
 
+  /// RUN-5: an import was just saved from the import preview (a fetched
+  /// page or an AI import, never a by-hand draft). Written once.
+  Future<void> recordImportSaved() async {
+    if (_settings.importSaved) return;
+    await update(_settings.copyWith(importSaved: true));
+  }
+
   /// IMP-7: the save path calls this, and only the save path — never a
   /// cancelled or failed preview, which costs nothing. Rolls the count
   /// over to the current month first if the last save was in an earlier

@@ -101,6 +101,12 @@ String formatAmount(
   return digits == DigitStyle.arabic ? easternDigits(text) : text;
 }
 
+/// A scale factor as the app shows it, "×½" or "×2" (SCALE-2, QTY-5), kept
+/// left to right so the "×" stays before its number in Arabic text
+/// (LANG-5).
+String factorLabel(Rational factor, DigitStyle digits) =>
+    ltrIsolate('×${formatAmount(factor, null, digits: digits)}');
+
 /// The Arabic unit name that agrees with the amount (QTY-6): 1 → singular,
 /// 2 → dual, 3–10 → plural, 11+ → accusative singular. Fractions take the
 /// singular. (In the app this comes from ICU plural messages, LANG-2.)

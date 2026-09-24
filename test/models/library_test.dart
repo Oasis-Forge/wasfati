@@ -88,6 +88,50 @@ void main() {
     });
   });
 
+  group('LANG-4 search in every language', () {
+    final list = [
+      e('idam', 'إدام بامية', day: 1),
+      e('ice', 'آيس كريم بالفستق', day: 2),
+      e('halwa', 'حلوى الجبن', ingredients: ['جبنة عكاوي'], day: 3),
+      e('maqluba', 'مَقْلُوبَة بالباذنجان', day: 4),
+      e('creme', 'Crème brûlée', ingredients: ['jalapeño'], day: 5),
+      e('kofte', 'İçli köfte', notes: 'Işık usulü', day: 6),
+      e('cake', 'كيك ٣ طبقات', tags: ['Rapide'], day: 7),
+    ];
+    List<String> find(String text) =>
+        ids(runLibraryQuery(list, LibraryQuery(text: text)));
+
+    test('hamza forms of alef: a bare alef finds إ and آ, and back', () {
+      expect(find('ادام'), ['idam']);
+      expect(find('ايس'), ['ice']);
+      expect(find('أدام'), ['idam']);
+    });
+
+    test('alef maqsura and yaa, taa marbuta and haa, in title and '
+        'ingredient', () {
+      expect(find('حلوي'), ['halwa']);
+      expect(find('جبنه'), ['halwa']); // the ingredient "جبنة"
+      expect(find('مقلوبه'), ['maqluba']); // and its tashkeel ignored
+    });
+
+    test("a Persian keyboard's ک and ی still find كيك", () {
+      expect(find('کیک'), ['cake']);
+    });
+
+    test('Latin accents and case, and the Turkish i, are ignored', () {
+      expect(find('CREME BRULEE'), ['creme']);
+      expect(find('jalapeno'), ['creme']); // an ingredient
+      expect(find('icli kofte'), ['kofte']);
+      expect(find('ICLI'), ['kofte']);
+      expect(find('isik'), ['kofte']); // the notes
+      expect(find('rapide'), ['cake']); // a tag
+    });
+
+    test('digits in either style', () {
+      expect(find('3 طبقات'), ['cake']);
+    });
+  });
+
   group('ORG-5 sort', () {
     test('recently added by default', () {
       expect(ids(runLibraryQuery(all, const LibraryQuery())), [
@@ -155,5 +199,15 @@ void main() {
 
   test('ORG-2 tags box: commas of both kinds, duplicates dropped', () {
     expect(parseTags('حار، رمضان, سريع ،  حار ,,'), ['حار', 'رمضان', 'سريع']);
+  });
+
+  test('ORG-2: the editor joins Arabic tags with "، " and English ones with '
+      '", " (LANG-2)', () {
+    expect(['حار', 'رمضان'].join(tagSeparator(['حار', 'رمضان'])), 'حار، رمضان');
+    expect(
+      ['quick', 'easy'].join(tagSeparator(['quick', 'easy'])),
+      'quick, easy',
+    );
+    expect(tagSeparator(['quick', 'حار']), '، ');
   });
 }

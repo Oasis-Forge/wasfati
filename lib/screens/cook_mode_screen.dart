@@ -215,7 +215,13 @@ class _CookModeScreenState extends State<CookModeScreen>
           if (widget.recipe.ingredients.isNotEmpty)
             IconButton(
               tooltip: l10n.ingredients,
-              icon: const Icon(Icons.checklist),
+              // Ticks at the reading start: this icon doesn't mirror
+              // itself (LANG-5).
+              icon: Icon(
+                dir == TextDirection.rtl
+                    ? Icons.checklist_rtl
+                    : Icons.checklist,
+              ),
               onPressed: _showIngredients,
             ),
         ],

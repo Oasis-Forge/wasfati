@@ -251,7 +251,7 @@ abstract class AppLocalizations {
   /// Number of saved recipes. {shown} is {count} in the chosen digit style (QTY-5).
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{No recipes} =1{1 recipe} other{{shown} recipes}}'**
+  /// **'{count, plural, =0{No recipes} =1{{shown} recipe} other{{shown} recipes}}'**
   String recipesCount(int count, String shown);
 
   /// Reliable writes: shown when a database write fails and state was rolled back.
@@ -275,26 +275,26 @@ abstract class AppLocalizations {
   /// A duration in minutes on the recipe page.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 min} other{{shown} min}}'**
+  /// **'{count, plural, =1{{shown} min} other{{shown} min}}'**
   String minutes(int count, String shown);
 
   /// REC-7. Number of servings on the recipe page.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 serving} other{{shown} servings}}'**
+  /// **'{count, plural, =1{{shown} serving} other{{shown} servings}}'**
   String servings(int count, String shown);
 
-  /// Label before the prep time.
+  /// REC-3. The prep time on the recipe page, a shared recipe and the export; {time} is the minutes message, in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'Prep'**
-  String get prepTime;
+  /// **'Prep {time}'**
+  String prepTime(String time);
 
-  /// Label before the cook time.
+  /// REC-3. The cook time on the recipe page, a shared recipe and the export; {time} is the minutes message, in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'Cook'**
-  String get cookTime;
+  /// **'Cook {time}'**
+  String cookTime(String time);
 
   /// Recipe page and editor heading.
   ///
@@ -434,11 +434,11 @@ abstract class AppLocalizations {
   /// **'Servings'**
   String get fieldServings;
 
-  /// REC-7. Error for servings out of range.
+  /// REC-7. Error for servings out of range; the limits come in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'1 to 100'**
-  String get fieldServingsInvalid;
+  /// **'{min} to {max}'**
+  String fieldServingsInvalid(String min, String max);
 
   /// Editor field, minutes.
   ///
@@ -452,11 +452,11 @@ abstract class AppLocalizations {
   /// **'Cook (min)'**
   String get fieldCook;
 
-  /// REC-4, REC-5. Editor hint for the ingredients box.
+  /// REC-4, REC-5. Editor hint for the ingredients box; {n} (2) comes in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'One ingredient per line, e.g. 2 cups rice\nA line ending with : starts a group, e.g. For the sauce:'**
-  String get fieldIngredientsHint;
+  /// **'One ingredient per line, e.g. {n} cups rice\nA line ending with : starts a group, e.g. For the sauce:'**
+  String fieldIngredientsHint(String n);
 
   /// REC-6. Editor hint for the steps box.
   ///
@@ -470,11 +470,11 @@ abstract class AppLocalizations {
   /// **'Numbers only'**
   String get fieldNumberInvalid;
 
-  /// REC-6. Error when a step is too long.
+  /// REC-6. Error when a step is too long; {max} (2000) comes in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'A step is longer than 2,000 characters'**
-  String get stepTooLong;
+  /// **'A step is longer than {max} characters'**
+  String stepTooLong(String max);
 
   /// REC-8. Editor button.
   ///
@@ -752,22 +752,22 @@ abstract class AppLocalizations {
   /// **'Photo'**
   String get sourcePhoto;
 
-  /// ORG-6 time filter.
+  /// ORG-6 time filter; {n} (30) comes in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'Under 30 min'**
-  String get timeUnder30;
+  /// **'Under {n} min'**
+  String timeUnder30(String n);
+
+  /// ORG-6 time filter; {range} is "30–60" in the user's digits, kept left to right (LANG-5).
+  ///
+  /// In en, this message translates to:
+  /// **'{range} min'**
+  String time30to60(String range);
 
   /// ORG-6 time filter.
   ///
   /// In en, this message translates to:
-  /// **'30–60 min'**
-  String get time30to60;
-
-  /// ORG-6 time filter.
-  ///
-  /// In en, this message translates to:
-  /// **'Over 1 hour'**
+  /// **'Over an hour'**
   String get timeOver60;
 
   /// Filter option: no filter.
@@ -800,11 +800,11 @@ abstract class AppLocalizations {
   /// **'Name'**
   String get cookbookName;
 
-  /// ORG-1. Validation.
+  /// ORG-1. Validation; the limits (1 and 60) come in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'1 to 60 characters'**
-  String get cookbookNameInvalid;
+  /// **'{min} to {max} characters'**
+  String cookbookNameInvalid(String min, String max);
 
   /// ORG-1. Menu item.
   ///
@@ -827,7 +827,7 @@ abstract class AppLocalizations {
   /// ORG-1. Recipes in a cookbook.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{No recipes} =1{1 recipe} other{{shown} recipes}}'**
+  /// **'{count, plural, =0{No recipes} =1{{shown} recipe} other{{shown} recipes}}'**
   String cookbookRecipes(int count, String shown);
 
   /// RUN-1. Empty cookbooks tab.
@@ -854,11 +854,11 @@ abstract class AppLocalizations {
   /// **'Separate with commas, e.g. spicy, Ramadan'**
   String get fieldTagsHint;
 
-  /// ORG-2. Validation.
+  /// ORG-2. Validation; the limits (20 tags, 30 characters) come in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'Up to 20 tags, 30 characters each'**
-  String get tagsInvalid;
+  /// **'Up to {tags} tags, {chars} characters each'**
+  String tagsInvalid(String tags, String chars);
 
   /// ORG-1. Editor section.
   ///
@@ -905,7 +905,7 @@ abstract class AppLocalizations {
   /// SCALE-4. Header when some lines couldn't be scaled.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 ingredient wasn\'t scaled} other{{shown} ingredients weren\'t scaled}}'**
+  /// **'{count, plural, =1{{shown} ingredient wasn\'t scaled} other{{shown} ingredients weren\'t scaled}}'**
   String notScaledCount(int count, String shown);
 
   /// SCALE-5. Conversion view.
@@ -1160,16 +1160,16 @@ abstract class AppLocalizations {
   /// **'No mail app on this device. Write to us at {email}'**
   String reportMistakeNoMailApp(String email);
 
-  /// IMP-7: the always-visible quota counter, with the reset date.
+  /// IMP-7: the always-visible quota counter, with the reset date. {count} is the monthly quota (10 free, 100 with Premium), for the noun's agreement (QTY-6); {shown} and {quota} are the numbers in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'{shown} of {quota} AI imports left this month · resets on the 1st'**
-  String aiImportsLeftLine(String shown, String quota);
+  /// **'{count, plural, =1{{shown} of {quota} AI import left this month · resets at the start of each month} other{{shown} of {quota} AI imports left this month · resets at the start of each month}}'**
+  String aiImportsLeftLine(int count, String shown, String quota);
 
   /// IMP-7: shown instead of aiImportsLeftLine once the quota runs out.
   ///
   /// In en, this message translates to:
-  /// **'No AI imports left this month · resets on the 1st. Website imports still work, free.'**
+  /// **'No AI imports left this month · resets at the start of each month. Website imports still work, free.'**
   String get aiImportsOutLine;
 
   /// PAY-5, IMP-7: the one line under the quota once the free AI imports run out. Opens the purchase screen.
@@ -1307,7 +1307,7 @@ abstract class AppLocalizations {
   /// IMP-1: how many photos are about to be sent, next to their thumbnails.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 photo} other{{shown} photos}}'**
+  /// **'{count, plural, =1{{shown} photo} other{{shown} photos}}'**
   String importPhotoCount(int count, String shown);
 
   /// IMP-1: the system picker returned more photos than one import can send.
@@ -1490,11 +1490,11 @@ abstract class AppLocalizations {
   /// **'Eating out, leftovers…'**
   String get planNoteHint;
 
-  /// The note is empty or too long (PLAN-2)
+  /// The note is empty or too long (PLAN-2); the limits (1 and 60) come in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'1–60 characters'**
-  String get planNoteInvalid;
+  /// **'{min} to {max} characters'**
+  String planNoteInvalid(String min, String max);
 
   /// Button on a recipe page, and the title of its sheet (PLAN-3)
   ///
@@ -1559,14 +1559,14 @@ abstract class AppLocalizations {
   /// Snackbar after clearing a week (PLAN-4)
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{Nothing to clear} =1{1 meal removed} other{{shown} meals removed}}'**
+  /// **'{count, plural, =0{Nothing to clear} =1{{shown} meal removed} other{{shown} meals removed}}'**
   String planClearedCount(int count, String shown);
 
-  /// The slot already has PlanEntry.maxPerSlot entries (PLAN-2)
+  /// The slot already has PlanEntry.maxPerSlot entries (PLAN-2); {max} (10) comes in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'A meal holds up to 10 entries'**
-  String get planSlotFull;
+  /// **'A meal holds up to {max} entries'**
+  String planSlotFull(String max);
 
   /// Empty plan heading (PLAN-1, RUN-1)
   ///
@@ -1709,7 +1709,7 @@ abstract class AppLocalizations {
   /// DEL-2. Snackbar after Clear done or Clear all.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{Nothing to clear} =1{1 item cleared} other{{shown} items cleared}}'**
+  /// **'{count, plural, =0{Nothing to clear} =1{{shown} item cleared} other{{shown} items cleared}}'**
   String groceriesClearedCount(int count, String shown);
 
   /// GRO-5. View toggle.
@@ -1769,7 +1769,7 @@ abstract class AppLocalizations {
   /// GRO-2. Snackbar after adding a recipe's ticked lines to groceries.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 ingredient added} other{{shown} ingredients added}}'**
+  /// **'{count, plural, =1{{shown} ingredient added} other{{shown} ingredients added}}'**
   String groceriesAddedCount(int count, String shown);
 
   /// PLAN-5. Marker on an entry already sent to groceries.
@@ -1787,13 +1787,13 @@ abstract class AppLocalizations {
   /// PLAN-5. Snackbar after adding the week's ticked entries to groceries.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{Nothing to add} =1{1 meal added to groceries} other{{shown} meals added to groceries}}'**
+  /// **'{count, plural, =0{Nothing to add} =1{{shown} meal added to groceries} other{{shown} meals added to groceries}}'**
   String planGroceriesAddedCount(int count, String shown);
 
   /// RAM-3. The plan's card, 7 days before Ramadan through the day before it starts.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{Ramadan starts in 1 day. Switch the plan to suhoor and iftar?} other{Ramadan starts in {shown} days. Switch the plan to suhoor and iftar?}}'**
+  /// **'{count, plural, =1{Ramadan starts in {shown} day. Switch the plan to suhoor and iftar?} other{Ramadan starts in {shown} days. Switch the plan to suhoor and iftar?}}'**
   String ramadanCardSoon(int count, String shown);
 
   /// RAM-3. The plan's card, once Ramadan has started.
@@ -1919,25 +1919,25 @@ abstract class AppLocalizations {
   /// BAK-7. Recipe count in the restore preview sheet.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{No recipes} =1{1 recipe} other{{shown} recipes}}'**
+  /// **'{count, plural, =0{No recipes} =1{{shown} recipe} other{{shown} recipes}}'**
   String backupPreviewRecipes(int count, String shown);
 
   /// BAK-7. Cookbook count in the restore preview sheet.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{No cookbooks} =1{1 cookbook} other{{shown} cookbooks}}'**
+  /// **'{count, plural, =0{No cookbooks} =1{{shown} cookbook} other{{shown} cookbooks}}'**
   String backupPreviewCookbooks(int count, String shown);
 
   /// BAK-7. Distinct plan weeks in the restore preview sheet.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{No plan weeks} =1{1 plan week} other{{shown} plan weeks}}'**
+  /// **'{count, plural, =0{No plan weeks} =1{{shown} plan week} other{{shown} plan weeks}}'**
   String backupPreviewWeeks(int count, String shown);
 
   /// BAK-7. Grocery item count in the restore preview sheet.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{No grocery items} =1{1 grocery item} other{{shown} grocery items}}'**
+  /// **'{count, plural, =0{No grocery items} =1{{shown} grocery item} other{{shown} grocery items}}'**
   String backupPreviewGroceryItems(int count, String shown);
 
   /// No description provided for @backupMergeAction.
@@ -2045,7 +2045,7 @@ abstract class AppLocalizations {
   /// BAK-8. The library's reminder card, days since the last backup.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{Last backup was 1 day ago} other{Last backup was {shown} days ago}}'**
+  /// **'{count, plural, =1{Last backup was {shown} day ago} other{Last backup was {shown} days ago}}'**
   String backupReminderDaysAgo(int count, String shown);
 
   /// No description provided for @backupReminderNowAction.
@@ -2141,7 +2141,7 @@ abstract class AppLocalizations {
   /// PAY-7: AI imports a month with Pro (10) or Premium (100).
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 AI import a month} other{{shown} AI imports a month}}'**
+  /// **'{count, plural, =1{{shown} AI import a month} other{{shown} AI imports a month}}'**
   String purchaseAiImports(int count, String shown);
 
   /// PAY-7, SRV-4: Premium's 100 AI imports are fair use.

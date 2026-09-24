@@ -131,6 +131,19 @@ void main() {
     });
   });
 
+  group('RUN-5: importSaved', () {
+    test('no import saved by default, nor in settings from before it', () {
+      expect(const AppSettings().importSaved, isFalse);
+      expect(AppSettings.fromJson('{}').importSaved, isFalse);
+    });
+
+    test('round-trips through JSON, and copyWith keeps it', () {
+      const s = AppSettings(importSaved: true);
+      expect(AppSettings.fromJson(s.toJson()).importSaved, isTrue);
+      expect(s.copyWith(grid: true).importSaved, isTrue);
+    });
+  });
+
   group('RUN-3: deviceDigits, the setup page\'s preselected digits', () {
     test('Egyptian Arabic writes ١٢٣', () {
       expect(deviceDigits(const [Locale('ar', 'EG')]), DigitStyle.arabic);

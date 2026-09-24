@@ -93,6 +93,7 @@ class AppSettings {
     this.aiImportsMonth, // 'YYYY-MM', local; null = never used yet
     this.firstRunComplete = false, // RUN-3, RUN-4: a fresh install
     this.reviewAskedAt, // RUN-5: null = the store was never asked
+    this.importSaved = false, // RUN-5: no import saved yet
   });
 
   final LanguagePref language;
@@ -158,6 +159,13 @@ class AppSettings {
   /// it never was. Asked at most once every 120 days.
   final DateTime? reviewAskedAt;
 
+  /// RUN-5: an import has been saved from the import preview at least once
+  /// — a fetched page, or an AI import of a post, a caption or a photo.
+  /// Not a recipe typed by hand after a failed import, whatever source it
+  /// is tagged with, and not a recipe's tag: a pasted caption's AI import is
+  /// tagged as written (IMP-3). Stays true once set.
+  final bool importSaved;
+
   /// The sighting shift that applies to [hijriYear] (RAM-2): [ramadanShift]
   /// when it was set for that year, else 0.
   int ramadanShiftFor(int hijriYear) =>
@@ -184,6 +192,7 @@ class AppSettings {
     String? aiImportsMonth,
     bool? firstRunComplete,
     DateTime? reviewAskedAt,
+    bool? importSaved,
   }) => AppSettings(
     language: language ?? this.language,
     digits: digits ?? this.digits,
@@ -207,6 +216,7 @@ class AppSettings {
     aiImportsMonth: aiImportsMonth ?? this.aiImportsMonth,
     firstRunComplete: firstRunComplete ?? this.firstRunComplete,
     reviewAskedAt: reviewAskedAt ?? this.reviewAskedAt,
+    importSaved: importSaved ?? this.importSaved,
   );
 
   String toJson() => jsonEncode({
@@ -231,6 +241,7 @@ class AppSettings {
     'aiImportsMonth': aiImportsMonth,
     'firstRunComplete': firstRunComplete,
     'reviewAskedAt': reviewAskedAt?.millisecondsSinceEpoch,
+    'importSaved': importSaved,
   });
 
   /// Unknown or missing values fall back to the defaults, so a backup from a
@@ -273,6 +284,7 @@ class AppSettings {
       aiImportsMonth: m['aiImportsMonth'] as String?,
       firstRunComplete: m['firstRunComplete'] != false,
       reviewAskedAt: _msToUtc(m['reviewAskedAt']),
+      importSaved: m['importSaved'] == true,
     );
   }
 

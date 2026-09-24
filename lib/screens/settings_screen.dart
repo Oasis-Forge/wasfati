@@ -569,9 +569,9 @@ class _BackupSectionState extends State<_BackupSection> {
 
     String servingsLabel(int n) => l10n.servings(n, settingsState.number(n));
     String prepTimeLabel(int m) =>
-        '${l10n.prepTime} ${l10n.minutes(m, settingsState.number(m))}';
+        l10n.prepTime(l10n.minutes(m, settingsState.number(m)));
     String cookTimeLabel(int m) =>
-        '${l10n.cookTime} ${l10n.minutes(m, settingsState.number(m))}';
+        l10n.cookTime(l10n.minutes(m, settingsState.number(m)));
     String unscaledLineText(String line, String mark) =>
         l10n.shareUnscaledLine(line, mark);
 

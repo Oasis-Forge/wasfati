@@ -172,6 +172,31 @@ void main() {
     expect(find.text('شوربة عدس'), findsNothing);
   });
 
+  testWidgets('back from the walkthrough reopens setup; another language '
+      'chosen there is the sample\'s, since it comes only as the walkthrough '
+      'ends (RUN-4, RUN-6)', (tester) async {
+    _device(tester, const [Locale('ar', 'SA')]);
+    await _freshInstall(tester);
+    await tester.tap(find.text('متابعة'));
+    await settle(tester);
+    expect(find.text(_arPages[0]), findsOneWidget);
+    expect(reviewPrompt.recipes.recipes, isEmpty); // not offered yet
+
+    await tester.binding.handlePopRoute(); // system Back
+    await settle(tester);
+    expect(find.text('أهلًا بك في وصفاتي'), findsOneWidget);
+    await tester.tap(find.text('English'));
+    await settle(tester);
+    await tester.tap(find.text('Continue'));
+    await settle(tester);
+    await tester.tap(find.text('Skip'));
+    await settle(tester);
+
+    expect(find.text('Red lentil soup'), findsOneWidget);
+    expect(find.text('شوربة عدس'), findsNothing);
+    expect(reviewPrompt.recipes.recipes, hasLength(1));
+  });
+
   testWidgets('a device that writes ١٢٣ gets it preselected, and the '
       'walkthrough draws in it (RUN-3, QTY-5)', (tester) async {
     _device(tester, const [Locale('ar', 'EG')]);
@@ -331,8 +356,10 @@ void main() {
     testWidgets('comes right after cook mode closes from its last page, once '
         'there is a saved import and a cooked recipe — never from the close '
         'button, and not again within 120 days', (tester) async {
-      // The kabsa is a website import (IMP-2).
+      // The kabsa is a website import (IMP-2), saved from the import
+      // preview, which is what records "saved an import" (app_test.dart).
       final (_, settings) = await pumpApp(tester, withRecipe: true);
+      await tester.runAsync(settings.recordImportSaved);
       await tester.tap(find.text('كبسة لحم'));
       await settle(tester);
 

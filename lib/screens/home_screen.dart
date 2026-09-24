@@ -8,6 +8,7 @@ import '../providers/settings_state.dart';
 import '../services/backup.dart';
 import '../widgets/ad_slot.dart';
 import '../widgets/content_direction.dart';
+import '../widgets/digit_counter.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/pressable_slab.dart';
 import 'groceries_screen.dart';
@@ -291,6 +292,7 @@ Future<String?> askCookbookName(
   required String action,
 }) {
   final l10n = AppLocalizations.of(context);
+  final settings = context.read<SettingsState>();
   final controller = TextEditingController(text: initial);
   final form = GlobalKey<FormState>();
   void submit(BuildContext ctx) {
@@ -309,9 +311,14 @@ Future<String?> askCookbookName(
           controller: controller,
           autofocus: true,
           maxLength: Cookbook.maxName,
+          buildCounter: digitCounter,
           decoration: InputDecoration(labelText: l10n.cookbookName),
-          validator: (v) =>
-              (v ?? '').trim().isEmpty ? l10n.cookbookNameInvalid : null,
+          validator: (v) => (v ?? '').trim().isEmpty
+              ? l10n.cookbookNameInvalid(
+                  settings.number(1),
+                  settings.number(Cookbook.maxName),
+                )
+              : null,
           onFieldSubmitted: (_) => submit(ctx),
         ),
       ),

@@ -146,10 +146,14 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get prepTime => 'التحضير';
+  String prepTime(String time) {
+    return 'التحضير $time';
+  }
 
   @override
-  String get cookTime => 'الطبخ';
+  String cookTime(String time) {
+    return 'الطبخ $time';
+  }
 
   @override
   String get ingredients => 'المكونات';
@@ -228,7 +232,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fieldServings => 'عدد الحصص';
 
   @override
-  String get fieldServingsInvalid => 'من 1 إلى 100';
+  String fieldServingsInvalid(String min, String max) {
+    return 'من $min إلى $max';
+  }
 
   @override
   String get fieldPrep => 'التحضير (دقيقة)';
@@ -237,8 +243,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fieldCook => 'الطبخ (دقيقة)';
 
   @override
-  String get fieldIngredientsHint =>
-      'مكوّن في كل سطر، مثل: 2 كوب أرز\nالسطر الذي ينتهي بنقطتين يبدأ مجموعة، مثل: للصلصة:';
+  String fieldIngredientsHint(String n) {
+    return 'مكوّن في كل سطر، مثل: $n كوب أرز\nالسطر الذي ينتهي بنقطتين يبدأ مجموعة، مثل: للصلصة:';
+  }
 
   @override
   String get fieldStepsHint => 'خطوة في كل سطر';
@@ -247,7 +254,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fieldNumberInvalid => 'أرقام فقط';
 
   @override
-  String get stepTooLong => 'إحدى الخطوات أطول من 2000 حرف';
+  String stepTooLong(String max) {
+    return 'إحدى الخطوات أطول من $max حرف';
+  }
 
   @override
   String get photoAdd => 'أضف صورة';
@@ -390,10 +399,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get sourcePhoto => 'صورة';
 
   @override
-  String get timeUnder30 => 'أقل من 30 دقيقة';
+  String timeUnder30(String n) {
+    return 'أقل من $n دقيقة';
+  }
 
   @override
-  String get time30to60 => '30–60 دقيقة';
+  String time30to60(String range) {
+    return '$range دقيقة';
+  }
 
   @override
   String get timeOver60 => 'أكثر من ساعة';
@@ -414,7 +427,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get cookbookName => 'الاسم';
 
   @override
-  String get cookbookNameInvalid => 'من 1 إلى 60 حرفًا';
+  String cookbookNameInvalid(String min, String max) {
+    return 'من $min إلى $max حرفًا';
+  }
 
   @override
   String get cookbookRename => 'إعادة تسمية';
@@ -455,7 +470,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fieldTagsHint => 'افصل بينها بفاصلة، مثل: حار، رمضان';
 
   @override
-  String get tagsInvalid => 'حتى 20 وسمًا، 30 حرفًا لكل وسم';
+  String tagsInvalid(String tags, String chars) {
+    return 'حتى $tags وسمًا، $chars حرفًا لكل وسم';
+  }
 
   @override
   String get fieldCookbooks => 'كتب الطبخ';
@@ -634,8 +651,22 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String aiImportsLeftLine(String shown, String quota) {
-    return 'بقي $shown من $quota استيرادات ذكية هذا الشهر · تتجدد في الأول من كل شهر';
+  String aiImportsLeftLine(int count, String shown, String quota) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'بقي $shown من $quota استيراد ذكي هذا الشهر · تتجدد في الأول من كل شهر',
+      many:
+          'بقي $shown من $quota استيرادًا ذكيًا هذا الشهر · تتجدد في الأول من كل شهر',
+      few:
+          'بقي $shown من $quota استيرادات ذكية هذا الشهر · تتجدد في الأول من كل شهر',
+      two:
+          'بقي $shown من $quota استيرادين ذكيين هذا الشهر · تتجدد في الأول من كل شهر',
+      one:
+          'بقي $shown من $quota استيراد ذكي هذا الشهر · تتجدد في الأول من كل شهر',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -833,7 +864,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get planNoteHint => 'مطعم، بقايا الأمس…';
 
   @override
-  String get planNoteInvalid => 'من ١ إلى ٦٠ حرفًا';
+  String planNoteInvalid(String min, String max) {
+    return 'من $min إلى $max حرفًا';
+  }
 
   @override
   String get planAddToPlan => 'أضف إلى الخطة';
@@ -881,7 +914,9 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get planSlotFull => 'الوجبة تتسع حتى ١٠ عناصر';
+  String planSlotFull(String max) {
+    return 'الوجبة تتسع حتى $max عناصر';
+  }
 
   @override
   String get planEmptyTitle => 'خطط أسبوعك';

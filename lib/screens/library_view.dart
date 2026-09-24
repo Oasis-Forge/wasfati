@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/library.dart';
+import '../models/quantity/arabic_text.dart' show ltrIsolate;
 import '../models/recipe.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
@@ -134,9 +135,14 @@ class _FilterBar extends StatelessWidget {
     final q = query;
     final sortNames = sortLabels(l10n);
     final sourceNames = sourceLabels(l10n);
+    final digits = context.watch<SettingsState>();
+    // LANG-5: the range is an expression, so it stays left to right in
+    // right-to-left text ("30–60", never "60–30").
     final timeNames = {
-      TimeBucket.under30: l10n.timeUnder30,
-      TimeBucket.from30to60: l10n.time30to60,
+      TimeBucket.under30: l10n.timeUnder30(digits.number(30)),
+      TimeBucket.from30to60: l10n.time30to60(
+        ltrIsolate('${digits.number(30)}–${digits.number(60)}'),
+      ),
       TimeBucket.over60: l10n.timeOver60,
     };
     final bookName = {for (final c in state.cookbooks) c.id: c.name};

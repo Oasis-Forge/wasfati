@@ -248,9 +248,9 @@ class _RecipeBody extends StatelessWidget {
     // Servings live in the scaling stepper (SCALE-2), not here.
     final facts = <String>[
       if (r.prepMinutes != null)
-        '${l10n.prepTime} ${l10n.minutes(r.prepMinutes!, s.number(r.prepMinutes!))}',
+        l10n.prepTime(l10n.minutes(r.prepMinutes!, s.number(r.prepMinutes!))),
       if (r.cookMinutes != null)
-        '${l10n.cookTime} ${l10n.minutes(r.cookMinutes!, s.number(r.cookMinutes!))}',
+        l10n.cookTime(l10n.minutes(r.cookMinutes!, s.number(r.cookMinutes!))),
     ];
     final host = r.sourceUrl == null ? null : Uri.tryParse(r.sourceUrl!)?.host;
 
@@ -592,9 +592,9 @@ Future<void> openShareRecipe(
 
   String servingsLabel(int n) => l10n.servings(n, settings.number(n));
   String prepTimeLabel(int m) =>
-      '${l10n.prepTime} ${l10n.minutes(m, settings.number(m))}';
+      l10n.prepTime(l10n.minutes(m, settings.number(m)));
   String cookTimeLabel(int m) =>
-      '${l10n.cookTime} ${l10n.minutes(m, settings.number(m))}';
+      l10n.cookTime(l10n.minutes(m, settings.number(m)));
   String unscaledLineText(String line, String mark) =>
       l10n.shareUnscaledLine(line, mark);
 

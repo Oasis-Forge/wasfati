@@ -3,11 +3,14 @@
 // never a real one.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wasfati/models/quantity/arabic_text.dart' show ownIsolate;
 import 'package:wasfati/models/settings.dart';
+import 'package:wasfati/screens/import_screen.dart';
+import 'package:wasfati/screens/purchase_screen.dart' as purchase_screen;
 import 'package:wasfati/services/ads.dart';
 import 'package:wasfati/services/store.dart';
 
-import 'app_test.dart' show adService, pumpApp, settle, shown, store;
+import 'app_test.dart' show adService, pumpApp, settle, shares, shown, store;
 
 const proOffer = StoreOffer(product: Product.pro, price: 'AED 14.99');
 const monthly = StoreOffer(
@@ -21,6 +24,12 @@ const yearly = StoreOffer(
   price: 'AED 79.99',
 );
 const allOffers = [proOffer, monthly, yearly];
+
+/// The price lines as drawn: the store's price as the store wrote it, in
+/// its own direction isolate (PAY-2, LANG-5).
+final proOnce = '${ownIsolate('AED 14.99')} مرة واحدة';
+final premiumMonthly = '${ownIsolate('AED 9.99')} شهريًا';
+final premiumYearly = '${ownIsolate('AED 79.99')} سنويًا';
 
 /// Opens Settings and scrolls to its Subscription section.
 Future<void> openSettings(WidgetTester tester) async {
@@ -94,9 +103,9 @@ void main() {
     expect(find.text('10 استيرادات ذكية شهريًا'), findsOneWidget);
     expect(find.text('100 استيراد ذكي شهريًا'), findsOneWidget);
     // PAY-2: the store's prices, as the store wrote them.
-    expect(find.text('AED 14.99 مرة واحدة'), findsOneWidget);
-    expect(find.text('AED 9.99 شهريًا'), findsOneWidget);
-    expect(find.text('AED 79.99 سنويًا'), findsOneWidget);
+    expect(find.text(proOnce), findsOneWidget);
+    expect(find.text(premiumMonthly), findsOneWidget);
+    expect(find.text(premiumYearly), findsOneWidget);
     // PAY-10: every plan the same kind of button, none preselected.
     expect(find.byType(OutlinedButton), findsNWidgets(3));
     expect(find.byType(FilledButton), findsNothing);
@@ -109,8 +118,8 @@ void main() {
     // ADS-9: never an ad here.
     expect(find.byKey(noopBannerKey), findsNothing);
 
-    await tester.ensureVisible(find.text('AED 79.99 سنويًا'));
-    await tester.tap(find.text('AED 79.99 سنويًا'));
+    await tester.ensureVisible(find.text(premiumYearly));
+    await tester.tap(find.text(premiumYearly));
     await settle(tester);
     expect(store.bought, [yearly]);
     expect(find.text('تملكه'), findsNothing); // nothing until it's confirmed
@@ -135,18 +144,18 @@ void main() {
       storeOverride: NoopPurchaseStore(offers: allOffers),
     );
     await openPurchaseScreen(tester);
-    await tester.tap(find.text('AED 14.99 مرة واحدة'));
+    await tester.tap(find.text(proOnce));
     await settle(tester);
     store.emit(Product.pro, PurchaseOutcome.pending);
     await settle(tester);
     expect(shown('بانتظار أن يؤكد Google Play الدفع'), findsOneWidget);
-    expect(find.text('AED 14.99 مرة واحدة'), findsNothing);
+    expect(find.text(proOnce), findsNothing);
 
     store.emit(Product.pro, PurchaseOutcome.failed);
     await settle(tester);
     await tester.scrollUntilVisible(find.text('لم تكتمل عملية الشراء.'), 200);
     expect(find.text('لم تكتمل عملية الشراء.'), findsOneWidget);
-    expect(find.text('AED 14.99 مرة واحدة'), findsOneWidget);
+    expect(find.text(proOnce), findsOneWidget);
     expect(store.finished, hasLength(2));
 
     store.emit(Product.pro, PurchaseOutcome.purchased);
@@ -178,8 +187,8 @@ void main() {
     await settle(tester);
     expect(find.text('استُعيدت عمليات الشراء.'), findsOneWidget);
     expect(find.text('تملكه'), findsOneWidget);
-    expect(find.text('AED 14.99 مرة واحدة'), findsNothing);
-    expect(find.text('AED 9.99 شهريًا'), findsOneWidget); // Premium still sold
+    expect(find.text(proOnce), findsNothing);
+    expect(find.text(premiumMonthly), findsOneWidget); // Premium still sold
 
     store.ownedNow = null; // Play can't be reached
     await tester.tap(restore);
@@ -276,7 +285,7 @@ void main() {
       // PAY-11: 12 used stays 12 used, of 100 or of 10.
       expect(
         find.text(
-          'بقي 88 من 100 استيرادات ذكية هذا الشهر · تتجدد في الأول من كل شهر',
+          'بقي 88 من 100 استيراد ذكي هذا الشهر · تتجدد في الأول من كل شهر',
         ),
         findsOneWidget,
       );
@@ -300,7 +309,7 @@ void main() {
       expect(shown('نفدت الاستيرادات الذكية هذا الشهر'), findsOneWidget);
       await tester.tap(find.text('استيرادات ذكية أكثر مع بريميوم'));
       await settle(tester);
-      expect(find.text('AED 9.99 شهريًا'), findsOneWidget);
+      expect(find.text(premiumMonthly), findsOneWidget);
     });
 
     testWidgets('PAY-6: no Premium line when nothing is on sale', (
@@ -316,6 +325,38 @@ void main() {
       await settle(tester);
       expect(shown('نفدت الاستيرادات الذكية هذا الشهر'), findsOneWidget);
       expect(find.text('استيرادات ذكية أكثر مع بريميوم'), findsNothing);
+    });
+
+    testWidgets('RUN-3: a share during setup opens import with no Premium '
+        'line, and nothing opens the purchase screen', (tester) async {
+      final (_, settings) = await pumpApp(
+        tester,
+        firstRunComplete: false,
+        storeOverride: NoopPurchaseStore(offers: allOffers),
+      );
+      await tester.runAsync(() async {
+        for (var i = 0; i < 10; i++) {
+          await settings.recordAiImportSaved();
+        }
+      });
+      expect(find.text('متابعة'), findsOneWidget); // setup
+
+      shares.add('نص عشوائي بلا وصفة');
+      await settle(tester);
+      expect(find.byType(ImportScreen), findsOneWidget);
+      // The quota line, and the share's own out-of-imports notice.
+      expect(shown('نفدت الاستيرادات الذكية هذا الشهر'), findsWidgets);
+      expect(find.text('استيرادات ذكية أكثر مع بريميوم'), findsNothing);
+
+      // The one way in refuses too, until the first run is finished.
+      // Not awaited first: a pushed screen would wait for its own close.
+      final opening = purchase_screen.openPurchaseScreen(
+        tester.element(find.byType(ImportScreen)),
+      );
+      await settle(tester);
+      expect(find.byType(purchase_screen.PurchaseScreen), findsNothing);
+      expect(find.text(premiumMonthly), findsNothing);
+      await opening; // it returned at once, having pushed nothing
     });
   });
 

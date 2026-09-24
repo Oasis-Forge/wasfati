@@ -17,14 +17,9 @@ import 'recipe.dart';
 const wasfatiPlayStoreUrl =
     'https://play.google.com/store/apps/details?id=com.oasisforge.wasfati';
 
-// Matches format.dart's own isolate characters (QTY-5): a "×2" mark has no
-// direction of its own, so it's wrapped the same way an amount is, or it
-// reads reversed inside an Arabic line ("2×", must-fix, adversarial review).
-final _lri = String.fromCharCode(0x2066); // left-to-right isolate
-final _pdi = String.fromCharCode(0x2069); // pop directional isolate
-
-String _isolatedFactor(Rational factor, DigitStyle digits) =>
-    '$_lri×${formatAmount(factor, null, digits: digits)}$_pdi';
+// A "×2" mark has no direction of its own, so [factorLabel] wraps it the
+// same way an amount is, or it reads reversed inside an Arabic line ("2×",
+// must-fix, adversarial review).
 
 /// The recipe as text (SHARE-1, SHARE-2): the title; one line with whichever
 /// of servings and prep/cook times are set (REC-3, servings following
@@ -110,14 +105,14 @@ String? _factsLine(
           // A factor that doesn't land on a whole serving count shows the
           // multiplier instead, exactly as the ingredients section does
           // (SCALE-2): "×½", never a fractional serving count.
-          : _isolatedFactor(factor, digits),
+          : factorLabel(factor, digits),
     );
   } else if (factor != Rational.one) {
     // SCALE-6, should-fix (adversarial review): a recipe with no servings
     // still shows the current multiplier — the page's chips already do,
     // via the selected chip's own label — so the share isn't silently ×2
     // with no sign of it.
-    parts.add(_isolatedFactor(factor, digits));
+    parts.add(factorLabel(factor, digits));
   }
   if (r.prepMinutes != null) parts.add(prepTimeLabel(r.prepMinutes!));
   if (r.cookMinutes != null) parts.add(cookTimeLabel(r.cookMinutes!));

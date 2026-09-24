@@ -3,6 +3,7 @@
 // taking every banner away. Over the no-op ad network and store.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wasfati/models/quantity/arabic_text.dart' show ownIsolate;
 import 'package:wasfati/services/ads.dart';
 import 'package:wasfati/services/store.dart';
 import 'package:wasfati/widgets/ad_slot.dart';
@@ -246,7 +247,55 @@ void main() {
     );
     await tester.tap(target);
     await settle(tester);
-    expect(find.text('AED 14.99 مرة واحدة'), findsOneWidget);
+    expect(find.text('${ownIsolate('AED 14.99')} مرة واحدة'), findsOneWidget);
     expect(banner, findsNothing);
+  });
+
+  testWidgets('ADS-4: a fresh install asks for no ad and no consent during '
+      'setup or the walkthrough; the banner comes once it\'s finished', (
+    tester,
+  ) async {
+    final service = NoopAdService(consent: allowed, fills: true);
+    await pumpApp(
+      tester,
+      firstRunComplete: false,
+      adServiceOverride: service,
+      // PAY-5: something on sale, so a slot would carry its target too.
+      storeOverride: NoopPurchaseStore(
+        offers: const [StoreOffer(product: Product.pro, price: 'AED 14.99')],
+      ),
+    );
+
+    void nothingAsked(String where) {
+      expect(service.consentAsks, 0, reason: where);
+      expect(service.started, isFalse, reason: where);
+      expect(service.requests, isEmpty, reason: where);
+      expect(find.byType(AdSlot), findsNothing, reason: where);
+      expect(find.text('إزالة الإعلانات'), findsNothing, reason: where);
+    }
+
+    // Setup (RUN-3), with the store already answered.
+    expect(purchases.checked, isTrue);
+    expect(find.text('متابعة'), findsOneWidget);
+    nothingAsked('setup');
+    await tester.tap(find.text('متابعة'));
+    await settle(tester);
+
+    // Every walkthrough page (RUN-4).
+    for (var page = 1; page <= 3; page++) {
+      nothingAsked('walkthrough page $page');
+      await tester.tap(find.text('التالي'));
+      await settle(tester);
+    }
+    nothingAsked('walkthrough page 4');
+    await tester.tap(find.text('إلى وصفاتي'));
+    await settle(tester);
+
+    // The library: consent asked once, then the banner.
+    expect(find.text('شوربة عدس'), findsOneWidget);
+    expect(service.consentAsks, 1);
+    expect(service.started, isTrue);
+    expect(banner, findsOneWidget);
+    expect(find.text('إزالة الإعلانات'), findsOneWidget);
   });
 }

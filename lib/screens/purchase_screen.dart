@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/quantity/arabic_text.dart' show ownIsolate;
 import '../providers/purchases_state.dart';
 import '../providers/settings_state.dart';
 import '../services/store.dart';
@@ -9,13 +10,17 @@ import '../services/store.dart';
 /// PAY-10: opens the purchase screen. Only PAY-5's three places call it:
 /// the Settings "Subscription" row, the ad slot's small "remove ads"
 /// target, and the import screen's line once the free AI imports run out.
-Future<void> openPurchaseScreen(BuildContext context) =>
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        fullscreenDialog: true,
-        builder: (_) => const PurchaseScreen(),
-      ),
-    );
+/// Never before setup and the walkthrough are finished (RUN-3, RUN-4): each
+/// place already hides itself then, and this is the backstop.
+Future<void> openPurchaseScreen(BuildContext context) async {
+  if (!context.read<SettingsState>().settings.firstRunComplete) return;
+  await Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      fullscreenDialog: true,
+      builder: (_) => const PurchaseScreen(),
+    ),
+  );
+}
 
 /// Pro and Premium side by side (PAY-10), each with the store's own prices
 /// (PAY-2), what it includes (PAY-7), and "Owned" once bought. A close
@@ -140,11 +145,19 @@ class _TierCard extends StatelessWidget {
           ]
         : [?purchases.offerFor(product)];
 
-    String priceLabel(StoreOffer offer) => switch (offer.plan) {
-      null => l10n.purchasePriceOnce(offer.price),
-      PremiumPlan.monthly => l10n.purchasePriceMonthly(offer.price),
-      PremiumPlan.yearly => l10n.purchasePriceYearly(offer.price),
-    };
+    // PAY-2: the store's price exactly as the store wrote it, never
+    // re-digited: its "." may group thousands ("Rp 329.000"), which the
+    // Arabic decimal mark would turn into 329 point 000. Isolated in its
+    // own direction (LANG-5), so "AED" stays on the same side of the number
+    // whatever the text around it.
+    String priceLabel(StoreOffer offer) {
+      final price = ownIsolate(offer.price);
+      return switch (offer.plan) {
+        null => l10n.purchasePriceOnce(price),
+        PremiumPlan.monthly => l10n.purchasePriceMonthly(price),
+        PremiumPlan.yearly => l10n.purchasePriceYearly(price),
+      };
+    }
 
     return Card(
       margin: EdgeInsets.zero,

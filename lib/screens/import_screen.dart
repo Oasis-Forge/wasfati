@@ -345,7 +345,15 @@ class _ImportScreenState extends State<ImportScreen> {
     await _openPreview(draft, usedAiImport: true);
   }
 
-  Future<void> _openPreview(Recipe draft, {required bool usedAiImport}) async {
+  /// IMP-5: the preview. Saving a fetched or AI draft from it is what
+  /// RUN-5 counts as "saved an import"; a [byHand] draft after a failed
+  /// import isn't one, whatever source it's tagged with.
+  Future<void> _openPreview(
+    Recipe draft, {
+    required bool usedAiImport,
+    bool byHand = false,
+  }) async {
+    final settings = context.read<SettingsState>();
     final saved = await Navigator.of(context).push<String>(
       MaterialPageRoute(
         builder: (_) => RecipeEditorScreen(
@@ -355,6 +363,7 @@ class _ImportScreenState extends State<ImportScreen> {
         ),
       ),
     );
+    if (saved != null && !byHand) await settings.recordImportSaved();
     if (saved != null && mounted) {
       Navigator.of(context).pop();
       await openRecipe(context, saved);
@@ -431,7 +440,7 @@ class _ImportScreenState extends State<ImportScreen> {
                 sourceUrl: normalizeSourceUrl(_link.text.trim()),
                 sourceType: SourceType.website,
               );
-    await _openPreview(draft, usedAiImport: false);
+    await _openPreview(draft, usedAiImport: false, byHand: true);
   }
 
   Future<void> _sendCaption() async {
@@ -492,7 +501,11 @@ class _ImportScreenState extends State<ImportScreen> {
     final quota = purchases.aiImportQuota;
     final left = settings.aiImportsLeft(quota: quota);
     final quotaLine = left > 0
-        ? l10n.aiImportsLeftLine(settings.number(left), settings.number(quota))
+        ? l10n.aiImportsLeftLine(
+            quota, // the noun agrees with the quota (LANG-2, QTY-6)
+            settings.number(left),
+            settings.number(quota),
+          )
         : l10n.aiImportsOutLine;
 
     return Scaffold(
@@ -526,8 +539,13 @@ class _ImportScreenState extends State<ImportScreen> {
           // the month's AI imports are used up.
           Text(quotaLine, style: Theme.of(context).textTheme.bodySmall),
           // PAY-5, IMP-7: the one line where the free AI imports run out —
-          // only while Premium is on sale and not already owned (PAY-6).
-          if (left <= 0 && !purchases.ownsPremium && purchases.sellsPremium)
+          // only while Premium is on sale and not already owned (PAY-6),
+          // and never during the first run (RUN-3): a share can open this
+          // screen over setup or the walkthrough.
+          if (settings.settings.firstRunComplete &&
+              left <= 0 &&
+              !purchases.ownsPremium &&
+              purchases.sellsPremium)
             Align(
               alignment: AlignmentDirectional.centerStart,
               child: TextButton(

@@ -5,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../models/grocery.dart';
 import '../models/library.dart';
 import '../models/plan.dart';
+import '../models/quantity/format.dart' show factorLabel;
 import '../models/quantity/rational.dart';
 import '../models/ramadan.dart';
 import '../models/settings.dart';
@@ -14,6 +15,7 @@ import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../theme/decor.dart';
 import '../widgets/content_direction.dart';
+import '../widgets/digit_counter.dart';
 import '../widgets/empty_state.dart';
 import 'home_screen.dart';
 
@@ -170,7 +172,6 @@ class _PlanScreenState extends State<PlanScreen> {
     final plan = context.watch<PlanState>();
     final settings = context.watch<SettingsState>();
     final dates = MaterialLocalizations.of(context);
-    final rtl = Directionality.of(context) == TextDirection.rtl;
     final days = plan.days;
     final range = days.isEmpty
         ? ''
@@ -243,9 +244,9 @@ class _PlanScreenState extends State<PlanScreen> {
                   children: [
                     IconButton(
                       tooltip: l10n.planPreviousWeek,
-                      icon: Icon(
-                        rtl ? Icons.chevron_right : Icons.chevron_left,
-                      ),
+                      // Mirrors itself in right-to-left (matchTextDirection):
+                      // it points to the reading start either way (LANG-5).
+                      icon: const Icon(Icons.chevron_left),
                       onPressed: () => plan.shiftWeeks(-1),
                     ),
                     Flexible(
@@ -258,9 +259,7 @@ class _PlanScreenState extends State<PlanScreen> {
                     ),
                     IconButton(
                       tooltip: l10n.planNextWeek,
-                      icon: Icon(
-                        rtl ? Icons.chevron_left : Icons.chevron_right,
-                      ),
+                      icon: const Icon(Icons.chevron_right),
                       onPressed: () => plan.shiftWeeks(1),
                     ),
                   ],
@@ -584,7 +583,7 @@ class _EntryTile extends StatelessWidget {
     final amount = entry.servings != null
         ? l10n.servings(entry.servings!, settings.number(entry.servings!))
         : entry.multiplier != null && entry.multiplier != Rational.one
-        ? '×${entry.multiplier}'
+        ? factorLabel(entry.multiplier!, settings.digits)
         : null;
 
     return InkWell(
@@ -605,16 +604,26 @@ class _EntryTile extends StatelessWidget {
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: 8),
-            Expanded(child: ContentText(title)),
-            if (amount != null)
-              Padding(
-                padding: const EdgeInsetsDirectional.only(start: 8),
-                child: Text(
-                  amount,
-                  textDirection: TextDirection.ltr,
-                  style: Theme.of(context).textTheme.labelMedium,
-                ),
+            // The amount sits at the end of the title's line, or drops
+            // below it when the two don't fit side by side: never an
+            // overflow at 1.3x text on a 360dp phone (LANG-6).
+            Expanded(
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                children: [
+                  ContentText(title),
+                  // The ambient direction: "٦ حصص" reads right to left, and
+                  // a "×2" carries its own left-to-right isolate (LANG-5).
+                  if (amount != null)
+                    Text(
+                      amount,
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                ],
               ),
+            ),
           ],
         ),
       ),
@@ -642,9 +651,13 @@ Future<void> _addToSlot(
   final l10n = AppLocalizations.of(context);
   final plan = context.read<PlanState>();
   final recipes = context.read<RecipesState>();
+  final settings = context.read<SettingsState>();
   if (plan.entriesFor(day, slot).length >= PlanEntry.maxPerSlot) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(l10n.planSlotFull)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.planSlotFull(settings.number(PlanEntry.maxPerSlot))),
+      ),
+    );
     return;
   }
   final choice = await showModalBottomSheet<String>(
@@ -706,7 +719,12 @@ Future<void> _entryMenu(BuildContext context, PlanEntry entry) async {
               onTap: () => Navigator.pop(ctx, 'amount'),
             ),
           ListTile(
-            leading: const Icon(Icons.drive_file_move_outline),
+            // This icon doesn't mirror itself (LANG-5).
+            leading: Icon(
+              Directionality.of(ctx) == TextDirection.rtl
+                  ? Icons.drive_file_move_rtl_outlined
+                  : Icons.drive_file_move_outline,
+            ),
             title: Text(l10n.planMove),
             onTap: () => Navigator.pop(ctx, 'move'),
           ),
@@ -792,7 +810,7 @@ Future<void> _askAmount(BuildContext context, PlanEntry entry) async {
             children: [
               for (final m in PlanEntry.multipliers)
                 ChoiceChip(
-                  label: Text('×$m', textDirection: TextDirection.ltr),
+                  label: Text(factorLabel(m, settings.digits)),
                   selected: (entry.multiplier ?? Rational.one) == m,
                   onSelected: (_) => Navigator.pop(ctx, m),
                 ),
@@ -847,6 +865,7 @@ Future<void> _askAmount(BuildContext context, PlanEntry entry) async {
 /// The note text of a written entry (PLAN-2): 1–60 characters.
 Future<String?> askPlanNote(BuildContext context, {String initial = ''}) {
   final l10n = AppLocalizations.of(context);
+  final settings = context.read<SettingsState>();
   final controller = TextEditingController(text: initial);
   final form = GlobalKey<FormState>();
   void submit(BuildContext ctx) {
@@ -865,12 +884,17 @@ Future<String?> askPlanNote(BuildContext context, {String initial = ''}) {
           controller: controller,
           autofocus: true,
           maxLength: PlanEntry.maxNote,
+          buildCounter: digitCounter,
           decoration: InputDecoration(
             labelText: l10n.planNoteLabel,
             hintText: l10n.planNoteHint,
           ),
-          validator: (v) =>
-              (v ?? '').trim().isEmpty ? l10n.planNoteInvalid : null,
+          validator: (v) => (v ?? '').trim().isEmpty
+              ? l10n.planNoteInvalid(
+                  settings.number(1),
+                  settings.number(PlanEntry.maxNote),
+                )
+              : null,
           onFieldSubmitted: (_) => submit(ctx),
         ),
       ),
@@ -1125,7 +1149,7 @@ String _candidateSubtitle(
   final amount = entry.servings != null
       ? l10n.servings(entry.servings!, settings.number(entry.servings!))
       : entry.multiplier != null && entry.multiplier != Rational.one
-      ? '×${entry.multiplier}'
+      ? factorLabel(entry.multiplier!, settings.digits)
       : null;
   return [
     date,

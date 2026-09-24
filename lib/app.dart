@@ -255,10 +255,9 @@ class _PayingSyncState extends State<_PayingSync> with WidgetsBindingObserver {
 
   void _sync() {
     if (!mounted) return;
-    // ADS-4: the first run's own flag goes here —
-    // `widget.settings.settings.firstRunComplete` once RUN-3/RUN-4 add it.
-    // Until then there is no first run to wait for.
-    widget.ads.setSetupFinished(true);
+    // ADS-4: no ad and no consent form until setup and the walkthrough are
+    // finished (RUN-3, RUN-4); FirstRunFlow sets this flag when they are.
+    widget.ads.setSetupFinished(widget.settings.settings.firstRunComplete);
   }
 
   @override

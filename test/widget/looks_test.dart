@@ -1,63 +1,237 @@
-// LOOK-8: every main screen renders in both looks, both brightnesses and
-// both languages, at 1.3x text on a 360dp phone, without overflow. Four
-// runs (Ink/Saffron x light/dark), language alternated across them so both
-// still get covered — the failure mode LOOK-8 guards against (a RenderFlex
-// overflow) is far more sensitive to text length and scale than to which
-// two brightnesses of the same look are on screen, so the full eight-way
-// cross product would multiply run time for little extra confidence.
+// LOOK-8, LANG-6: every screen renders in both looks, both brightnesses
+// and both languages, at 1.3x text on a 360dp phone, without overflow. Four
+// runs (Ink/Saffron x light/dark), language and digit style alternated
+// across them so every pairing is still covered — the failure mode LOOK-8
+// guards against (a RenderFlex overflow) is far more sensitive to text
+// length and scale than to which two brightnesses of the same look are on
+// screen, so the full cross product would multiply run time for little
+// extra confidence. Setup and a fresh install's walkthrough have their own
+// 1.3x runs in first_run_test.dart; here the walkthrough is replayed from
+// Settings in the chosen digits.
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderFlex;
 import 'package:flutter/semantics.dart' show SemanticsNode;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wasfati/l10n/app_localizations.dart';
+import 'package:wasfati/models/grocery.dart';
+import 'package:wasfati/models/plan.dart';
+import 'package:wasfati/models/quantity/format.dart';
+import 'package:wasfati/models/quantity/rational.dart';
 import 'package:wasfati/models/recipe.dart';
 import 'package:wasfati/models/settings.dart';
+import 'package:wasfati/services/ads.dart';
+import 'package:wasfati/services/store.dart';
 import 'package:wasfati/theme/colors.dart' show wasfatiColorScheme;
 import 'package:wasfati/theme/decor.dart';
+import 'package:wasfati/widgets/ad_slot.dart';
 import 'package:wasfati/widgets/digit_box.dart';
 
-import 'app_test.dart' show pumpApp, settle;
+import 'app_test.dart' show groceries, plan, pumpApp, settle;
+
+const _offers = [
+  StoreOffer(product: Product.pro, price: 'AED 14.99'),
+  StoreOffer(
+    product: Product.premium,
+    plan: PremiumPlan.monthly,
+    price: 'AED 9.99',
+  ),
+  StoreOffer(
+    product: Product.premium,
+    plan: PremiumPlan.yearly,
+    price: 'AED 79.99',
+  ),
+];
+
+const _englishTitle = 'Slow-roasted chicken shawarma wraps with garlic sauce';
+
+/// An English recipe with long words, beside the Arabic kabsa, so both
+/// directions of content are on every list and page.
+Recipe _englishRecipe(String id, DateTime now) => Recipe(
+  id: id,
+  title: _englishTitle,
+  servings: 4,
+  prepMinutes: 25,
+  cookMinutes: 90,
+  ingredients: [
+    Section(
+      id: '$id-i',
+      items: [
+        IngredientLine.parse('$id-1', '1.5 kg boneless chicken thighs'),
+        IngredientLine.parse('$id-2', '2 tbsp shawarma spice mix'),
+      ],
+    ),
+  ],
+  steps: [
+    Section(
+      id: '$id-s',
+      items: [
+        RecipeStep(
+          id: '$id-3',
+          text: 'Roast for 90 minutes, then rest for 10 minutes.',
+        ),
+      ],
+    ),
+  ],
+  createdAt: now,
+  updatedAt: now,
+);
+
+/// Drags [scrollable] a screen at a time to its end, checking each view.
+Future<void> _scrollThrough(
+  WidgetTester tester,
+  Finder scrollable,
+  String reason,
+) async {
+  for (var i = 0; i < 20; i++) {
+    final position = tester.state<ScrollableState>(scrollable).position;
+    if (position.pixels >= position.maxScrollExtent) return;
+    await tester.drag(scrollable, const Offset(0, -500));
+    await settle(tester);
+    _fits(tester, '$reason, ${i + 1} down');
+  }
+}
+
+/// Fails when anything overflowed since the last check, naming what the
+/// overflowing row or column shows, so a failure says where to look.
+void _fits(WidgetTester tester, String where) {
+  final error = tester.takeException();
+  if (error == null) return;
+  final culprits = [
+    for (final box in tester.allRenderObjects)
+      if (box is RenderFlex && box.toString().contains('OVERFLOWING'))
+        find
+            .descendant(
+              of: find.byElementPredicate((e) => e.renderObject == box),
+              matching: find.byType(Text),
+            )
+            .evaluate()
+            .map((e) => (e.widget as Text).data ?? '')
+            .join(' | '),
+  ];
+  fail('$where: $error ${culprits.join('; ')}');
+}
 
 void main() {
   final cases = [
-    (style: AppStyle.ink, theme: ThemePref.light, language: LanguagePref.ar),
-    (style: AppStyle.ink, theme: ThemePref.dark, language: LanguagePref.en),
+    (
+      style: AppStyle.ink,
+      theme: ThemePref.light,
+      language: LanguagePref.ar,
+      digits: DigitStyle.western,
+    ),
+    (
+      style: AppStyle.ink,
+      theme: ThemePref.dark,
+      language: LanguagePref.en,
+      digits: DigitStyle.arabic,
+    ),
     (
       style: AppStyle.saffron,
       theme: ThemePref.light,
       language: LanguagePref.en,
+      digits: DigitStyle.western,
     ),
-    (style: AppStyle.saffron, theme: ThemePref.dark, language: LanguagePref.ar),
+    (
+      style: AppStyle.saffron,
+      theme: ThemePref.dark,
+      language: LanguagePref.ar,
+      digits: DigitStyle.arabic,
+    ),
   ];
 
   for (final c in cases) {
     testWidgets(
-      '${c.style.name}/${c.theme.name}/${c.language.name} at 1.3x on 360dp: '
-      'every main screen renders with no overflow (LOOK-8, LANG-6)',
+      '${c.style.name}/${c.theme.name}/${c.language.name}/${c.digits.name} '
+      'at 1.3x on 360dp: every screen renders with no overflow (LOOK-8, '
+      'LANG-6)',
       (tester) async {
-        final (_, settings) = await pumpApp(
+        final l = lookupAppLocalizations(Locale(c.language.name));
+        final (recipes, settings) = await pumpApp(
           tester,
           language: c.language,
+          digits: c.digits,
           textScale: 1.3,
           withRecipe: true,
+          // A store selling both tiers and an ad network that fills, so the
+          // banner, its "remove ads" link and every price are on screen.
+          storeOverride: NoopPurchaseStore(offers: _offers),
+          adServiceOverride: NoopAdService(
+            consent: const AdConsent(
+              canRequestAds: true,
+              privacyOptionsRequired: true,
+            ),
+            fills: true,
+          ),
         );
         // A real (non-fake-timer) DB write, called outside any widget
         // event handler, needs to escape the fake-async zone or it never
         // resolves (ramadan_test.dart's own comment, same reason).
-        await tester.runAsync(
-          () => settings.update(
+        await tester.runAsync(() async {
+          await settings.update(
             settings.settings.copyWith(style: c.style, theme: c.theme),
-          ),
-        );
+          );
+          final kabsa = recipes.recipes.single;
+          final repo = recipes.repository;
+          final english = await recipes.save(
+            _englishRecipe(repo.newId(), repo.now()),
+          );
+          await recipes.saveCookbook(l.walkthroughDemoRecipe);
+          // The plan and groceries with rows in them, not their empty
+          // states: servings, a ×½, a full-length note, and lines from
+          // both recipes.
+          await plan.add(
+            date: plan.today,
+            slot: MealSlot.lunch,
+            recipeId: kabsa.id,
+            servings: 6,
+          );
+          await plan.add(
+            date: plan.today,
+            slot: MealSlot.dinner,
+            recipeId: english!.id,
+            multiplier: Rational.half,
+          );
+          await plan.add(
+            date: plan.today,
+            slot: MealSlot.snack,
+            note: 'ب' * PlanEntry.maxNote,
+          );
+          await groceries.add([
+            IncomingLine(
+              name: 'لحم ضأن',
+              min: Rational(3, 2),
+              unitId: 'kg',
+              recipeId: kabsa.id,
+            ),
+            IncomingLine(
+              name: 'boneless chicken thighs',
+              min: Rational(3, 2),
+              unitId: 'kg',
+              recipeId: english.id,
+            ),
+          ]);
+          await groceries.addByHand('ملعقة كبيرة سكر بني ناعم للتزيين');
+        });
         await settle(tester);
-        expect(tester.takeException(), isNull, reason: 'library');
+        _fits(tester, 'library');
+        // PAY-5's small target fits on the slot's own line, above the ad.
+        expect(find.text(l.adSlotRemoveAds), findsOneWidget);
+        expect(
+          tester.getSize(find.text(l.adSlotRemoveAds)).height,
+          lessThanOrEqualTo(AdSlot.targetLine),
+        );
+
+        await tester.tap(find.text(l.tabCookbooks));
+        await settle(tester);
+        _fits(tester, 'cookbooks');
+        await tester.tap(find.text(l.tabAllRecipes));
+        await settle(tester);
 
         // The recipe page (ingredients through AmountLine and RailHeading,
-        // the hero photo/cards/chips through Decor). Already on screen —
-        // one recipe, no scroll needed (and the library's TabBarView
-        // keeps more than one Scrollable mounted, so scrollUntilVisible's
-        // own default `scrollable` finder can't disambiguate here).
+        // the hero photo/cards/chips through Decor).
         await tester.tap(find.text('كبسة لحم'));
         await settle(tester);
-        expect(tester.takeException(), isNull, reason: 'recipe');
+        _fits(tester, 'recipe');
 
         // Cook mode (LOOK-7's ledge, COOK-2's sizes in both looks). A
         // generous single drag (never past the list's own clamped end)
@@ -67,26 +241,47 @@ void main() {
         // a few pixels past the bottom of a 360x800 view at 1.3x text.
         await tester.drag(find.byType(ListView).first, const Offset(0, -2000));
         await settle(tester);
+        _fits(tester, 'recipe, scrolled');
         await tester.tap(find.byIcon(Icons.soup_kitchen_outlined));
         await settle(tester);
-        expect(tester.takeException(), isNull, reason: 'cook mode');
-
-        await tester.tap(find.byIcon(Icons.close).first);
+        _fits(tester, 'cook mode');
+        await tester.tap(find.byTooltip(l.ingredients));
         await settle(tester);
-        expect(tester.takeException(), isNull, reason: 'back to recipe');
+        _fits(tester, 'cook ingredients');
+        await tester.tapAt(const Offset(180, 40)); // the sheet's barrier
+        await settle(tester);
+        // Every step, then the last page (mark as cooked, done).
+        while (find.text(l.markCooked).evaluate().isEmpty) {
+          await tester.tap(find.text(l.nextStep));
+          await settle(tester);
+          _fits(tester, 'cook mode step');
+        }
+        _fits(tester, 'cook mode done');
 
-        // The editor.
+        await tester.tap(find.byTooltip(l.closeCooking));
+        await settle(tester);
+        _fits(tester, 'back to recipe');
+
+        // The editor, top to bottom.
         await tester.tap(find.byIcon(Icons.edit_outlined).first);
         await settle(tester);
-        expect(tester.takeException(), isNull, reason: 'editor');
+        _fits(tester, 'editor');
+        await _scrollThrough(tester, find.byType(Scrollable).first, 'editor');
 
         await tester.tap(find.byType(BackButton).first);
         await settle(tester);
-        expect(tester.takeException(), isNull, reason: 'back to recipe');
+        _fits(tester, 'back to recipe');
 
         await tester.tap(find.byType(BackButton).first);
         await settle(tester);
-        expect(tester.takeException(), isNull, reason: 'back to library');
+        _fits(tester, 'back to library');
+
+        // The English recipe's page too: content in the other direction.
+        await tester.tap(find.text(_englishTitle));
+        await settle(tester);
+        _fits(tester, 'English recipe');
+        await tester.tap(find.byType(BackButton).first);
+        await settle(tester);
 
         // The meal plan and groceries (the shell's own tabs) — scoped to
         // the NavigationBar itself: the recipe and plan pages carry their
@@ -99,31 +294,116 @@ void main() {
         );
         await tester.tap(navTab(Icons.calendar_month_outlined));
         await settle(tester);
-        expect(tester.takeException(), isNull, reason: 'plan');
+        _fits(tester, 'plan');
+        await _scrollThrough(tester, find.byType(Scrollable).first, 'plan');
 
         await tester.tap(navTab(Icons.shopping_basket_outlined));
         await settle(tester);
-        expect(tester.takeException(), isNull, reason: 'groceries');
+        _fits(tester, 'groceries');
+        await tester.tap(find.text(l.groceriesByRecipe));
+        await settle(tester);
+        _fits(tester, 'groceries by recipe');
+        await tester.tap(find.text(l.groceriesByAisle));
+        await settle(tester);
 
         await tester.tap(navTab(Icons.menu_book_outlined));
         await settle(tester);
-        expect(tester.takeException(), isNull, reason: 'back to library');
+        _fits(tester, 'back to library');
 
         // Import.
         await tester.tap(find.byIcon(Icons.link).first);
         await settle(tester);
-        expect(tester.takeException(), isNull, reason: 'import');
+        _fits(tester, 'import');
 
         await tester.tap(find.byType(BackButton).first);
         await settle(tester);
-        expect(tester.takeException(), isNull, reason: 'back to library');
+        _fits(tester, 'back to library');
 
-        // Settings, with the new "الطراز"/"Look" row (LOOK-1).
+        // Settings, top to bottom, with the Look row (LOOK-1) and the
+        // paying rows (PAY-5, PAY-11, ADS-5).
         await tester.tap(find.byIcon(Icons.settings_outlined).first);
         await settle(tester);
-        expect(tester.takeException(), isNull, reason: 'settings');
+        _fits(tester, 'settings');
+        final settingsList = find.byType(Scrollable).first;
+
+        // The purchase screen, from its Settings row (PAY-5, PAY-10).
+        await tester.scrollUntilVisible(
+          find.text(l.settingsSubscription),
+          300,
+          scrollable: settingsList,
+        );
+        await settle(tester);
+        _fits(tester, 'settings, paying');
+        await tester.tap(find.text(l.settingsSubscription));
+        await settle(tester);
+        _fits(tester, 'purchase');
+        await _scrollThrough(tester, find.byType(Scrollable).first, 'purchase');
+        await tester.tap(find.byTooltip(l.purchaseClose));
+        await settle(tester);
+
+        // The walkthrough, replayed: each of its four pages (RUN-4).
+        await tester.scrollUntilVisible(
+          find.text(l.settingsReplayWalkthrough),
+          300,
+          scrollable: settingsList,
+        );
+        await settle(tester);
+        await tester.tap(find.text(l.settingsReplayWalkthrough));
+        await settle(tester);
+        final pages = [
+          l.walkthroughImportTitle,
+          l.walkthroughScaleTitle,
+          l.walkthroughCookTitle,
+          l.walkthroughPlanTitle,
+        ];
+        for (final (i, title) in pages.indexed) {
+          expect(find.text(title), findsOneWidget);
+          _fits(tester, 'walkthrough $i');
+          await tester.tap(
+            find.text(i < 3 ? l.walkthroughNext : l.walkthroughStart),
+          );
+          await settle(tester);
+        }
+        _fits(tester, 'back to settings');
+
+        await _scrollThrough(tester, settingsList, 'settings');
       },
     );
+  }
+
+  // LANG-6: the purchase screen's other states, in both languages at 1.3x:
+  // both tiers owned (Premium's "Manage or cancel"), and nothing for sale
+  // yet ("Coming soon" in both cards, PAY-3).
+  for (final language in [LanguagePref.ar, LanguagePref.en]) {
+    for (final (name, owned, offers) in [
+      ('both tiers owned', {Product.pro, Product.premium}, _offers),
+      ('nothing for sale', <Product>{}, const <StoreOffer>[]),
+    ]) {
+      testWidgets('${language.name}: the purchase screen with $name fits at '
+          '1.3x on 360dp (LANG-6, PAY-10)', (tester) async {
+        final l = lookupAppLocalizations(Locale(language.name));
+        await pumpApp(
+          tester,
+          language: language,
+          digits: DigitStyle.arabic,
+          textScale: 1.3,
+          storeOverride: NoopPurchaseStore(owned: owned, offers: offers),
+        );
+        await tester.tap(find.byIcon(Icons.settings_outlined).first);
+        await settle(tester);
+        await tester.scrollUntilVisible(
+          find.text(l.settingsSubscription),
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await settle(tester);
+        _fits(tester, 'settings, paying');
+        await tester.tap(find.text(l.settingsSubscription));
+        await settle(tester);
+        _fits(tester, 'purchase');
+        await _scrollThrough(tester, find.byType(Scrollable).first, 'purchase');
+      });
+    }
   }
 
   // should-fix, platform review: the branch's one new control — the "الطراز"

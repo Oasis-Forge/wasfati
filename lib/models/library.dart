@@ -23,10 +23,10 @@ class LibraryEntry {
     this.tags = const [],
     this.notes,
     this.cookbookIds = const {},
-  }) : _title = normalizeArabic(title),
-       _ingredients = [for (final n in ingredientNames) normalizeArabic(n)],
-       _tags = [for (final t in tags) normalizeArabic(t)],
-       _notes = normalizeArabic(notes ?? '');
+  }) : _title = searchKey(title),
+       _ingredients = [for (final n in ingredientNames) searchKey(n)],
+       _tags = [for (final t in tags) searchKey(t)],
+       _notes = searchKey(notes ?? '');
 
   final String id;
   final String title;
@@ -46,7 +46,8 @@ class LibraryEntry {
   final List<String> _tags;
   final String _notes;
 
-  /// The A–Z key: normalized, so أ/ا and ة/ه sort together (ORG-4, ORG-5).
+  /// The A–Z key: the search key, so أ/ا, ة/ه and é/e sort together
+  /// (ORG-4, ORG-5, LANG-4).
   String get sortKey => _title;
 }
 
@@ -110,13 +111,13 @@ class LibraryHit {
 /// [entries] (ORG-7). With search text, title matches come first, then tags,
 /// then ingredients, then notes (ORG-3); within a rank, the chosen sort.
 List<LibraryHit> runLibraryQuery(List<LibraryEntry> entries, LibraryQuery q) {
-  final needle = normalizeArabic(q.text.trim());
+  final needle = searchKey(q.text.trim());
   final hits = <LibraryHit>[];
   for (final e in entries) {
     if (q.cookbookId != null && !e.cookbookIds.contains(q.cookbookId)) {
       continue;
     }
-    if (q.tag != null && !e._tags.contains(normalizeArabic(q.tag!))) {
+    if (q.tag != null && !e._tags.contains(searchKey(q.tag!))) {
       continue;
     }
     if (q.source != null && e.sourceType != q.source) continue;
@@ -184,6 +185,11 @@ int Function(LibraryEntry, LibraryEntry) _comparator(LibrarySort sort) {
     },
   };
 }
+
+/// The comma between tags in the editor's box (ORG-2): Arabic "، " when any
+/// of [tags] is Arabic, ", " otherwise, so an English list never reads
+/// "quick، easy". [parseTags] splits on both.
+String tagSeparator(Iterable<String> tags) => tags.any(hasArabic) ? '، ' : ', ';
 
 /// Splits a tags box ("حار، رمضان, سريع") into clean, distinct tags (ORG-2).
 List<String> parseTags(String text) {

@@ -9,8 +9,9 @@ import 'package:wasfati/services/store_review.dart';
 
 import '../helpers.dart';
 
-/// RUN-5 end to end over the real state: the library decides "saved an
-/// import" and "marked as cooked", Settings keeps when the store was asked.
+/// RUN-5 end to end over the real state: the library decides "marked as
+/// cooked"; Settings keeps "saved an import" (set by the import preview's
+/// Save) and when the store was asked.
 void main() {
   late RecipeRepository repo;
   late FakeClock clock;
@@ -36,8 +37,13 @@ void main() {
     );
   });
 
-  /// An imported recipe (website, like the competitor research's kabsa).
-  Future<Recipe> saveImport() async => (await recipes.save(kabsa(repo)))!;
+  /// An imported recipe (website, like the competitor research's kabsa),
+  /// saved the way the import preview saves it (RUN-5).
+  Future<Recipe> saveImport() async {
+    final saved = (await recipes.save(kabsa(repo)))!;
+    await settings.recordImportSaved();
+    return saved;
+  }
 
   /// A recipe written by hand.
   Future<Recipe> saveWritten() async => (await recipes.save(
@@ -107,13 +113,35 @@ void main() {
     },
   );
 
-  test('an import that was deleted no longer counts', () async {
+  test('a recipe tagged with a link but typed by hand after a failed import '
+      '("Add by hand") is no import: not asked', () async {
+    final byHand = (await recipes.save(kabsa(repo)))!; // tagged website
+    await recipes.markCooked(byHand.id);
+    expect(await prompt.afterCooking(), isFalse);
+    expect(store.requests, 0);
+    expect(settings.settings.importSaved, isFalse);
+  });
+
+  test("a pasted caption's AI import is an import, though it is tagged as "
+      'written (IMP-3)', () async {
+    final caption = await saveWritten();
+    await settings.recordImportSaved(); // its preview's Save
+    await recipes.markCooked(caption.id);
+    expect(await prompt.afterCooking(), isTrue);
+    expect(store.requests, 1);
+  });
+
+  test('"has saved an import" stays true when that recipe is deleted, and '
+      'survives a restart', () async {
     final imported = await saveImport();
     final written = await saveWritten();
     await recipes.markCooked(written.id);
     await recipes.delete(imported.id);
-    expect(await prompt.afterCooking(), isFalse);
-    expect(store.requests, 0);
+    final reloaded = SettingsState(repo.db);
+    await reloaded.load();
+    expect(reloaded.settings.importSaved, isTrue);
+    expect(await prompt.afterCooking(), isTrue);
+    expect(store.requests, 1);
   });
 
   test('a write that fails asks nothing and throws nothing (cook mode '

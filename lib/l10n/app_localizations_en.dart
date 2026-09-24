@@ -98,7 +98,7 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other: '$shown recipes',
-      one: '1 recipe',
+      one: '$shown recipe',
       zero: 'No recipes',
     );
     return '$_temp0';
@@ -120,7 +120,7 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other: '$shown min',
-      one: '1 min',
+      one: '$shown min',
     );
     return '$_temp0';
   }
@@ -131,16 +131,20 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other: '$shown servings',
-      one: '1 serving',
+      one: '$shown serving',
     );
     return '$_temp0';
   }
 
   @override
-  String get prepTime => 'Prep';
+  String prepTime(String time) {
+    return 'Prep $time';
+  }
 
   @override
-  String get cookTime => 'Cook';
+  String cookTime(String time) {
+    return 'Cook $time';
+  }
 
   @override
   String get ingredients => 'Ingredients';
@@ -219,7 +223,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldServings => 'Servings';
 
   @override
-  String get fieldServingsInvalid => '1 to 100';
+  String fieldServingsInvalid(String min, String max) {
+    return '$min to $max';
+  }
 
   @override
   String get fieldPrep => 'Prep (min)';
@@ -228,8 +234,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldCook => 'Cook (min)';
 
   @override
-  String get fieldIngredientsHint =>
-      'One ingredient per line, e.g. 2 cups rice\nA line ending with : starts a group, e.g. For the sauce:';
+  String fieldIngredientsHint(String n) {
+    return 'One ingredient per line, e.g. $n cups rice\nA line ending with : starts a group, e.g. For the sauce:';
+  }
 
   @override
   String get fieldStepsHint => 'One step per line';
@@ -238,7 +245,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldNumberInvalid => 'Numbers only';
 
   @override
-  String get stepTooLong => 'A step is longer than 2,000 characters';
+  String stepTooLong(String max) {
+    return 'A step is longer than $max characters';
+  }
 
   @override
   String get photoAdd => 'Add photo';
@@ -381,13 +390,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sourcePhoto => 'Photo';
 
   @override
-  String get timeUnder30 => 'Under 30 min';
+  String timeUnder30(String n) {
+    return 'Under $n min';
+  }
 
   @override
-  String get time30to60 => '30–60 min';
+  String time30to60(String range) {
+    return '$range min';
+  }
 
   @override
-  String get timeOver60 => 'Over 1 hour';
+  String get timeOver60 => 'Over an hour';
 
   @override
   String get any => 'Any';
@@ -405,7 +418,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cookbookName => 'Name';
 
   @override
-  String get cookbookNameInvalid => '1 to 60 characters';
+  String cookbookNameInvalid(String min, String max) {
+    return '$min to $max characters';
+  }
 
   @override
   String get cookbookRename => 'Rename';
@@ -422,7 +437,7 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other: '$shown recipes',
-      one: '1 recipe',
+      one: '$shown recipe',
       zero: 'No recipes',
     );
     return '$_temp0';
@@ -443,7 +458,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldTagsHint => 'Separate with commas, e.g. spicy, Ramadan';
 
   @override
-  String get tagsInvalid => 'Up to 20 tags, 30 characters each';
+  String tagsInvalid(String tags, String chars) {
+    return 'Up to $tags tags, $chars characters each';
+  }
 
   @override
   String get fieldCookbooks => 'Cookbooks';
@@ -472,7 +489,7 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other: '$shown ingredients weren\'t scaled',
-      one: '1 ingredient wasn\'t scaled',
+      one: '$shown ingredient wasn\'t scaled',
     );
     return '$_temp0';
   }
@@ -620,13 +637,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String aiImportsLeftLine(String shown, String quota) {
-    return '$shown of $quota AI imports left this month · resets on the 1st';
+  String aiImportsLeftLine(int count, String shown, String quota) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$shown of $quota AI imports left this month · resets at the start of each month',
+      one:
+          '$shown of $quota AI import left this month · resets at the start of each month',
+    );
+    return '$_temp0';
   }
 
   @override
   String get aiImportsOutLine =>
-      'No AI imports left this month · resets on the 1st. Website imports still work, free.';
+      'No AI imports left this month · resets at the start of each month. Website imports still work, free.';
 
   @override
   String get aiImportsPremiumLine => 'More AI imports with Premium';
@@ -715,7 +740,7 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other: '$shown photos',
-      one: '1 photo',
+      one: '$shown photo',
     );
     return '$_temp0';
   }
@@ -820,7 +845,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planNoteHint => 'Eating out, leftovers…';
 
   @override
-  String get planNoteInvalid => '1–60 characters';
+  String planNoteInvalid(String min, String max) {
+    return '$min to $max characters';
+  }
 
   @override
   String get planAddToPlan => 'Add to plan';
@@ -858,14 +885,16 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other: '$shown meals removed',
-      one: '1 meal removed',
+      one: '$shown meal removed',
       zero: 'Nothing to clear',
     );
     return '$_temp0';
   }
 
   @override
-  String get planSlotFull => 'A meal holds up to 10 entries';
+  String planSlotFull(String max) {
+    return 'A meal holds up to $max entries';
+  }
 
   @override
   String get planEmptyTitle => 'Plan your week';
@@ -946,7 +975,7 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other: '$shown items cleared',
-      one: '1 item cleared',
+      one: '$shown item cleared',
       zero: 'Nothing to clear',
     );
     return '$_temp0';
@@ -989,7 +1018,7 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other: '$shown ingredients added',
-      one: '1 ingredient added',
+      one: '$shown ingredient added',
     );
     return '$_temp0';
   }
@@ -1006,7 +1035,7 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other: '$shown meals added to groceries',
-      one: '1 meal added to groceries',
+      one: '$shown meal added to groceries',
       zero: 'Nothing to add',
     );
     return '$_temp0';
@@ -1019,7 +1048,7 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other:
           'Ramadan starts in $shown days. Switch the plan to suhoor and iftar?',
-      one: 'Ramadan starts in 1 day. Switch the plan to suhoor and iftar?',
+      one: 'Ramadan starts in $shown day. Switch the plan to suhoor and iftar?',
     );
     return '$_temp0';
   }
@@ -1095,7 +1124,7 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other: '$shown recipes',
-      one: '1 recipe',
+      one: '$shown recipe',
       zero: 'No recipes',
     );
     return '$_temp0';
@@ -1107,7 +1136,7 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other: '$shown cookbooks',
-      one: '1 cookbook',
+      one: '$shown cookbook',
       zero: 'No cookbooks',
     );
     return '$_temp0';
@@ -1119,7 +1148,7 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other: '$shown plan weeks',
-      one: '1 plan week',
+      one: '$shown plan week',
       zero: 'No plan weeks',
     );
     return '$_temp0';
@@ -1131,7 +1160,7 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other: '$shown grocery items',
-      one: '1 grocery item',
+      one: '$shown grocery item',
       zero: 'No grocery items',
     );
     return '$_temp0';
@@ -1208,7 +1237,7 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Last backup was $shown days ago',
-      one: 'Last backup was 1 day ago',
+      one: 'Last backup was $shown day ago',
     );
     return '$_temp0';
   }
@@ -1267,7 +1296,7 @@ class AppLocalizationsEn extends AppLocalizations {
       count,
       locale: localeName,
       other: '$shown AI imports a month',
-      one: '1 AI import a month',
+      one: '$shown AI import a month',
     );
     return '$_temp0';
   }

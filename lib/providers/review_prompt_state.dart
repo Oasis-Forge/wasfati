@@ -6,9 +6,9 @@ import 'settings_state.dart';
 
 /// RUN-5: decides, when cook mode closes from its last page, whether to
 /// ask the store for its review prompt, and remembers when it did. The
-/// conditions are [reviewPromptDue]'s; the saved import and the cooked
-/// recipe are read from the live library, the last time asked from
-/// Settings (so a restored backup carries it, BAK-6).
+/// conditions are [reviewPromptDue]'s; the cooked recipe is read from the
+/// live library, the saved import and the last time asked from Settings
+/// (so a backup carries them, BAK-6).
 class ReviewPrompt {
   ReviewPrompt({
     required this.store,
@@ -33,7 +33,7 @@ class ReviewPrompt {
     final now = _clock();
     final due = reviewPromptDue(
       firstRunComplete: s.firstRunComplete,
-      savedImport: hasSavedImport(recipes.recipes),
+      savedImport: s.importSaved,
       markedCooked: hasMarkedCooked(recipes.recipes),
       lastAskedAt: s.reviewAskedAt,
       now: now,
