@@ -150,8 +150,8 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
   - The purchase screen has a close button from the first frame, and no crossed-out prices or countdowns (PAY-10).
   - Cancelling is two taps from Settings (PAY-11).
   - It rewrites the privacy policy, the data-safety form and the store listing in the same release (ADS-6).
-- [ ] **Review prompt** (RUN-5): only after a saved import **and** a recipe marked as cooked, at most once every 120 days, never during setup.
-- [ ] **First-run setup and walkthrough** (RUN-3, RUN-4): last. Language and digit style, then up to four pages. No profiling questions.
+- [x] **Review prompt** (RUN-5): only after a saved import **and** a recipe marked as cooked, at most once every 120 days, never during setup. `in_app_review` behind `StoreReview`; asked when cook mode closes from its last page, by "Done" or by "Mark as cooked" (which closes it too); a saved import is a live recipe that isn't written by hand.
+- [x] **First-run setup and walkthrough** (RUN-3, RUN-4): last. Language and digit style, then up to four pages. No profiling questions. `AppSettings.firstRunComplete`; schema step 7 marks an upgraded install complete; the digits are preselected from the device locale's own numbers (only Egyptian Arabic writes ١٢٣); the sample (RUN-6) is added when setup ends, in the language chosen there; the walkthrough replays from Settings.
 
 ## Phase 5: Google Play
 - [ ] Finish the Android one-time setup in `docs/RELEASING.md`: signing, contact details (oasisforge.support@gmail.com), payments profile, secrets.

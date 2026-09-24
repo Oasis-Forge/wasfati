@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:ui' show Locale;
 
+import 'package:intl/intl.dart' show Intl, NumberFormat;
+
 import 'grocery.dart';
 import 'library.dart';
 import 'quantity/format.dart';
@@ -29,6 +31,30 @@ Locale appLanguage(LanguagePref pref, List<Locale> deviceLocales) {
       }
       return const Locale('en');
   }
+}
+
+/// RUN-3: the digit style the device's own locale writes numbers in, to
+/// preselect on the setup page. It's the first device locale Wasfati ships
+/// (the same one [appLanguage] follows), formatted by `intl`'s own locale
+/// data: only a region whose standard numbers are ١٢٣ (Egypt's Arabic, for
+/// one) answers [DigitStyle.arabic]. Everything else — Gulf Arabic
+/// included, and any device with no Arabic or English locale — keeps
+/// Decision 5's 123.
+DigitStyle deviceDigits(List<Locale> deviceLocales) {
+  for (final l in deviceLocales) {
+    if (l.languageCode != 'ar' && l.languageCode != 'en') continue;
+    final tag = l.countryCode == null || l.countryCode!.isEmpty
+        ? l.languageCode
+        : '${l.languageCode}_${l.countryCode}';
+    final known = Intl.verifiedLocale(
+      tag,
+      NumberFormat.localeExists,
+      onFailure: (_) => l.languageCode,
+    );
+    final zero = NumberFormat.decimalPattern(known).format(0);
+    return zero == '٠' ? DigitStyle.arabic : DigitStyle.western;
+  }
+  return DigitStyle.western;
 }
 
 /// SCALE-5: which view conversion shows by default.
@@ -65,6 +91,8 @@ class AppSettings {
     this.backupReminderOff = false, // BAK-8: the Settings switch
     this.aiImportsUsed = 0, // IMP-7: AI imports saved in aiImportsMonth
     this.aiImportsMonth, // 'YYYY-MM', local; null = never used yet
+    this.firstRunComplete = false, // RUN-3, RUN-4: a fresh install
+    this.reviewAskedAt, // RUN-5: null = the store was never asked
   });
 
   final LanguagePref language;
@@ -118,6 +146,18 @@ class AppSettings {
   /// or null if no AI import has ever been saved on this device.
   final String? aiImportsMonth;
 
+  /// RUN-3, RUN-4: setup and the walkthrough are behind this install —
+  /// finished, or skipped. False only on a fresh install (no stored
+  /// settings at all); settings stored by a version from before the first
+  /// run existed read as true (see [AppSettings.fromJson]), and schema step
+  /// 7 marks an upgraded database that already had recipes or an install
+  /// ID. ADS-4 reads this too.
+  final bool firstRunComplete;
+
+  /// RUN-5: when the store's review prompt was last asked for, or null if
+  /// it never was. Asked at most once every 120 days.
+  final DateTime? reviewAskedAt;
+
   /// The sighting shift that applies to [hijriYear] (RAM-2): [ramadanShift]
   /// when it was set for that year, else 0.
   int ramadanShiftFor(int hijriYear) =>
@@ -142,6 +182,8 @@ class AppSettings {
     bool? backupReminderOff,
     int? aiImportsUsed,
     String? aiImportsMonth,
+    bool? firstRunComplete,
+    DateTime? reviewAskedAt,
   }) => AppSettings(
     language: language ?? this.language,
     digits: digits ?? this.digits,
@@ -163,6 +205,8 @@ class AppSettings {
     backupReminderOff: backupReminderOff ?? this.backupReminderOff,
     aiImportsUsed: aiImportsUsed ?? this.aiImportsUsed,
     aiImportsMonth: aiImportsMonth ?? this.aiImportsMonth,
+    firstRunComplete: firstRunComplete ?? this.firstRunComplete,
+    reviewAskedAt: reviewAskedAt ?? this.reviewAskedAt,
   );
 
   String toJson() => jsonEncode({
@@ -185,10 +229,20 @@ class AppSettings {
     'backupReminderOff': backupReminderOff,
     'aiImportsUsed': aiImportsUsed,
     'aiImportsMonth': aiImportsMonth,
+    'firstRunComplete': firstRunComplete,
+    'reviewAskedAt': reviewAskedAt?.millisecondsSinceEpoch,
   });
 
   /// Unknown or missing values fall back to the defaults, so a backup from a
   /// newer version never breaks settings.
+  ///
+  /// One exception, RUN-4: a missing `firstRunComplete` reads as true.
+  /// [toJson] always writes it, so stored settings without it were written
+  /// by a version from before the first run existed — an install that is
+  /// already in use, or a backup of one, which a "replace" restore (BAK-7)
+  /// writes over this phone's settings as they are. Neither must be sent
+  /// through setup again. Only a fresh install, with no settings stored at
+  /// all ([text] null), starts with it false.
   factory AppSettings.fromJson(String? text) {
     if (text == null) return const AppSettings();
     final m = jsonDecode(text) as Map<String, Object?>;
@@ -217,6 +271,8 @@ class AppSettings {
       backupReminderOff: m['backupReminderOff'] == true,
       aiImportsUsed: (m['aiImportsUsed'] as int?) ?? 0,
       aiImportsMonth: m['aiImportsMonth'] as String?,
+      firstRunComplete: m['firstRunComplete'] != false,
+      reviewAskedAt: _msToUtc(m['reviewAskedAt']),
     );
   }
 

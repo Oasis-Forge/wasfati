@@ -19,6 +19,7 @@ import 'providers/grocery_state.dart';
 import 'providers/plan_state.dart';
 import 'providers/purchases_state.dart';
 import 'providers/recipes_state.dart';
+import 'providers/review_prompt_state.dart';
 import 'providers/settings_state.dart';
 import 'providers/timers_state.dart';
 import 'services/ai_import.dart';
@@ -33,6 +34,7 @@ import 'services/play_store.dart';
 import 'services/recipe_pages.dart';
 import 'services/sharer.dart';
 import 'services/store.dart';
+import 'services/store_review.dart';
 import 'services/web_import.dart';
 import 'services/photo_store.dart';
 
@@ -48,7 +50,9 @@ Future<void> main() async {
   final groceryRepo = GroceryRepository(db);
   final photos = DevicePhotoStore();
   final settings = SettingsState(db);
-  await settings.load();
+  final deviceLocales = WidgetsBinding.instance.platformDispatcher.locales;
+  // RUN-3: a fresh install's digit style starts as the device's own.
+  await settings.load(deviceLocales: deviceLocales);
   // RUN-6: offered once, before the trash is ever purged (must-fix,
   // review) — otherwise an upgrade whose only recipes sat in the trash for
   // over 30 days would lose them to the purge below and then read as an
@@ -56,14 +60,16 @@ Future<void> main() async {
   // marks such a database as offered, but the ordering here matters too:
   // a fresh install's purge is always a no-op, so this never delays it.
   // The language matches what the app actually starts in (LANG-1),
-  // through the same resolver MaterialApp uses (app.dart).
-  final arabic =
-      appLanguage(
-        settings.settings.language,
-        WidgetsBinding.instance.platformDispatcher.locales,
-      ).languageCode ==
-      'ar';
-  await repo.addSampleOnFirstRun(arabic: arabic);
+  // through the same resolver MaterialApp uses (app.dart). A fresh install
+  // (RUN-3) offers it instead when setup ends (FirstRunFlow), in the
+  // language picked there; its trash is empty, so the purge can't take
+  // anything first.
+  if (settings.settings.firstRunComplete) {
+    final arabic =
+        appLanguage(settings.settings.language, deviceLocales).languageCode ==
+        'ar';
+    await repo.addSampleOnFirstRun(arabic: arabic);
+  }
   // DEL-2: purge the trash on app start, and the purged photos (REC-8).
   for (final path in await repo.purgeTrash()) {
     await photos.delete(path);
@@ -145,6 +151,11 @@ Future<void> main() async {
       importPhotos: DeviceImportPhotoPicker(),
       purchases: purchases,
       ads: ads,
+      reviewPrompt: ReviewPrompt(
+        store: const DeviceStoreReview(),
+        settings: settings,
+        recipes: recipes,
+      ),
     ),
   );
 }

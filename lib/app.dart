@@ -12,7 +12,9 @@ import 'providers/grocery_state.dart';
 import 'providers/plan_state.dart';
 import 'providers/purchases_state.dart';
 import 'providers/recipes_state.dart';
+import 'providers/review_prompt_state.dart';
 import 'providers/settings_state.dart';
+import 'screens/first_run_screen.dart';
 import 'screens/home_screen.dart';
 import 'providers/timers_state.dart';
 import 'services/backup.dart';
@@ -57,6 +59,7 @@ class WasfatiApp extends StatelessWidget {
     required this.importPhotos,
     required this.purchases,
     required this.ads,
+    required this.reviewPrompt,
   });
 
   final RecipesState recipes;
@@ -116,6 +119,12 @@ class WasfatiApp extends StatelessWidget {
   /// No default, for the same reason.
   final AdsState ads;
 
+  /// RUN-5: asks the store for its review prompt when cook mode closes
+  /// from its last page, if everything RUN-5 asks for holds. No default,
+  /// like [mail]: the caller builds it over its own `StoreReview` (the real
+  /// one only in `main.dart`, a counting fake in tests).
+  final ReviewPrompt reviewPrompt;
+
   static final navigatorKey = GlobalKey<NavigatorState>();
 
   @override
@@ -140,6 +149,7 @@ class WasfatiApp extends StatelessWidget {
         Provider<ImportPhotoPicker>.value(value: importPhotos),
         ChangeNotifierProvider.value(value: purchases),
         ChangeNotifierProvider.value(value: ads),
+        Provider<ReviewPrompt>.value(value: reviewPrompt),
       ],
       child: _RamadanSync(
         settings: settings,
@@ -345,7 +355,23 @@ class _LocaleObserverState extends State<_LocaleObserver>
       navigatorKey: WasfatiApp.navigatorKey,
       builder: (context, child) =>
           ShareRouter(navigator: WasfatiApp.navigatorKey, child: child!),
-      home: const HomeScreen(),
+      home: const _FirstRunGate(),
     ),
   );
+}
+
+/// RUN-3, RUN-4: a fresh install opens on setup and the walkthrough; once
+/// they're finished or skipped (`firstRunComplete`), the library, for good.
+/// An upgraded install is already complete (schema step 7), so it goes
+/// straight to the library.
+class _FirstRunGate extends StatelessWidget {
+  const _FirstRunGate();
+
+  @override
+  Widget build(BuildContext context) {
+    final done = context.select<SettingsState, bool>(
+      (s) => s.settings.firstRunComplete,
+    );
+    return done ? const HomeScreen() : const FirstRunFlow();
+  }
 }

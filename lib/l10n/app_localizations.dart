@@ -116,6 +116,132 @@ abstract class AppLocalizations {
   /// **'Share a recipe from TikTok, Instagram or YouTube, or add your own.'**
   String get recipesEmptyBody;
 
+  /// RUN-3. The setup page's heading, on the first launch.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Wasfati'**
+  String get setupTitle;
+
+  /// RUN-3. Under the setup page's heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Two quick choices. You can change both later in Settings.'**
+  String get setupBody;
+
+  /// RUN-3. Setup page button; opens the walkthrough.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get setupContinue;
+
+  /// RUN-4. On every walkthrough page; ends the walkthrough.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get walkthroughSkip;
+
+  /// RUN-4. Moves to the next walkthrough page.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get walkthroughNext;
+
+  /// RUN-4. The last walkthrough page's button; opens the library.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to my recipes'**
+  String get walkthroughStart;
+
+  /// RUN-4. Screen-reader label of the walkthrough's page dots.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {n} of {total}'**
+  String walkthroughPageOf(String n, String total);
+
+  /// RUN-4. Walkthrough page 1 heading: importing.
+  ///
+  /// In en, this message translates to:
+  /// **'Save recipes from any post'**
+  String get walkthroughImportTitle;
+
+  /// RUN-4. Walkthrough page 1 text.
+  ///
+  /// In en, this message translates to:
+  /// **'Share a post from TikTok, Instagram or YouTube, a recipe site or a photo. Wasfati turns it into a clean recipe you check before saving.'**
+  String get walkthroughImportBody;
+
+  /// RUN-4. Walkthrough page 2 heading: scaling.
+  ///
+  /// In en, this message translates to:
+  /// **'Amounts that scale, in proper Arabic'**
+  String get walkthroughScaleTitle;
+
+  /// RUN-4. Walkthrough page 2 text.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the servings and every amount follows: fractions stay readable, and Arabic units agree with the number.'**
+  String get walkthroughScaleBody;
+
+  /// RUN-4. Walkthrough page 3 heading: cook mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Cook one step at a time'**
+  String get walkthroughCookTitle;
+
+  /// RUN-4. Walkthrough page 3 text.
+  ///
+  /// In en, this message translates to:
+  /// **'Big text, one step per page, timers straight from the step, and the screen stays on.'**
+  String get walkthroughCookBody;
+
+  /// RUN-4. Walkthrough page 4 heading: plan and groceries.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan the week, shop from one list'**
+  String get walkthroughPlanTitle;
+
+  /// RUN-4. Walkthrough page 4 text.
+  ///
+  /// In en, this message translates to:
+  /// **'Put recipes on your days, then add them to one grocery list, sorted by aisle and ready to share.'**
+  String get walkthroughPlanBody;
+
+  /// RUN-4. The made-up recipe the walkthrough's drawings show.
+  ///
+  /// In en, this message translates to:
+  /// **'Chicken kabsa'**
+  String get walkthroughDemoRecipe;
+
+  /// RUN-4. A demo ingredient line; the app parses and doubles it, so keep an amount and a unit.
+  ///
+  /// In en, this message translates to:
+  /// **'1½ cups rice'**
+  String get walkthroughDemoLine1;
+
+  /// RUN-4. A demo ingredient line; the app parses and doubles it, so keep an amount and a unit.
+  ///
+  /// In en, this message translates to:
+  /// **'2 tbsp olive oil'**
+  String get walkthroughDemoLine2;
+
+  /// RUN-4. A demo grocery item, shown ticked off.
+  ///
+  /// In en, this message translates to:
+  /// **'1 onion'**
+  String get walkthroughDemoLine3;
+
+  /// RUN-4. A demo cook-mode step; keep the time, the app reads a timer from it.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover and simmer for 25 minutes.'**
+  String get walkthroughDemoStep;
+
+  /// RUN-4. Settings row that replays the first-run walkthrough.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the walkthrough again'**
+  String get settingsReplayWalkthrough;
+
   /// RUN-1. The one clear first action on the empty list.
   ///
   /// In en, this message translates to:

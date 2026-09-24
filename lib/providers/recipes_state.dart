@@ -74,6 +74,18 @@ class RecipesState extends ChangeNotifier {
     return saved;
   });
 
+  /// RUN-6: offers the built-in sample once, in the language setup ended
+  /// in (RUN-3), so the walkthrough ends in a library that already shows
+  /// one. The repository's own rules decide: never on a phone that has, or
+  /// ever had, a recipe, and never twice. True if it was added.
+  Future<bool> addSampleOnFirstRun({required bool arabic}) async =>
+      await _write(() async {
+        final added = await _repo.addSampleOnFirstRun(arabic: arabic);
+        await _reload();
+        return added;
+      }) ??
+      false;
+
   /// Moves a recipe to the trash (DEL-1); [restore] undoes it (DEL-2).
   Future<bool> delete(String id) async =>
       await _write(() async {

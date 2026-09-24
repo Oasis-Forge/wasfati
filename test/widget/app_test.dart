@@ -21,6 +21,7 @@ import 'package:wasfati/providers/grocery_state.dart';
 import 'package:wasfati/providers/plan_state.dart';
 import 'package:wasfati/providers/purchases_state.dart';
 import 'package:wasfati/providers/recipes_state.dart';
+import 'package:wasfati/providers/review_prompt_state.dart';
 import 'package:wasfati/providers/settings_state.dart';
 import 'package:wasfati/providers/timers_state.dart';
 
@@ -40,6 +41,7 @@ import 'package:wasfati/services/photo_store.dart';
 import 'package:wasfati/services/recipe_pages.dart';
 import 'package:wasfati/services/sharer.dart';
 import 'package:wasfati/services/store.dart';
+import 'package:wasfati/services/store_review.dart';
 import 'package:wasfati/services/web_import.dart';
 
 import '../services/importer_test.dart' show FakeFetcher, kabsaPage;
@@ -125,6 +127,13 @@ late AdsState ads;
 
 /// The recipe photo store of the last [pumpApp]: records deletes (REC-8).
 late RecordingPhotoStore photoStore;
+
+/// The store's review prompt of the last [pumpApp] (RUN-5): counts every
+/// time the store was asked.
+late NoopStoreReview storeReview;
+
+/// RUN-5's decision over [storeReview], from the last [pumpApp].
+late ReviewPrompt reviewPrompt;
 
 /// Like [NoopPhotoStore], but records every photo it was asked to delete,
 /// so a test can see a removed or discarded import photo go (IMP-10), and
@@ -216,6 +225,15 @@ Future<(RecipesState, SettingsState)> pumpApp(
   // The defaults sell and own nothing, and never show a banner.
   NoopPurchaseStore? storeOverride,
   NoopAdService? adServiceOverride,
+  // RUN-3, RUN-4: every other test starts past the first run, in the
+  // library. A first-run test passes false.
+  bool firstRunComplete = true,
+  // RUN-4: an existing database (an upgraded install, or a fresh one). Its
+  // stored settings load as they are, with the test's device locales, the
+  // way `main.dart` loads them, instead of the ones above.
+  Database? existingDb,
+  // RUN-4: the device's reduce-motion setting.
+  bool disableAnimations = false,
 }) async {
   late RecipesState recipes;
   late SettingsState settings;
@@ -224,7 +242,9 @@ Future<(RecipesState, SettingsState)> pumpApp(
   late RecipeRepository repository;
   photoStore = RecordingPhotoStore();
   await tester.runAsync(() async {
-    final (repo, fakeClock, idSource) = await testRepo();
+    final (repo, fakeClock, idSource) = existingDb == null
+        ? await testRepo()
+        : _repoOn(existingDb);
     repository = repo;
     ids = idSource;
     clock = fakeClock;
@@ -237,9 +257,18 @@ Future<(RecipesState, SettingsState)> pumpApp(
     );
     await groceries.load();
     settings = SettingsState(repo.db);
-    await settings.update(
-      AppSettings(language: language, digits: digits, ramadanMode: ramadanMode),
-    );
+    if (existingDb != null) {
+      await settings.load(deviceLocales: tester.platformDispatcher.locales);
+    } else {
+      await settings.update(
+        AppSettings(
+          language: language,
+          digits: digits,
+          ramadanMode: ramadanMode,
+          firstRunComplete: firstRunComplete,
+        ),
+      );
+    }
     recipes = RecipesState(repo);
     importer = Importer(
       FakeFetcher({'https://site.com/kabsa': kabsaPage, ...pages}),
@@ -278,6 +307,13 @@ Future<(RecipesState, SettingsState)> pumpApp(
   backupFiles = NoopBackupFiles();
   mail = NoopMailComposer();
   importPhotos = NoopImportPhotoPicker();
+  storeReview = NoopStoreReview();
+  reviewPrompt = ReviewPrompt(
+    store: storeReview,
+    settings: settings,
+    recipes: recipes,
+    clock: clock.call,
+  );
   backupState = BackupState(
     backup: backup,
     files: backupFilesOverride ?? backupFiles,
@@ -297,7 +333,10 @@ Future<(RecipesState, SettingsState)> pumpApp(
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
     MediaQuery(
-      data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
+      data: MediaQueryData(
+        textScaler: TextScaler.linear(textScale),
+        disableAnimations: disableAnimations,
+      ),
       child: WasfatiApp(
         recipes: recipes,
         plan: plan,
@@ -316,12 +355,19 @@ Future<(RecipesState, SettingsState)> pumpApp(
         photos: photoStore,
         purchases: purchases,
         ads: ads,
+        reviewPrompt: reviewPrompt,
       ),
     ),
   );
   // Not pumpAndSettle: the plan's loading spinner never settles.
   await settle(tester);
   return (recipes, settings);
+}
+
+(RecipeRepository, FakeClock, CountingIds) _repoOn(Database db) {
+  final clock = FakeClock();
+  final ids = CountingIds();
+  return (RecipeRepository(db, clock: clock.call, ids: ids.call), clock, ids);
 }
 
 final _isolates = RegExp(

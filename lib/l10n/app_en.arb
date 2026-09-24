@@ -12,6 +12,98 @@
   "@recipesEmptyBody": {
     "description": "RUN-1. Empty recipe list explanation."
   },
+  "setupTitle": "Welcome to Wasfati",
+  "@setupTitle": {
+    "description": "RUN-3. The setup page's heading, on the first launch."
+  },
+  "setupBody": "Two quick choices. You can change both later in Settings.",
+  "@setupBody": {
+    "description": "RUN-3. Under the setup page's heading."
+  },
+  "setupContinue": "Continue",
+  "@setupContinue": {
+    "description": "RUN-3. Setup page button; opens the walkthrough."
+  },
+  "walkthroughSkip": "Skip",
+  "@walkthroughSkip": {
+    "description": "RUN-4. On every walkthrough page; ends the walkthrough."
+  },
+  "walkthroughNext": "Next",
+  "@walkthroughNext": {
+    "description": "RUN-4. Moves to the next walkthrough page."
+  },
+  "walkthroughStart": "Go to my recipes",
+  "@walkthroughStart": {
+    "description": "RUN-4. The last walkthrough page's button; opens the library."
+  },
+  "walkthroughPageOf": "Page {n} of {total}",
+  "@walkthroughPageOf": {
+    "description": "RUN-4. Screen-reader label of the walkthrough's page dots.",
+    "placeholders": {
+      "n": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "walkthroughImportTitle": "Save recipes from any post",
+  "@walkthroughImportTitle": {
+    "description": "RUN-4. Walkthrough page 1 heading: importing."
+  },
+  "walkthroughImportBody": "Share a post from TikTok, Instagram or YouTube, a recipe site or a photo. Wasfati turns it into a clean recipe you check before saving.",
+  "@walkthroughImportBody": {
+    "description": "RUN-4. Walkthrough page 1 text."
+  },
+  "walkthroughScaleTitle": "Amounts that scale, in proper Arabic",
+  "@walkthroughScaleTitle": {
+    "description": "RUN-4. Walkthrough page 2 heading: scaling."
+  },
+  "walkthroughScaleBody": "Change the servings and every amount follows: fractions stay readable, and Arabic units agree with the number.",
+  "@walkthroughScaleBody": {
+    "description": "RUN-4. Walkthrough page 2 text."
+  },
+  "walkthroughCookTitle": "Cook one step at a time",
+  "@walkthroughCookTitle": {
+    "description": "RUN-4. Walkthrough page 3 heading: cook mode."
+  },
+  "walkthroughCookBody": "Big text, one step per page, timers straight from the step, and the screen stays on.",
+  "@walkthroughCookBody": {
+    "description": "RUN-4. Walkthrough page 3 text."
+  },
+  "walkthroughPlanTitle": "Plan the week, shop from one list",
+  "@walkthroughPlanTitle": {
+    "description": "RUN-4. Walkthrough page 4 heading: plan and groceries."
+  },
+  "walkthroughPlanBody": "Put recipes on your days, then add them to one grocery list, sorted by aisle and ready to share.",
+  "@walkthroughPlanBody": {
+    "description": "RUN-4. Walkthrough page 4 text."
+  },
+  "walkthroughDemoRecipe": "Chicken kabsa",
+  "@walkthroughDemoRecipe": {
+    "description": "RUN-4. The made-up recipe the walkthrough's drawings show."
+  },
+  "walkthroughDemoLine1": "1½ cups rice",
+  "@walkthroughDemoLine1": {
+    "description": "RUN-4. A demo ingredient line; the app parses and doubles it, so keep an amount and a unit."
+  },
+  "walkthroughDemoLine2": "2 tbsp olive oil",
+  "@walkthroughDemoLine2": {
+    "description": "RUN-4. A demo ingredient line; the app parses and doubles it, so keep an amount and a unit."
+  },
+  "walkthroughDemoLine3": "1 onion",
+  "@walkthroughDemoLine3": {
+    "description": "RUN-4. A demo grocery item, shown ticked off."
+  },
+  "walkthroughDemoStep": "Cover and simmer for 25 minutes.",
+  "@walkthroughDemoStep": {
+    "description": "RUN-4. A demo cook-mode step; keep the time, the app reads a timer from it."
+  },
+  "settingsReplayWalkthrough": "Show the walkthrough again",
+  "@settingsReplayWalkthrough": {
+    "description": "RUN-4. Settings row that replays the first-run walkthrough."
+  },
   "recipesAdd": "Add a recipe",
   "@recipesAdd": {
     "description": "RUN-1. The one clear first action on the empty list."

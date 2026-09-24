@@ -1,12 +1,16 @@
 import 'dart:io';
 
+import 'package:flutter/widgets.dart' show Locale;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:wasfati/db/db_helper.dart';
 import 'package:wasfati/db/recipe_repository.dart';
 import 'package:wasfati/models/quantity/convert.dart';
+import 'package:wasfati/models/quantity/format.dart';
 import 'package:wasfati/models/quantity/rational.dart';
 import 'package:wasfati/models/recipe.dart';
+import 'package:wasfati/models/settings.dart';
+import 'package:wasfati/providers/settings_state.dart';
 import 'package:wasfati/services/photo_store.dart' show NoopPhotoStore;
 
 import '../helpers.dart';
@@ -109,7 +113,7 @@ void main() {
         await old.close();
 
         final db = await DBHelper.open(databaseFactoryFfi, path);
-        expect(await _version(db), 6);
+        expect(await _version(db), DBHelper.version);
         final cols = (await db.rawQuery('PRAGMA table_info(recipes)'))
             .map((c) => c['name'])
             .toSet();
@@ -139,6 +143,94 @@ void main() {
         await databaseFactoryFfi.deleteDatabase(path);
       },
     );
+
+    group('step 7: an install from before the first run skips it (RUN-4)', () {
+      /// A step-6 database on disk, [prepare]d the way that version left
+      /// it, then reopened at the current schema; returns what Settings
+      /// load from it.
+      Future<AppSettings> upgraded(
+        String name,
+        Future<void> Function(Database old, RecipeRepository repo) prepare,
+      ) async {
+        sqfliteFfiInit();
+        final path = '${Directory.systemTemp.path}/wasfati_first_run_$name.db';
+        await databaseFactoryFfi.deleteDatabase(path);
+        final old = await DBHelper.open(databaseFactoryFfi, path, upTo: 6);
+        final ids = CountingIds();
+        final clock = FakeClock();
+        await prepare(
+          old,
+          RecipeRepository(old, clock: clock.call, ids: ids.call),
+        );
+        await old.close();
+
+        final db = await DBHelper.open(databaseFactoryFfi, path);
+        expect(await _version(db), DBHelper.version);
+        final settings = SettingsState(db);
+        await settings.load(deviceLocales: const [Locale('ar', 'EG')]);
+        await db.close();
+        await databaseFactoryFfi.deleteDatabase(path);
+        return settings.settings;
+      }
+
+      test('a database with a recipe and no stored settings', () async {
+        final s = await upgraded('recipe', (old, repo) async {
+          await repo.save(kabsa(repo));
+        });
+        expect(s.firstRunComplete, isTrue);
+        // Nothing else was invented for it: Decision 5's defaults, not the
+        // device's digits, which only a fresh install is preselected with.
+        expect(s.digits, DigitStyle.western);
+        expect(s.language, LanguagePref.system);
+      });
+
+      test('a database whose only recipe sits in the trash', () async {
+        final s = await upgraded('trash', (old, repo) async {
+          final r = await repo.save(kabsa(repo));
+          await repo.delete(r.id);
+        });
+        expect(s.firstRunComplete, isTrue);
+      });
+
+      test(
+        'a database with only an install ID (every recipe purged)',
+        () async {
+          final s = await upgraded('install', (old, repo) async {
+            await repo.installId();
+          });
+          expect(s.firstRunComplete, isTrue);
+        },
+      );
+
+      test('stored settings keep every choice, and read as complete', () async {
+        final s = await upgraded('settings', (old, repo) async {
+          await repo.installId();
+          // Written the way 0.16 wrote settings: no firstRunComplete key.
+          await old.insert('meta', {
+            'key': 'settings',
+            'value': '{"language":"en","digits":"arabic","style":"saffron"}',
+          });
+        });
+        expect(s.firstRunComplete, isTrue);
+        expect(s.language, LanguagePref.en);
+        expect(s.digits, DigitStyle.arabic);
+        expect(s.style, AppStyle.saffron);
+      });
+
+      test('a database that was never used still gets the first run', () async {
+        final s = await upgraded('empty', (old, repo) async {});
+        expect(s.firstRunComplete, isFalse);
+      });
+
+      test('a fresh install gets the first run, with the device\'s digits '
+          'preselected (RUN-3)', () async {
+        final db = await memoryDb();
+        final settings = SettingsState(db);
+        await settings.load(deviceLocales: const [Locale('ar', 'EG')]);
+        expect(settings.settings.firstRunComplete, isFalse);
+        expect(settings.settings.digits, DigitStyle.arabic);
+      });
+    });
 
     test(
       'REC-1, REC-2, DEL-1: every record table has id, times, deleted_at',
