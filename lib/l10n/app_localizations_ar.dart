@@ -572,6 +572,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'نفدت الاستيرادات الذكية هذا الشهر · تتجدد في الأول من كل شهر. استيراد صفحات المواقع يبقى مجانيًا وبلا حدود.';
 
   @override
+  String get aiImportsPremiumLine => 'استيرادات ذكية أكثر مع بريميوم';
+
+  @override
   String aiImportCostLine(String shown, String quota) {
     return 'سيُستخدم استيراد ذكي واحد الآن · بقي $shown من $quota';
   }
@@ -1204,4 +1207,116 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ramadanShiftLater => 'يوم لاحق';
+
+  @override
+  String get adSlotRemoveAds => 'إزالة الإعلانات';
+
+  @override
+  String get purchaseTitle => 'برو وبريميوم';
+
+  @override
+  String get purchaseClose => 'إغلاق';
+
+  @override
+  String get purchaseLead =>
+      'كل ما في وصفاتي يبقى مجانيًا. برو يزيل الإعلانات، وبريميوم يزيلها أيضًا ويمنحك استيرادات ذكية أكثر.';
+
+  @override
+  String get purchasePro => 'برو';
+
+  @override
+  String get purchasePremium => 'بريميوم';
+
+  @override
+  String get purchaseProKind => 'شراء لمرة واحدة';
+
+  @override
+  String get purchasePremiumKind => 'اشتراك';
+
+  @override
+  String get purchaseNoAds => 'بلا إعلانات';
+
+  @override
+  String purchaseAiImports(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown استيراد ذكي شهريًا',
+      many: '$shown استيرادًا ذكيًا شهريًا',
+      few: '$shown استيرادات ذكية شهريًا',
+      two: 'استيرادان ذكيان شهريًا',
+      one: 'استيراد ذكي واحد شهريًا',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get purchaseFairUse => 'ضمن الاستخدام العادل';
+
+  @override
+  String get purchaseOwned => 'تملكه';
+
+  @override
+  String purchasePriceOnce(String price) {
+    return '$price مرة واحدة';
+  }
+
+  @override
+  String purchasePriceMonthly(String price) {
+    return '$price شهريًا';
+  }
+
+  @override
+  String purchasePriceYearly(String price) {
+    return '$price سنويًا';
+  }
+
+  @override
+  String get purchaseComingSoon => 'قريبًا';
+
+  @override
+  String get purchaseNothingYet => 'لا شيء معروض للشراء بعد.';
+
+  @override
+  String get purchaseRestore => 'استعادة عمليات الشراء';
+
+  @override
+  String get purchaseRestored => 'استُعيدت عمليات الشراء.';
+
+  @override
+  String get purchaseNothingToRestore =>
+      'لا عمليات شراء لوصفاتي على حساب Google هذا.';
+
+  @override
+  String get purchaseStoreUnreachable =>
+      'تعذّر الوصول إلى Google Play. حاول لاحقًا.';
+
+  @override
+  String get purchasePending =>
+      'بانتظار أن يؤكد Google Play الدفع. لا يتغير شيء قبل ذلك.';
+
+  @override
+  String get purchaseFailed => 'لم تكتمل عملية الشراء.';
+
+  @override
+  String get purchasePremiumRenews =>
+      'يتجدد بريميوم تلقائيًا حتى تلغيه. ألغِه متى شئت: الإعدادات › إدارة أو إلغاء يفتحه في Google Play.';
+
+  @override
+  String get purchaseManage => 'إدارة أو إلغاء';
+
+  @override
+  String get purchaseManageFailed => 'تعذّر فتح Google Play.';
+
+  @override
+  String get settingsPayingSection => 'الإعلانات والاشتراك';
+
+  @override
+  String get settingsSubscription => 'الاشتراك';
+
+  @override
+  String get tierFree => 'مجاني';
+
+  @override
+  String get settingsAdPrivacy => 'خيارات الخصوصية في الإعلانات';
 }

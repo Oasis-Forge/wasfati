@@ -731,6 +731,10 @@
   "@aiImportsOutLine": {
     "description": "IMP-7: shown instead of aiImportsLeftLine once the quota runs out."
   },
+  "aiImportsPremiumLine": "More AI imports with Premium",
+  "@aiImportsPremiumLine": {
+    "description": "PAY-5, IMP-7: the one line under the quota once the free AI imports run out. Opens the purchase screen."
+  },
   "aiImportCostLine": "Uses one AI import · {shown} of {quota} left",
   "@aiImportCostLine": {
     "description": "IMP-3: shown before an import is sent to the AI server, next to the progress indicator.",
@@ -1432,5 +1436,130 @@
   "ramadanShiftLater": "One day later",
   "@ramadanShiftLater": {
     "description": "RAM-2. Tooltip: moves Ramadan's first day a day later, for the local moon sighting."
+  },
+  "adSlotRemoveAds": "Remove ads",
+  "@adSlotRemoveAds": {
+    "description": "PAY-5: the one small target on the ad slot, above the banner. Opens the purchase screen."
+  },
+  "purchaseTitle": "Pro and Premium",
+  "@purchaseTitle": {
+    "description": "PAY-10: the purchase screen's title; also the Settings subscription row's value when both are owned."
+  },
+  "purchaseClose": "Close",
+  "@purchaseClose": {
+    "description": "PAY-10: tooltip of the purchase screen's close button, there from the first frame."
+  },
+  "purchaseLead": "Everything in Wasfati stays free. Pro removes the ads. Premium removes them too, and gives you more AI imports.",
+  "@purchaseLead": {
+    "description": "PAY-4, PAY-10: the purchase screen's first line."
+  },
+  "purchasePro": "Pro",
+  "@purchasePro": {
+    "description": "PAY-1: the one-time product's name."
+  },
+  "purchasePremium": "Premium",
+  "@purchasePremium": {
+    "description": "PAY-1: the subscription's name."
+  },
+  "purchaseProKind": "One-time purchase",
+  "purchasePremiumKind": "Subscription",
+  "purchaseNoAds": "No ads",
+  "@purchaseNoAds": {
+    "description": "PAY-7: what Pro and Premium include."
+  },
+  "purchaseAiImports": "{count, plural, =1{1 AI import a month} other{{shown} AI imports a month}}",
+  "@purchaseAiImports": {
+    "description": "PAY-7: AI imports a month with Pro (10) or Premium (100).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseFairUse": "Fair use",
+  "@purchaseFairUse": {
+    "description": "PAY-7, SRV-4: Premium's 100 AI imports are fair use."
+  },
+  "purchaseOwned": "Owned",
+  "@purchaseOwned": {
+    "description": "PAY-7, PAY-10: shown on a product this store account already owns."
+  },
+  "purchasePriceOnce": "{price} once",
+  "@purchasePriceOnce": {
+    "description": "PAY-2, PAY-10: Pro's buy button; price is the store's own formatted price.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "purchasePriceMonthly": "{price} a month",
+  "@purchasePriceMonthly": {
+    "description": "PAY-2, PAY-8: Premium's monthly plan button; price is the store's own formatted price.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "purchasePriceYearly": "{price} a year",
+  "@purchasePriceYearly": {
+    "description": "PAY-2, PAY-8: Premium's yearly plan button; price is the store's own formatted price.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "purchaseComingSoon": "Coming soon",
+  "@purchaseComingSoon": {
+    "description": "PAY-3: a product the store doesn't sell yet: no price, no button."
+  },
+  "purchaseNothingYet": "Nothing is for sale yet.",
+  "@purchaseNothingYet": {
+    "description": "PAY-6: the store has no product configured, or can't sell on this device."
+  },
+  "purchaseRestore": "Restore purchases",
+  "@purchaseRestore": {
+    "description": "PAY-1, PAY-10: next to the prices. In Arabic, avoid المشتريات: it names the grocery list."
+  },
+  "purchaseRestored": "Your purchases are restored.",
+  "purchaseNothingToRestore": "This Google account has no Wasfati purchases.",
+  "purchaseStoreUnreachable": "Couldn't reach Google Play. Try again later.",
+  "purchasePending": "Waiting for Google Play to confirm the payment. Nothing changes until it does.",
+  "@purchasePending": {
+    "description": "PAY-6: a purchase the store reports as pending."
+  },
+  "purchaseFailed": "The purchase didn't go through.",
+  "@purchaseFailed": {
+    "description": "PAY-6: the store reported an error for the last purchase."
+  },
+  "purchasePremiumRenews": "Premium renews automatically until you cancel it. Cancel any time: Settings › Manage or cancel opens it in Google Play.",
+  "@purchasePremiumRenews": {
+    "description": "PAY-10, PAY-11: that Premium renews until cancelled, and where to cancel."
+  },
+  "purchaseManage": "Manage or cancel",
+  "@purchaseManage": {
+    "description": "PAY-11: opens Google Play's page for the subscription."
+  },
+  "purchaseManageFailed": "Couldn't open Google Play.",
+  "settingsPayingSection": "Ads and subscription",
+  "@settingsPayingSection": {
+    "description": "PAY-11, ADS-5: the Settings section heading. In Arabic, avoid المشتريات: it names the grocery list."
+  },
+  "settingsSubscription": "Subscription",
+  "@settingsSubscription": {
+    "description": "PAY-5, PAY-11: the Settings row; its value is the plan. Opens the purchase screen."
+  },
+  "tierFree": "Free",
+  "@tierFree": {
+    "description": "PAY-11: the Settings subscription row's value when nothing is owned."
+  },
+  "settingsAdPrivacy": "Ad privacy choices",
+  "@settingsAdPrivacy": {
+    "description": "ADS-5: opens the ad network's own consent form, where the law asks for one."
   }
 }

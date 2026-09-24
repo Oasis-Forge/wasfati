@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -12,9 +13,11 @@ import 'db/grocery_repository.dart';
 import 'db/plan_repository.dart';
 import 'db/recipe_repository.dart';
 import 'models/settings.dart';
+import 'providers/ads_state.dart';
 import 'providers/backup_state.dart';
 import 'providers/grocery_state.dart';
 import 'providers/plan_state.dart';
+import 'providers/purchases_state.dart';
 import 'providers/recipes_state.dart';
 import 'providers/settings_state.dart';
 import 'providers/timers_state.dart';
@@ -22,11 +25,14 @@ import 'services/ai_import.dart';
 import 'services/backup.dart';
 import 'services/backup_files.dart';
 import 'services/cook_services.dart';
+import 'services/google_ads.dart';
 import 'services/import_photos.dart';
 import 'services/importer.dart';
 import 'services/mail.dart';
+import 'services/play_store.dart';
 import 'services/recipe_pages.dart';
 import 'services/sharer.dart';
+import 'services/store.dart';
 import 'services/web_import.dart';
 import 'services/photo_store.dart';
 
@@ -106,6 +112,14 @@ Future<void> main() async {
     inForeground: () =>
         WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed,
   );
+  // PAY-1: Play Billing on Android; no store elsewhere yet (iOS is Phase
+  // 6). Not awaited: until the store answers, no ad is asked for
+  // (AdsState), so the first frame never waits on it.
+  final purchases = PurchasesState(
+    Platform.isAndroid ? PlayPurchaseStore() : NoopPurchaseStore(),
+  );
+  unawaited(purchases.start());
+  final ads = AdsState(GoogleAdService(), purchases);
   runApp(
     WasfatiApp(
       recipes: recipes,
@@ -129,6 +143,8 @@ Future<void> main() async {
       backupState: backupState,
       mail: const DeviceMailComposer(),
       importPhotos: DeviceImportPhotoPicker(),
+      purchases: purchases,
+      ads: ads,
     ),
   );
 }

@@ -155,6 +155,7 @@ Groundwork every feature builds on. Settle everything that shapes stored data no
 
 ## Phase 5: Google Play
 - [ ] Finish the Android one-time setup in `docs/RELEASING.md`: signing, contact details (oasisforge.support@gmail.com), payments profile, secrets.
+- [ ] **Premium on the import server** (SRV-4, PAY-7, PAY-11; Decision 22), before Premium is offered to anyone, licence testers included: link a Google service account to the Play Console project; the Worker (`Oasis-Forge/wasfati-import`) verifies a Premium purchase token with Google Play's own record and allows 100 AI imports a month for it, 10 otherwise; the app sends the token with each AI import and translation; and Settings' Subscription row shows the renewal date from that record. Create the products first (`docs/RELEASING.md`, Android step 10).
 - [ ] Internal testing from a release, including Pro and Premium bought by licence testers.
 - [ ] **Closed test from W8 (16 November 2026):** at least 12 testers for 14 days before production access; start with the 2a+2b build. Recruit Arabic-speaking testers in W6.
 - [ ] Store listing in Arabic and English from `store/play/` (text, screenshots, feature graphic, icon), privacy policy URL, data-safety form, and `app-ads.txt` in `Oasis-Forge/oasis-forge.github.io`.

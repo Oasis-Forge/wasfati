@@ -559,6 +559,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'No AI imports left this month · resets on the 1st. Website imports still work, free.';
 
   @override
+  String get aiImportsPremiumLine => 'More AI imports with Premium';
+
+  @override
   String aiImportCostLine(String shown, String quota) {
     return 'Uses one AI import · $shown of $quota left';
   }
@@ -1159,4 +1162,113 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ramadanShiftLater => 'One day later';
+
+  @override
+  String get adSlotRemoveAds => 'Remove ads';
+
+  @override
+  String get purchaseTitle => 'Pro and Premium';
+
+  @override
+  String get purchaseClose => 'Close';
+
+  @override
+  String get purchaseLead =>
+      'Everything in Wasfati stays free. Pro removes the ads. Premium removes them too, and gives you more AI imports.';
+
+  @override
+  String get purchasePro => 'Pro';
+
+  @override
+  String get purchasePremium => 'Premium';
+
+  @override
+  String get purchaseProKind => 'One-time purchase';
+
+  @override
+  String get purchasePremiumKind => 'Subscription';
+
+  @override
+  String get purchaseNoAds => 'No ads';
+
+  @override
+  String purchaseAiImports(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown AI imports a month',
+      one: '1 AI import a month',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get purchaseFairUse => 'Fair use';
+
+  @override
+  String get purchaseOwned => 'Owned';
+
+  @override
+  String purchasePriceOnce(String price) {
+    return '$price once';
+  }
+
+  @override
+  String purchasePriceMonthly(String price) {
+    return '$price a month';
+  }
+
+  @override
+  String purchasePriceYearly(String price) {
+    return '$price a year';
+  }
+
+  @override
+  String get purchaseComingSoon => 'Coming soon';
+
+  @override
+  String get purchaseNothingYet => 'Nothing is for sale yet.';
+
+  @override
+  String get purchaseRestore => 'Restore purchases';
+
+  @override
+  String get purchaseRestored => 'Your purchases are restored.';
+
+  @override
+  String get purchaseNothingToRestore =>
+      'This Google account has no Wasfati purchases.';
+
+  @override
+  String get purchaseStoreUnreachable =>
+      'Couldn\'t reach Google Play. Try again later.';
+
+  @override
+  String get purchasePending =>
+      'Waiting for Google Play to confirm the payment. Nothing changes until it does.';
+
+  @override
+  String get purchaseFailed => 'The purchase didn\'t go through.';
+
+  @override
+  String get purchasePremiumRenews =>
+      'Premium renews automatically until you cancel it. Cancel any time: Settings › Manage or cancel opens it in Google Play.';
+
+  @override
+  String get purchaseManage => 'Manage or cancel';
+
+  @override
+  String get purchaseManageFailed => 'Couldn\'t open Google Play.';
+
+  @override
+  String get settingsPayingSection => 'Ads and subscription';
+
+  @override
+  String get settingsSubscription => 'Subscription';
+
+  @override
+  String get tierFree => 'Free';
+
+  @override
+  String get settingsAdPrivacy => 'Ad privacy choices';
 }

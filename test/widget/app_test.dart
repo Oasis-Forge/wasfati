@@ -15,9 +15,11 @@ import 'package:wasfati/models/settings.dart';
 import 'package:wasfati/db/grocery_repository.dart';
 import 'package:wasfati/db/plan_repository.dart';
 import 'package:wasfati/db/recipe_repository.dart';
+import 'package:wasfati/providers/ads_state.dart';
 import 'package:wasfati/providers/backup_state.dart';
 import 'package:wasfati/providers/grocery_state.dart';
 import 'package:wasfati/providers/plan_state.dart';
+import 'package:wasfati/providers/purchases_state.dart';
 import 'package:wasfati/providers/recipes_state.dart';
 import 'package:wasfati/providers/settings_state.dart';
 import 'package:wasfati/providers/timers_state.dart';
@@ -26,6 +28,7 @@ import 'dart:async';
 
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:wasfati/services/ads.dart';
 import 'package:wasfati/services/ai_import.dart';
 import 'package:wasfati/services/backup.dart';
 import 'package:wasfati/services/backup_files.dart';
@@ -36,6 +39,7 @@ import 'package:wasfati/services/mail.dart';
 import 'package:wasfati/services/photo_store.dart';
 import 'package:wasfati/services/recipe_pages.dart';
 import 'package:wasfati/services/sharer.dart';
+import 'package:wasfati/services/store.dart';
 import 'package:wasfati/services/web_import.dart';
 
 import '../services/importer_test.dart' show FakeFetcher, kabsaPage;
@@ -104,6 +108,20 @@ late NoopMailComposer mail;
 /// The camera and photo picker of the last [pumpApp] (IMP-1, IMP-10): set
 /// its `next` before tapping a photo button.
 late NoopImportPhotoPicker importPhotos;
+
+/// The store of the last [pumpApp] (PAY-1–PAY-11): sells and owns nothing
+/// unless the test passed its own.
+late NoopPurchaseStore store;
+
+/// Pro and Premium from the last [pumpApp], over [store].
+late PurchasesState purchases;
+
+/// The ad network of the last [pumpApp]: no consent, so no banner, unless
+/// the test passed its own (ADS-1–ADS-9).
+late NoopAdService adService;
+
+/// The banner slots' state from the last [pumpApp].
+late AdsState ads;
 
 /// The recipe photo store of the last [pumpApp]: records deletes (REC-8).
 late RecordingPhotoStore photoStore;
@@ -194,6 +212,10 @@ Future<(RecipesState, SettingsState)> pumpApp(
   Future<String?> Function(String id, Uint8List bytes)? savePhoto,
   // More made-up recipe pages for website import (IMP-2), beside the kabsa.
   Map<String, String> pages = const {},
+  // PAY-1–PAY-11 and ADS-1–ADS-9: a store and an ad network a test drives.
+  // The defaults sell and own nothing, and never show a banner.
+  NoopPurchaseStore? storeOverride,
+  NoopAdService? adServiceOverride,
 }) async {
   late RecipesState recipes;
   late SettingsState settings;
@@ -263,6 +285,13 @@ Future<(RecipesState, SettingsState)> pumpApp(
     shareStorage: shareStorage,
     settings: settings,
   );
+  store = storeOverride ?? NoopPurchaseStore();
+  adService = adServiceOverride ?? NoopAdService();
+  purchases = PurchasesState(store);
+  addTearDown(purchases.dispose);
+  ads = AdsState(adService, purchases);
+  addTearDown(ads.dispose);
+  await tester.runAsync(purchases.start);
   tester.view.physicalSize = const Size(1080, 2400); // a phone (LANG-6)
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
@@ -285,6 +314,8 @@ Future<(RecipesState, SettingsState)> pumpApp(
         mail: mail,
         importPhotos: importPhotos,
         photos: photoStore,
+        purchases: purchases,
+        ads: ads,
       ),
     ),
   );

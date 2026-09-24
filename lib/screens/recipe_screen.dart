@@ -18,6 +18,7 @@ import '../providers/settings_state.dart';
 import '../services/recipe_pages.dart';
 import '../services/sharer.dart';
 import '../theme/decor.dart';
+import '../widgets/ad_slot.dart';
 import '../widgets/amount_line.dart';
 import '../widgets/content_direction.dart';
 import '../widgets/pressable_slab.dart';
@@ -124,6 +125,10 @@ class _RecipeScreenState extends State<RecipeScreen> {
                   factor: _factor,
                   onFactor: (f) => setState(() => _factor = f),
                 ),
+          // ADS-3, ADS-9: the recipe page's slot, in its bottom bar — never
+          // in the steps' scrolling list — and 8 dp clear of "ابدأ الطبخ".
+          // Cook mode itself has none (COOK-1).
+          bottomNavigationBar: const AdSlot(aboveSystemBar: true),
         );
       },
     );

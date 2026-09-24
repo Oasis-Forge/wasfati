@@ -1046,6 +1046,12 @@ abstract class AppLocalizations {
   /// **'No AI imports left this month · resets on the 1st. Website imports still work, free.'**
   String get aiImportsOutLine;
 
+  /// PAY-5, IMP-7: the one line under the quota once the free AI imports run out. Opens the purchase screen.
+  ///
+  /// In en, this message translates to:
+  /// **'More AI imports with Premium'**
+  String get aiImportsPremiumLine;
+
   /// IMP-3: shown before an import is sent to the AI server, next to the progress indicator.
   ///
   /// In en, this message translates to:
@@ -1951,6 +1957,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'One day later'**
   String get ramadanShiftLater;
+
+  /// PAY-5: the one small target on the ad slot, above the banner. Opens the purchase screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove ads'**
+  String get adSlotRemoveAds;
+
+  /// PAY-10: the purchase screen's title; also the Settings subscription row's value when both are owned.
+  ///
+  /// In en, this message translates to:
+  /// **'Pro and Premium'**
+  String get purchaseTitle;
+
+  /// PAY-10: tooltip of the purchase screen's close button, there from the first frame.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get purchaseClose;
+
+  /// PAY-4, PAY-10: the purchase screen's first line.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything in Wasfati stays free. Pro removes the ads. Premium removes them too, and gives you more AI imports.'**
+  String get purchaseLead;
+
+  /// PAY-1: the one-time product's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Pro'**
+  String get purchasePro;
+
+  /// PAY-1: the subscription's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium'**
+  String get purchasePremium;
+
+  /// No description provided for @purchaseProKind.
+  ///
+  /// In en, this message translates to:
+  /// **'One-time purchase'**
+  String get purchaseProKind;
+
+  /// No description provided for @purchasePremiumKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get purchasePremiumKind;
+
+  /// PAY-7: what Pro and Premium include.
+  ///
+  /// In en, this message translates to:
+  /// **'No ads'**
+  String get purchaseNoAds;
+
+  /// PAY-7: AI imports a month with Pro (10) or Premium (100).
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 AI import a month} other{{shown} AI imports a month}}'**
+  String purchaseAiImports(int count, String shown);
+
+  /// PAY-7, SRV-4: Premium's 100 AI imports are fair use.
+  ///
+  /// In en, this message translates to:
+  /// **'Fair use'**
+  String get purchaseFairUse;
+
+  /// PAY-7, PAY-10: shown on a product this store account already owns.
+  ///
+  /// In en, this message translates to:
+  /// **'Owned'**
+  String get purchaseOwned;
+
+  /// PAY-2, PAY-10: Pro's buy button; price is the store's own formatted price.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} once'**
+  String purchasePriceOnce(String price);
+
+  /// PAY-2, PAY-8: Premium's monthly plan button; price is the store's own formatted price.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} a month'**
+  String purchasePriceMonthly(String price);
+
+  /// PAY-2, PAY-8: Premium's yearly plan button; price is the store's own formatted price.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} a year'**
+  String purchasePriceYearly(String price);
+
+  /// PAY-3: a product the store doesn't sell yet: no price, no button.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get purchaseComingSoon;
+
+  /// PAY-6: the store has no product configured, or can't sell on this device.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is for sale yet.'**
+  String get purchaseNothingYet;
+
+  /// PAY-1, PAY-10: next to the prices. In Arabic, avoid المشتريات: it names the grocery list.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore purchases'**
+  String get purchaseRestore;
+
+  /// No description provided for @purchaseRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Your purchases are restored.'**
+  String get purchaseRestored;
+
+  /// No description provided for @purchaseNothingToRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'This Google account has no Wasfati purchases.'**
+  String get purchaseNothingToRestore;
+
+  /// No description provided for @purchaseStoreUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach Google Play. Try again later.'**
+  String get purchaseStoreUnreachable;
+
+  /// PAY-6: a purchase the store reports as pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for Google Play to confirm the payment. Nothing changes until it does.'**
+  String get purchasePending;
+
+  /// PAY-6: the store reported an error for the last purchase.
+  ///
+  /// In en, this message translates to:
+  /// **'The purchase didn\'t go through.'**
+  String get purchaseFailed;
+
+  /// PAY-10, PAY-11: that Premium renews until cancelled, and where to cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium renews automatically until you cancel it. Cancel any time: Settings › Manage or cancel opens it in Google Play.'**
+  String get purchasePremiumRenews;
+
+  /// PAY-11: opens Google Play's page for the subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage or cancel'**
+  String get purchaseManage;
+
+  /// No description provided for @purchaseManageFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open Google Play.'**
+  String get purchaseManageFailed;
+
+  /// PAY-11, ADS-5: the Settings section heading. In Arabic, avoid المشتريات: it names the grocery list.
+  ///
+  /// In en, this message translates to:
+  /// **'Ads and subscription'**
+  String get settingsPayingSection;
+
+  /// PAY-5, PAY-11: the Settings row; its value is the plan. Opens the purchase screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get settingsSubscription;
+
+  /// PAY-11: the Settings subscription row's value when nothing is owned.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get tierFree;
+
+  /// ADS-5: opens the ad network's own consent form, where the law asks for one.
+  ///
+  /// In en, this message translates to:
+  /// **'Ad privacy choices'**
+  String get settingsAdPrivacy;
 }
 
 class _AppLocalizationsDelegate

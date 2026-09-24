@@ -6,6 +6,7 @@ import '../models/cookbook.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../services/backup.dart';
+import '../widgets/ad_slot.dart';
 import '../widgets/content_direction.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/pressable_slab.dart';
@@ -41,24 +42,34 @@ class _HomeScreenState extends State<HomeScreen> {
         index: _index,
         children: const [LibraryHome(), PlanScreen(), GroceriesScreen()],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.menu_book_outlined),
-            selectedIcon: const Icon(Icons.menu_book),
-            label: l10n.tabRecipes,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.calendar_month_outlined),
-            selectedIcon: const Icon(Icons.calendar_month),
-            label: l10n.planTitle,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.shopping_basket_outlined),
-            selectedIcon: const Icon(Icons.shopping_basket),
-            label: l10n.groceriesTitle,
+      // ADS-3, ADS-9: the library, the plan and groceries share one slot,
+      // in the bottom bar above the navigation bar, outside every tab's
+      // scrolling content. An empty library has neither (RUN-1): its whole
+      // screen is the one first action.
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const AdSlot(),
+          NavigationBar(
+            selectedIndex: _index,
+            onDestinationSelected: (i) => setState(() => _index = i),
+            destinations: [
+              NavigationDestination(
+                icon: const Icon(Icons.menu_book_outlined),
+                selectedIcon: const Icon(Icons.menu_book),
+                label: l10n.tabRecipes,
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.calendar_month_outlined),
+                selectedIcon: const Icon(Icons.calendar_month),
+                label: l10n.planTitle,
+              ),
+              NavigationDestination(
+                icon: const Icon(Icons.shopping_basket_outlined),
+                selectedIcon: const Icon(Icons.shopping_basket),
+                label: l10n.groceriesTitle,
+              ),
+            ],
           ),
         ],
       ),

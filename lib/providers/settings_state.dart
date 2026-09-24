@@ -16,8 +16,8 @@ class SettingsState extends ChangeNotifier {
   static const _key = 'settings';
 
   /// IMP-7, PAY-7: the free tier's AI imports a calendar month. Premium's
-  /// 100 (fair use, SRV-4) isn't wired here yet — pass it as [quota] to
-  /// [aiImportsLeft] once PAY-11 can tell Premium is owned.
+  /// 100 (fair use, SRV-4) comes from `PurchasesState.aiImportQuota`,
+  /// passed as [quota] to [aiImportsLeft].
   static const freeAiImportsPerMonth = 10;
 
   AppSettings _settings = const AppSettings();

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../models/recipe.dart';
 import '../models/recipe_translation.dart';
+import '../providers/purchases_state.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../services/ai_import.dart';
@@ -45,7 +46,9 @@ Future<String?> translateAndPreview(
   }
 
   if (!free) {
-    final left = settings.aiImportsLeft();
+    // PAY-7: Premium's 100 a month, the free 10 otherwise.
+    final quota = context.read<PurchasesState>().aiImportQuota;
+    final left = settings.aiImportsLeft(quota: quota);
     if (left <= 0) {
       // IMP-7: out of AI imports — said plainly, nothing sent.
       messenger
@@ -58,10 +61,7 @@ Future<String?> translateAndPreview(
       builder: (ctx) => AlertDialog(
         title: Text(l10n.translateRecipe),
         content: Text(
-          l10n.aiImportCostLine(
-            settings.number(left),
-            settings.number(SettingsState.freeAiImportsPerMonth),
-          ),
+          l10n.aiImportCostLine(settings.number(left), settings.number(quota)),
         ),
         actions: [
           TextButton(
