@@ -4,6 +4,16 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-09-24
+
+### Added
+- Import a recipe from TikTok, Instagram or any post your phone can't read on its own: share it into Wasfati, or paste the caption, and it comes back as a clean Arabic recipe you check before saving.
+- Ten AI imports a month, free. The count and its reset date sit on the import screen, and an import is only counted once you save it — a preview you cancel costs nothing. Recipes from websites like فتافيت and كوكباد are still read on your phone, free and unlimited.
+- When a link can't be read, Wasfati asks for the caption instead. It reads your clipboard only when you tap "لصق", and keeps the original link on the saved recipe.
+
+### Changed
+- The privacy policy now describes the import server: what leaves your phone, when, that Anthropic's Claude turns it into a recipe, and that nothing you send is kept.
+
 ## [0.14.1] - 2026-09-23
 
 ### Changed
