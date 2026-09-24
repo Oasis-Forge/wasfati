@@ -17,6 +17,7 @@ import '../services/backup.dart';
 import '../services/backup_files.dart' show BackupFilesError;
 import '../theme/decor.dart';
 import '../widgets/content_direction.dart';
+import 'walkthrough_screen.dart';
 
 /// Settings (roadmap 2a): language (LANG-1), digit style (QTY-5), units
 /// (SCALE-5), week start and theme. Changes apply at once.
@@ -105,6 +106,24 @@ class SettingsScreen extends StatelessWidget {
           ),
           _RamadanSection(settings: s, month: ramadanMonth, onChanged: set),
           const _BackupSection(),
+          // RUN-4: the walkthrough can be replayed; it just closes at the
+          // end, and changes nothing.
+          Padding(
+            padding: const EdgeInsetsDirectional.only(top: 20),
+            child: _Group(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.auto_stories_outlined),
+                  title: Text(l10n.settingsReplayWalkthrough),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const WalkthroughScreen(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

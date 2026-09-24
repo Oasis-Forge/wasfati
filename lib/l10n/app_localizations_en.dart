@@ -20,6 +20,76 @@ class AppLocalizationsEn extends AppLocalizations {
       'Share a recipe from TikTok, Instagram or YouTube, or add your own.';
 
   @override
+  String get setupTitle => 'Welcome to Wasfati';
+
+  @override
+  String get setupBody =>
+      'Two quick choices. You can change both later in Settings.';
+
+  @override
+  String get setupContinue => 'Continue';
+
+  @override
+  String get walkthroughSkip => 'Skip';
+
+  @override
+  String get walkthroughNext => 'Next';
+
+  @override
+  String get walkthroughStart => 'Go to my recipes';
+
+  @override
+  String walkthroughPageOf(String n, String total) {
+    return 'Page $n of $total';
+  }
+
+  @override
+  String get walkthroughImportTitle => 'Save recipes from any post';
+
+  @override
+  String get walkthroughImportBody =>
+      'Share a post from TikTok, Instagram or YouTube, a recipe site or a photo. Wasfati turns it into a clean recipe you check before saving.';
+
+  @override
+  String get walkthroughScaleTitle => 'Amounts that scale, in proper Arabic';
+
+  @override
+  String get walkthroughScaleBody =>
+      'Change the servings and every amount follows: fractions stay readable, and Arabic units agree with the number.';
+
+  @override
+  String get walkthroughCookTitle => 'Cook one step at a time';
+
+  @override
+  String get walkthroughCookBody =>
+      'Big text, one step per page, timers straight from the step, and the screen stays on.';
+
+  @override
+  String get walkthroughPlanTitle => 'Plan the week, shop from one list';
+
+  @override
+  String get walkthroughPlanBody =>
+      'Put recipes on your days, then add them to one grocery list, sorted by aisle and ready to share.';
+
+  @override
+  String get walkthroughDemoRecipe => 'Chicken kabsa';
+
+  @override
+  String get walkthroughDemoLine1 => '1½ cups rice';
+
+  @override
+  String get walkthroughDemoLine2 => '2 tbsp olive oil';
+
+  @override
+  String get walkthroughDemoLine3 => '1 onion';
+
+  @override
+  String get walkthroughDemoStep => 'Cover and simmer for 25 minutes.';
+
+  @override
+  String get settingsReplayWalkthrough => 'Show the walkthrough again';
+
+  @override
   String get recipesAdd => 'Add a recipe';
 
   @override

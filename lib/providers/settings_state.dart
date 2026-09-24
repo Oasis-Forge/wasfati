@@ -23,13 +23,39 @@ class SettingsState extends ChangeNotifier {
   AppSettings _settings = const AppSettings();
   AppSettings get settings => _settings;
 
-  Future<void> load() async {
+  /// Reads the stored settings. With none stored yet — a fresh install —
+  /// the digit style starts as [deviceLocales]' own (RUN-3, [deviceDigits]),
+  /// so setup opens with the device's answer already chosen; nothing is
+  /// written until the user changes something.
+  Future<void> load({List<Locale> deviceLocales = const []}) async {
     final rows = await _db.query('meta', where: 'key = ?', whereArgs: [_key]);
-    _settings = AppSettings.fromJson(
-      rows.isEmpty ? null : rows.single['value'] as String,
-    );
+    _settings = rows.isEmpty
+        ? AppSettings(digits: deviceDigits(deviceLocales))
+        : AppSettings.fromJson(rows.single['value'] as String);
     notifyListeners();
   }
+
+  /// RUN-3: the setup page's language choice, `'ar'` or `'en'`. Choosing
+  /// the language the device already resolves to keeps "System default"
+  /// (LANG-1), so the app goes on following the phone; choosing the other
+  /// one pins it, exactly like the Settings row. Applies at once.
+  Future<void> chooseSetupLanguage(String code, List<Locale> deviceLocales) {
+    final device = appLanguage(LanguagePref.system, deviceLocales);
+    final pref = code == device.languageCode
+        ? LanguagePref.system
+        : (code == 'ar' ? LanguagePref.ar : LanguagePref.en);
+    return update(_settings.copyWith(language: pref));
+  }
+
+  /// RUN-3, QTY-5: the setup page's digit style. Applies at once.
+  Future<void> chooseDigits(DigitStyle digits) =>
+      update(_settings.copyWith(digits: digits));
+
+  /// RUN-4: setup and the walkthrough are done (finished or skipped), so
+  /// neither shows again on its own; Settings can still replay the
+  /// walkthrough.
+  Future<void> completeFirstRun() =>
+      update(_settings.copyWith(firstRunComplete: true));
 
   /// Writes first, then applies (reliable writes).
   Future<void> update(AppSettings next) async {

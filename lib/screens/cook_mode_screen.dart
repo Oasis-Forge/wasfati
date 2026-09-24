@@ -9,6 +9,7 @@ import '../models/quantity/format.dart';
 import '../models/quantity/rational.dart';
 import '../models/recipe.dart';
 import '../providers/recipes_state.dart';
+import '../providers/review_prompt_state.dart';
 import '../providers/settings_state.dart';
 import '../providers/timers_state.dart';
 import '../services/cook_services.dart';
@@ -110,7 +111,16 @@ class _CookModeScreenState extends State<CookModeScreen>
     final ok = await context.read<RecipesState>().markCooked(widget.recipe.id);
     if (!mounted) return;
     if (ok) messenger.showSnackBar(SnackBar(content: Text(l10n.markedCooked)));
+    _closeFromLastPage();
+  }
+
+  /// COOK-6's last page closes cook mode, by "Done" or by "Mark as cooked".
+  /// RUN-5: right after it closes — never from the close button part-way
+  /// through — the store's review prompt may be asked for.
+  void _closeFromLastPage() {
+    final review = context.read<ReviewPrompt>();
     Navigator.of(context).pop();
+    review.afterCooking();
   }
 
   void _showIngredients() {
@@ -240,7 +250,10 @@ class _CookModeScreenState extends State<CookModeScreen>
                       );
                     },
                     itemBuilder: (context, i) => i == _last
-                        ? _DonePage(onCooked: _markCooked)
+                        ? _DonePage(
+                            onCooked: _markCooked,
+                            onDone: _closeFromLastPage,
+                          )
                         : _StepPage(
                             index: i,
                             total: _steps.length,
@@ -433,8 +446,9 @@ class _TimersBar extends StatelessWidget {
 }
 
 class _DonePage extends StatelessWidget {
-  const _DonePage({required this.onCooked});
+  const _DonePage({required this.onCooked, required this.onDone});
   final VoidCallback onCooked;
+  final VoidCallback onDone;
 
   @override
   Widget build(BuildContext context) {
@@ -459,10 +473,7 @@ class _DonePage extends StatelessWidget {
               label: Text(l10n.markCooked),
             ),
             const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(l10n.done),
-            ),
+            OutlinedButton(onPressed: onDone, child: Text(l10n.done)),
           ],
         ),
       ),

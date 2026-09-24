@@ -54,6 +54,7 @@ dependencies:
   archive: ^4.3.0
   flutter_file_dialog: ^3.3.2
   package_info_plus: ^10.2.1
+  in_app_review: ^2.0.12
 
 dev_dependencies:
   flutter_test:

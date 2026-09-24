@@ -1,4 +1,8 @@
+import 'package:flutter/widgets.dart' show Locale;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart' show Database;
+import 'package:wasfati/models/quantity/format.dart';
+import 'package:wasfati/models/settings.dart';
 import 'package:wasfati/providers/settings_state.dart';
 
 import '../helpers.dart';
@@ -112,6 +116,77 @@ void main() {
       }
       expect(state.aiImportsLeft(), 0); // free tier's 10 used up
       expect(state.aiImportsLeft(quota: 100), 90); // same 10 saves, Premium
+    });
+  });
+
+  group('SettingsState: the first run (RUN-3, RUN-4)', () {
+    const arabicDevice = [Locale('ar', 'SA')];
+
+    Future<String?> stored(Database db) async {
+      final rows = await db.query(
+        'meta',
+        where: 'key = ?',
+        whereArgs: ['settings'],
+      );
+      return rows.isEmpty ? null : rows.single['value'] as String;
+    }
+
+    test('a fresh install preselects the device\'s digits without writing '
+        'anything', () async {
+      final db = await memoryDb();
+      final state = SettingsState(db);
+      await state.load(deviceLocales: const [Locale('ar', 'EG')]);
+      expect(state.settings.digits, DigitStyle.arabic);
+      expect(state.settings.firstRunComplete, isFalse);
+      expect(await stored(db), isNull);
+    });
+
+    test('stored settings win over the device', () async {
+      final db = await memoryDb();
+      final writer = SettingsState(db);
+      await writer.load();
+      await writer.chooseDigits(DigitStyle.western);
+      final reader = SettingsState(db);
+      await reader.load(deviceLocales: const [Locale('ar', 'EG')]);
+      expect(reader.settings.digits, DigitStyle.western);
+    });
+
+    test('choosing the device\'s own language keeps "System default" '
+        '(LANG-1); the other one pins it', () async {
+      final db = await memoryDb();
+      final state = SettingsState(db);
+      await state.load(deviceLocales: arabicDevice);
+
+      await state.chooseSetupLanguage('en', arabicDevice);
+      expect(state.settings.language, LanguagePref.en);
+      await state.chooseSetupLanguage('ar', arabicDevice);
+      expect(state.settings.language, LanguagePref.system);
+
+      const englishDevice = [Locale('en', 'US')];
+      await state.chooseSetupLanguage('ar', englishDevice);
+      expect(state.settings.language, LanguagePref.ar);
+    });
+
+    test('every choice is stored at once, and the first run ends only when '
+        'told', () async {
+      final db = await memoryDb();
+      final state = SettingsState(db);
+      await state.load(deviceLocales: arabicDevice);
+      await state.chooseSetupLanguage('en', arabicDevice);
+      await state.chooseDigits(DigitStyle.arabic);
+
+      final reloaded = SettingsState(db);
+      await reloaded.load(deviceLocales: arabicDevice);
+      expect(reloaded.settings.language, LanguagePref.en);
+      expect(reloaded.settings.digits, DigitStyle.arabic);
+      expect(reloaded.settings.firstRunComplete, isFalse);
+
+      await state.completeFirstRun();
+      final after = SettingsState(db);
+      await after.load(deviceLocales: arabicDevice);
+      expect(after.settings.firstRunComplete, isTrue);
+      expect(after.settings.language, LanguagePref.en); // kept
+      expect(after.settings.digits, DigitStyle.arabic); // kept
     });
   });
 }

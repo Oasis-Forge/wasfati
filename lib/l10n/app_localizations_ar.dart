@@ -20,6 +20,77 @@ class AppLocalizationsAr extends AppLocalizations {
       'شارك وصفة من تيك توك أو إنستغرام أو يوتيوب، أو أضف وصفتك.';
 
   @override
+  String get setupTitle => 'أهلًا بك في وصفاتي';
+
+  @override
+  String get setupBody =>
+      'اختياران سريعان، ويمكنك تغييرهما لاحقًا من الإعدادات.';
+
+  @override
+  String get setupContinue => 'متابعة';
+
+  @override
+  String get walkthroughSkip => 'تخطَّ';
+
+  @override
+  String get walkthroughNext => 'التالي';
+
+  @override
+  String get walkthroughStart => 'إلى وصفاتي';
+
+  @override
+  String walkthroughPageOf(String n, String total) {
+    return 'الصفحة $n من $total';
+  }
+
+  @override
+  String get walkthroughImportTitle => 'احفظ الوصفات من أي منشور';
+
+  @override
+  String get walkthroughImportBody =>
+      'شارك منشورًا من تيك توك أو إنستغرام أو يوتيوب، أو موقع وصفات، أو صورة، فتحوّله وصفاتي إلى وصفة مرتبة تراجعها قبل الحفظ.';
+
+  @override
+  String get walkthroughScaleTitle => 'مقادير تتضاعف بعربية سليمة';
+
+  @override
+  String get walkthroughScaleBody =>
+      'غيّر عدد الحصص فتتبعه كل المقادير: كسور واضحة، ووحدات تتفق مع العدد.';
+
+  @override
+  String get walkthroughCookTitle => 'اطبخ خطوة بخطوة';
+
+  @override
+  String get walkthroughCookBody =>
+      'خط كبير وخطوة في كل صفحة، ومؤقتات من نص الخطوة نفسها، والشاشة تبقى مضاءة.';
+
+  @override
+  String get walkthroughPlanTitle => 'خطّط لأسبوعك وتسوّق من قائمة واحدة';
+
+  @override
+  String get walkthroughPlanBody =>
+      'ضع الوصفات على أيامك، ثم أضفها إلى قائمة مشتريات واحدة مرتبة حسب الأقسام وجاهزة للمشاركة.';
+
+  @override
+  String get walkthroughDemoRecipe => 'كبسة دجاج';
+
+  @override
+  String get walkthroughDemoLine1 => '1½ كوب أرز';
+
+  @override
+  String get walkthroughDemoLine2 => '2 ملعقة كبيرة زيت زيتون';
+
+  @override
+  String get walkthroughDemoLine3 => '1 بصلة';
+
+  @override
+  String get walkthroughDemoStep =>
+      'يُغطّى ويُترك على نار هادئة لمدة 25 دقيقة.';
+
+  @override
+  String get settingsReplayWalkthrough => 'اعرض الجولة التعريفية مجددًا';
+
+  @override
   String get recipesAdd => 'أضف وصفة';
 
   @override
