@@ -4,6 +4,15 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.16.1] - 2026-09-25
+
+### Changed
+- Settings gathers its options into cards that follow the look you picked, and the meal plan's days do the same, with today marked along its edge.
+- Numbers that change while you cook — the timer, the step count, the servings — no longer shift sideways as they change.
+
+### Fixed
+- Greyed-out options in Settings are easier to read.
+
 ## [0.16.0] - 2026-09-24
 
 ### Added
