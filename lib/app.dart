@@ -1,14 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'l10n/app_localizations.dart';
 import 'models/settings.dart' show appLanguage;
+import 'providers/ads_state.dart';
 import 'providers/backup_state.dart';
 import 'providers/grocery_state.dart';
 import 'providers/plan_state.dart';
+import 'providers/purchases_state.dart';
 import 'providers/recipes_state.dart';
+import 'providers/review_prompt_state.dart';
 import 'providers/settings_state.dart';
+import 'screens/first_run_screen.dart';
 import 'screens/home_screen.dart';
 import 'providers/timers_state.dart';
 import 'services/backup.dart';
@@ -51,6 +57,9 @@ class WasfatiApp extends StatelessWidget {
     required this.backupState,
     required this.mail,
     required this.importPhotos,
+    required this.purchases,
+    required this.ads,
+    required this.reviewPrompt,
   });
 
   final RecipesState recipes;
@@ -101,6 +110,21 @@ class WasfatiApp extends StatelessWidget {
   /// IMP-12). No default, like [mail]: the test fake is scripted per test.
   final ImportPhotoPicker importPhotos;
 
+  /// Pro and Premium (PAY-1–PAY-11): what the store account owns and what
+  /// it sells. No default, like every other state here: built once by the
+  /// caller over a real store (`main.dart`) or a fake (a test).
+  final PurchasesState purchases;
+
+  /// The banner slots (ADS-1–ADS-9), over the ad network and [purchases].
+  /// No default, for the same reason.
+  final AdsState ads;
+
+  /// RUN-5: asks the store for its review prompt when cook mode closes
+  /// from its last page, if everything RUN-5 asks for holds. No default,
+  /// like [mail]: the caller builds it over its own `StoreReview` (the real
+  /// one only in `main.dart`, a counting fake in tests).
+  final ReviewPrompt reviewPrompt;
+
   static final navigatorKey = GlobalKey<NavigatorState>();
 
   @override
@@ -123,17 +147,25 @@ class WasfatiApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: backupState),
         Provider<MailComposer>.value(value: mail),
         Provider<ImportPhotoPicker>.value(value: importPhotos),
+        ChangeNotifierProvider.value(value: purchases),
+        ChangeNotifierProvider.value(value: ads),
+        Provider<ReviewPrompt>.value(value: reviewPrompt),
       ],
       child: _RamadanSync(
         settings: settings,
         plan: plan,
-        // LANG-1: rebuilds the MaterialApp below whenever the PHONE's own
-        // locales change while Wasfati is already open (didChangeLocales),
-        // so its `locale:` is re-resolved at once instead of only at the
-        // next launch. A Settings change already rebuilds it through
-        // Consumer<SettingsState>; this covers the other half — the device
-        // language changing underneath a running app on "حسب الجهاز".
-        child: const _LocaleObserver(),
+        child: _PayingSync(
+          settings: settings,
+          purchases: purchases,
+          ads: ads,
+          // LANG-1: rebuilds the MaterialApp below whenever the PHONE's own
+          // locales change while Wasfati is already open (didChangeLocales),
+          // so its `locale:` is re-resolved at once instead of only at the
+          // next launch. A Settings change already rebuilds it through
+          // Consumer<SettingsState>; this covers the other half — the device
+          // language changing underneath a running app on "حسب الجهاز".
+          child: const _LocaleObserver(),
+        ),
       ),
     );
   }
@@ -179,6 +211,63 @@ class _RamadanSyncState extends State<_RamadanSync> {
 
   @override
   void dispose() {
+    widget.settings.removeListener(_sync);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+/// Keeps the paying state in step with the rest of the app, whichever
+/// screen is showing:
+///  * ADS-4: no ad — and no consent form — before setup and the walkthrough
+///    are finished (RUN-3, RUN-4). Settings says when they are.
+///  * PAY-1: the store is asked again what's owned whenever the app comes
+///    back to the front, so a subscription cancelled or refunded in Google
+///    Play while Wasfati was in the background lands at once.
+class _PayingSync extends StatefulWidget {
+  const _PayingSync({
+    required this.settings,
+    required this.purchases,
+    required this.ads,
+    required this.child,
+  });
+
+  final SettingsState settings;
+  final PurchasesState purchases;
+  final AdsState ads;
+  final Widget child;
+
+  @override
+  State<_PayingSync> createState() => _PayingSyncState();
+}
+
+class _PayingSyncState extends State<_PayingSync> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    widget.settings.addListener(_sync);
+    // Not during this build: AdsState notifies the providers above.
+    scheduleMicrotask(_sync);
+  }
+
+  void _sync() {
+    if (!mounted) return;
+    // ADS-4: no ad and no consent form until setup and the walkthrough are
+    // finished (RUN-3, RUN-4); FirstRunFlow sets this flag when they are.
+    widget.ads.setSetupFinished(widget.settings.settings.firstRunComplete);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) widget.purchases.refresh();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     widget.settings.removeListener(_sync);
     super.dispose();
   }
@@ -265,7 +354,23 @@ class _LocaleObserverState extends State<_LocaleObserver>
       navigatorKey: WasfatiApp.navigatorKey,
       builder: (context, child) =>
           ShareRouter(navigator: WasfatiApp.navigatorKey, child: child!),
-      home: const HomeScreen(),
+      home: const _FirstRunGate(),
     ),
   );
+}
+
+/// RUN-3, RUN-4: a fresh install opens on setup and the walkthrough; once
+/// they're finished or skipped (`firstRunComplete`), the library, for good.
+/// An upgraded install is already complete (schema step 7), so it goes
+/// straight to the library.
+class _FirstRunGate extends StatelessWidget {
+  const _FirstRunGate();
+
+  @override
+  Widget build(BuildContext context) {
+    final done = context.select<SettingsState, bool>(
+      (s) => s.settings.firstRunComplete,
+    );
+    return done ? const HomeScreen() : const FirstRunFlow();
+  }
 }

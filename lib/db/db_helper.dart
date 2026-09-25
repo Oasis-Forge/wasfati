@@ -16,6 +16,7 @@ class DBHelper {
     _v4Groceries,
     _v5SampleOffered,
     _v6TranslatedFrom,
+    _v7FirstRunDone,
   ];
 
   static int get version => steps.length;
@@ -255,4 +256,32 @@ Future<void> _v6TranslatedFrom(DatabaseExecutor db) async {
   await db.execute(
     'CREATE INDEX recipes_translated_from ON recipes(translated_from)',
   );
+}
+
+/// Step 7: an install from before the first run existed skips setup and the
+/// walkthrough (RUN-4: "an update on a device that already has data skips
+/// setup and the walkthrough"). The same test as step 5: a recipe row —
+/// any, trashed ones included — or an install ID means the app has been
+/// used. Stored settings from such a version never carry
+/// `firstRunComplete`, and `AppSettings.fromJson` reads its absence as
+/// true, so they're left exactly as they are; this only writes settings
+/// where none were stored yet (nobody ever changed one), which would
+/// otherwise read as a fresh install. On a fresh create, `recipes` and
+/// `meta` are both still empty here, so this writes nothing and the first
+/// run happens.
+Future<void> _v7FirstRunDone(DatabaseExecutor db) async {
+  final recipeCount = Sqflite.firstIntValue(
+    await db.rawQuery('SELECT COUNT(*) FROM recipes'),
+  );
+  final hasInstallId = (await db.query(
+    'meta',
+    where: 'key = ?',
+    whereArgs: ['install_id'],
+  )).isNotEmpty;
+  if ((recipeCount ?? 0) > 0 || hasInstallId) {
+    await db.insert('meta', {
+      'key': 'settings',
+      'value': '{"firstRunComplete":true}',
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
+  }
 }

@@ -37,5 +37,34 @@ class MainActivity : FlutterActivity() {
                 result.success(false)
             }
         }
+        // PAY-11: "Manage or cancel" opens Google Play's own page for this
+        // app's subscription (lib/services/play_store.dart), where it's
+        // changed or cancelled. An ACTION_VIEW intent for Play's https link:
+        // no permission, and no <queries> entry, since nothing is resolved
+        // before it starts. Only this one page, built here from the app's
+        // own package name.
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "com.oasisforge.wasfati/store",
+        ).setMethodCallHandler { call, result ->
+            if (call.method != "openSubscription") {
+                result.notImplemented()
+                return@setMethodCallHandler
+            }
+            val sku = Uri.encode(call.argument<String>("sku") ?: "")
+            val intent = Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse(
+                    "https://play.google.com/store/account/subscriptions" +
+                        "?sku=$sku&package=$packageName",
+                ),
+            )
+            try {
+                startActivity(intent)
+                result.success(true)
+            } catch (e: ActivityNotFoundException) {
+                result.success(false)
+            }
+        }
     }
 }

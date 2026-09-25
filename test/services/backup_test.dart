@@ -13,6 +13,7 @@ import 'package:wasfati/db/recipe_repository.dart';
 import 'package:wasfati/models/aisles.dart';
 import 'package:wasfati/models/plan.dart';
 import 'package:wasfati/models/recipe.dart';
+import 'package:wasfati/models/review_prompt.dart' show reviewPromptDue;
 import 'package:wasfati/models/settings.dart';
 import 'package:wasfati/services/backup.dart';
 
@@ -384,6 +385,72 @@ void main() {
       );
       expect(afterReplace.single['value'], remoteSettings.toJson());
     });
+
+    Future<AppSettings> replaceWith(
+      AppSettings here,
+      AppSettings inFile,
+    ) async {
+      final local = await testBackupFixture();
+      addTearDown(local.dispose);
+      final remote = await testBackupFixture();
+      addTearDown(remote.dispose);
+      for (final (db, s) in [(local.db, here), (remote.db, inFile)]) {
+        await db.insert('meta', {
+          'key': 'settings',
+          'value': s.toJson(),
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      final bytes = await remote.backup.createBackup();
+      await local.backup.restore(bytes, mode: RestoreMode.replace);
+      final rows = await local.db.query(
+        'meta',
+        where: 'key = ?',
+        whereArgs: ['settings'],
+      );
+      return AppSettings.fromJson(rows.single['value']! as String);
+    }
+
+    test('replace keeps this phone\'s review ask and saved import when the '
+        'file is from before them, so the prompt is not due again until 120 '
+        'days after the ask (RUN-5)', () async {
+      final asked = DateTime.utc(2026, 9, 1, 12);
+      final restored = await replaceWith(
+        AppSettings(
+          language: LanguagePref.ar,
+          reviewAskedAt: asked,
+          importSaved: true,
+        ),
+        const AppSettings(language: LanguagePref.en), // made before the ask
+      );
+      expect(restored.language, LanguagePref.en); // the rest is the file's
+      expect(restored.reviewAskedAt, asked);
+      expect(restored.importSaved, isTrue);
+
+      bool dueOn(DateTime now) => reviewPromptDue(
+        firstRunComplete: true,
+        savedImport: restored.importSaved,
+        markedCooked: true,
+        lastAskedAt: restored.reviewAskedAt,
+        now: now,
+      );
+      expect(dueOn(asked.add(const Duration(days: 10))), isFalse);
+      expect(dueOn(asked.add(const Duration(days: 119))), isFalse);
+      expect(dueOn(asked.add(const Duration(days: 120))), isTrue);
+    });
+
+    test(
+      'replace takes the file\'s ask when it is the later one (RUN-5)',
+      () async {
+        final earlier = DateTime.utc(2026, 5, 1);
+        final later = DateTime.utc(2026, 9, 1);
+        final restored = await replaceWith(
+          AppSettings(reviewAskedAt: earlier),
+          AppSettings(reviewAskedAt: later, importSaved: true),
+        );
+        expect(restored.reviewAskedAt, later);
+        expect(restored.importSaved, isTrue);
+      },
+    );
   });
 
   group('must-fix (BAK-3): a recipe edited on both phones merges as one '

@@ -20,6 +20,77 @@ class AppLocalizationsAr extends AppLocalizations {
       'شارك وصفة من تيك توك أو إنستغرام أو يوتيوب، أو أضف وصفتك.';
 
   @override
+  String get setupTitle => 'أهلًا بك في وصفاتي';
+
+  @override
+  String get setupBody =>
+      'اختياران سريعان، ويمكنك تغييرهما لاحقًا من الإعدادات.';
+
+  @override
+  String get setupContinue => 'متابعة';
+
+  @override
+  String get walkthroughSkip => 'تخطَّ';
+
+  @override
+  String get walkthroughNext => 'التالي';
+
+  @override
+  String get walkthroughStart => 'إلى وصفاتي';
+
+  @override
+  String walkthroughPageOf(String n, String total) {
+    return 'الصفحة $n من $total';
+  }
+
+  @override
+  String get walkthroughImportTitle => 'احفظ الوصفات من أي منشور';
+
+  @override
+  String get walkthroughImportBody =>
+      'شارك منشورًا من تيك توك أو إنستغرام أو يوتيوب، أو موقع وصفات، أو صورة، فتحوّله وصفاتي إلى وصفة مرتبة تراجعها قبل الحفظ.';
+
+  @override
+  String get walkthroughScaleTitle => 'مقادير تتضاعف بعربية سليمة';
+
+  @override
+  String get walkthroughScaleBody =>
+      'غيّر عدد الحصص فتتبعه كل المقادير: كسور واضحة، ووحدات تتفق مع العدد.';
+
+  @override
+  String get walkthroughCookTitle => 'اطبخ خطوة بخطوة';
+
+  @override
+  String get walkthroughCookBody =>
+      'خط كبير وخطوة في كل صفحة، ومؤقتات من نص الخطوة نفسها، والشاشة تبقى مضاءة.';
+
+  @override
+  String get walkthroughPlanTitle => 'خطّط لأسبوعك وتسوّق من قائمة واحدة';
+
+  @override
+  String get walkthroughPlanBody =>
+      'ضع الوصفات على أيامك، ثم أضفها إلى قائمة مشتريات واحدة مرتبة حسب الأقسام وجاهزة للمشاركة.';
+
+  @override
+  String get walkthroughDemoRecipe => 'كبسة دجاج';
+
+  @override
+  String get walkthroughDemoLine1 => '1½ كوب أرز';
+
+  @override
+  String get walkthroughDemoLine2 => '2 ملعقة كبيرة زيت زيتون';
+
+  @override
+  String get walkthroughDemoLine3 => '1 بصلة';
+
+  @override
+  String get walkthroughDemoStep =>
+      'يُغطّى ويُترك على نار هادئة لمدة 25 دقيقة.';
+
+  @override
+  String get settingsReplayWalkthrough => 'اعرض الجولة التعريفية مجددًا';
+
+  @override
   String get recipesAdd => 'أضف وصفة';
 
   @override
@@ -75,10 +146,14 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get prepTime => 'التحضير';
+  String prepTime(String time) {
+    return 'التحضير $time';
+  }
 
   @override
-  String get cookTime => 'الطبخ';
+  String cookTime(String time) {
+    return 'الطبخ $time';
+  }
 
   @override
   String get ingredients => 'المكونات';
@@ -157,7 +232,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fieldServings => 'عدد الحصص';
 
   @override
-  String get fieldServingsInvalid => 'من 1 إلى 100';
+  String fieldServingsInvalid(String min, String max) {
+    return 'من $min إلى $max';
+  }
 
   @override
   String get fieldPrep => 'التحضير (دقيقة)';
@@ -166,8 +243,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fieldCook => 'الطبخ (دقيقة)';
 
   @override
-  String get fieldIngredientsHint =>
-      'مكوّن في كل سطر، مثل: 2 كوب أرز\nالسطر الذي ينتهي بنقطتين يبدأ مجموعة، مثل: للصلصة:';
+  String fieldIngredientsHint(String n) {
+    return 'مكوّن في كل سطر، مثل: $n كوب أرز\nالسطر الذي ينتهي بنقطتين يبدأ مجموعة، مثل: للصلصة:';
+  }
 
   @override
   String get fieldStepsHint => 'خطوة في كل سطر';
@@ -176,7 +254,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fieldNumberInvalid => 'أرقام فقط';
 
   @override
-  String get stepTooLong => 'إحدى الخطوات أطول من 2000 حرف';
+  String stepTooLong(String max) {
+    return 'إحدى الخطوات أطول من $max حرف';
+  }
 
   @override
   String get photoAdd => 'أضف صورة';
@@ -319,10 +399,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get sourcePhoto => 'صورة';
 
   @override
-  String get timeUnder30 => 'أقل من 30 دقيقة';
+  String timeUnder30(String n) {
+    return 'أقل من $n دقيقة';
+  }
 
   @override
-  String get time30to60 => '30–60 دقيقة';
+  String time30to60(String range) {
+    return '$range دقيقة';
+  }
 
   @override
   String get timeOver60 => 'أكثر من ساعة';
@@ -343,7 +427,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get cookbookName => 'الاسم';
 
   @override
-  String get cookbookNameInvalid => 'من 1 إلى 60 حرفًا';
+  String cookbookNameInvalid(String min, String max) {
+    return 'من $min إلى $max حرفًا';
+  }
 
   @override
   String get cookbookRename => 'إعادة تسمية';
@@ -384,7 +470,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fieldTagsHint => 'افصل بينها بفاصلة، مثل: حار، رمضان';
 
   @override
-  String get tagsInvalid => 'حتى 20 وسمًا، 30 حرفًا لكل وسم';
+  String tagsInvalid(String tags, String chars) {
+    return 'حتى $tags وسمًا، $chars حرفًا لكل وسم';
+  }
 
   @override
   String get fieldCookbooks => 'كتب الطبخ';
@@ -563,13 +651,30 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String aiImportsLeftLine(String shown, String quota) {
-    return 'بقي $shown من $quota استيرادات ذكية هذا الشهر · تتجدد في الأول من كل شهر';
+  String aiImportsLeftLine(int count, String shown, String quota) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'بقي $shown من $quota استيراد ذكي هذا الشهر · تتجدد في الأول من كل شهر',
+      many:
+          'بقي $shown من $quota استيرادًا ذكيًا هذا الشهر · تتجدد في الأول من كل شهر',
+      few:
+          'بقي $shown من $quota استيرادات ذكية هذا الشهر · تتجدد في الأول من كل شهر',
+      two:
+          'بقي $shown من $quota استيرادين ذكيين هذا الشهر · تتجدد في الأول من كل شهر',
+      one:
+          'بقي $shown من $quota استيراد ذكي هذا الشهر · تتجدد في الأول من كل شهر',
+    );
+    return '$_temp0';
   }
 
   @override
   String get aiImportsOutLine =>
       'نفدت الاستيرادات الذكية هذا الشهر · تتجدد في الأول من كل شهر. استيراد صفحات المواقع يبقى مجانيًا وبلا حدود.';
+
+  @override
+  String get aiImportsPremiumLine => 'استيرادات ذكية أكثر مع بريميوم';
 
   @override
   String aiImportCostLine(String shown, String quota) {
@@ -759,7 +864,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get planNoteHint => 'مطعم، بقايا الأمس…';
 
   @override
-  String get planNoteInvalid => 'من ١ إلى ٦٠ حرفًا';
+  String planNoteInvalid(String min, String max) {
+    return 'من $min إلى $max حرفًا';
+  }
 
   @override
   String get planAddToPlan => 'أضف إلى الخطة';
@@ -807,7 +914,9 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get planSlotFull => 'الوجبة تتسع حتى ١٠ عناصر';
+  String planSlotFull(String max) {
+    return 'الوجبة تتسع حتى $max عناصر';
+  }
 
   @override
   String get planEmptyTitle => 'خطط أسبوعك';
@@ -1204,4 +1313,116 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ramadanShiftLater => 'يوم لاحق';
+
+  @override
+  String get adSlotRemoveAds => 'إزالة الإعلانات';
+
+  @override
+  String get purchaseTitle => 'برو وبريميوم';
+
+  @override
+  String get purchaseClose => 'إغلاق';
+
+  @override
+  String get purchaseLead =>
+      'كل ما في وصفاتي يبقى مجانيًا. برو يزيل الإعلانات، وبريميوم يزيلها أيضًا ويمنحك استيرادات ذكية أكثر.';
+
+  @override
+  String get purchasePro => 'برو';
+
+  @override
+  String get purchasePremium => 'بريميوم';
+
+  @override
+  String get purchaseProKind => 'شراء لمرة واحدة';
+
+  @override
+  String get purchasePremiumKind => 'اشتراك';
+
+  @override
+  String get purchaseNoAds => 'بلا إعلانات';
+
+  @override
+  String purchaseAiImports(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown استيراد ذكي شهريًا',
+      many: '$shown استيرادًا ذكيًا شهريًا',
+      few: '$shown استيرادات ذكية شهريًا',
+      two: 'استيرادان ذكيان شهريًا',
+      one: 'استيراد ذكي واحد شهريًا',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get purchaseFairUse => 'ضمن الاستخدام العادل';
+
+  @override
+  String get purchaseOwned => 'تملكه';
+
+  @override
+  String purchasePriceOnce(String price) {
+    return '$price مرة واحدة';
+  }
+
+  @override
+  String purchasePriceMonthly(String price) {
+    return '$price شهريًا';
+  }
+
+  @override
+  String purchasePriceYearly(String price) {
+    return '$price سنويًا';
+  }
+
+  @override
+  String get purchaseComingSoon => 'قريبًا';
+
+  @override
+  String get purchaseNothingYet => 'لا شيء معروض للشراء بعد.';
+
+  @override
+  String get purchaseRestore => 'استعادة عمليات الشراء';
+
+  @override
+  String get purchaseRestored => 'استُعيدت عمليات الشراء.';
+
+  @override
+  String get purchaseNothingToRestore =>
+      'لا عمليات شراء لوصفاتي على حساب Google هذا.';
+
+  @override
+  String get purchaseStoreUnreachable =>
+      'تعذّر الوصول إلى Google Play. حاول لاحقًا.';
+
+  @override
+  String get purchasePending =>
+      'بانتظار أن يؤكد Google Play الدفع. لا يتغير شيء قبل ذلك.';
+
+  @override
+  String get purchaseFailed => 'لم تكتمل عملية الشراء.';
+
+  @override
+  String get purchasePremiumRenews =>
+      'يتجدد بريميوم تلقائيًا حتى تلغيه. ألغِه متى شئت: الإعدادات › إدارة أو إلغاء يفتحه في Google Play.';
+
+  @override
+  String get purchaseManage => 'إدارة أو إلغاء';
+
+  @override
+  String get purchaseManageFailed => 'تعذّر فتح Google Play.';
+
+  @override
+  String get settingsPayingSection => 'الإعلانات والاشتراك';
+
+  @override
+  String get settingsSubscription => 'الاشتراك';
+
+  @override
+  String get tierFree => 'مجاني';
+
+  @override
+  String get settingsAdPrivacy => 'خيارات الخصوصية في الإعلانات';
 }

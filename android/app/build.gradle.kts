@@ -30,6 +30,11 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // ADS-8: every build but release asks with Google's published test
+        // app ID, so debug and profile builds never serve a live ad. The
+        // same IDs are in lib/services/ads.dart (AdIds) and docs/RELEASING.md;
+        // test/services/ad_ids_test.dart fails if they drift apart.
+        manifestPlaceholders["admobAppId"] = "ca-app-pub-3940256099942544~3347511713"
     }
 
     buildTypes {
@@ -37,6 +42,9 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // ADS-8: only a release build carries the real AdMob app ID
+            // (created 20 September 2026, docs/RELEASING.md).
+            manifestPlaceholders["admobAppId"] = "ca-app-pub-8287765177319119~8706163515"
         }
     }
 }

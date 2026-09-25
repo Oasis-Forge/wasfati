@@ -8,15 +8,19 @@ import '../models/quantity/format.dart';
 import '../models/ramadan.dart';
 import '../models/recipe.dart';
 import '../models/settings.dart';
+import '../providers/ads_state.dart';
 import '../providers/backup_state.dart';
 import '../providers/grocery_state.dart';
 import '../providers/plan_state.dart';
+import '../providers/purchases_state.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../services/backup.dart';
 import '../services/backup_files.dart' show BackupFilesError;
 import '../theme/decor.dart';
 import '../widgets/content_direction.dart';
+import 'purchase_screen.dart';
+import 'walkthrough_screen.dart';
 
 /// Settings (roadmap 2a): language (LANG-1), digit style (QTY-5), units
 /// (SCALE-5), week start and theme. Changes apply at once.
@@ -105,6 +109,25 @@ class SettingsScreen extends StatelessWidget {
           ),
           _RamadanSection(settings: s, month: ramadanMonth, onChanged: set),
           const _BackupSection(),
+          const _PayingSection(),
+          // RUN-4: the walkthrough can be replayed; it just closes at the
+          // end, and changes nothing.
+          Padding(
+            padding: const EdgeInsetsDirectional.only(top: 20),
+            child: _Group(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.auto_stories_outlined),
+                  title: Text(l10n.settingsReplayWalkthrough),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const WalkthroughScreen(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -546,9 +569,9 @@ class _BackupSectionState extends State<_BackupSection> {
 
     String servingsLabel(int n) => l10n.servings(n, settingsState.number(n));
     String prepTimeLabel(int m) =>
-        '${l10n.prepTime} ${l10n.minutes(m, settingsState.number(m))}';
+        l10n.prepTime(l10n.minutes(m, settingsState.number(m)));
     String cookTimeLabel(int m) =>
-        '${l10n.cookTime} ${l10n.minutes(m, settingsState.number(m))}';
+        l10n.cookTime(l10n.minutes(m, settingsState.number(m)));
     String unscaledLineText(String line, String mark) =>
         l10n.shareUnscaledLine(line, mark);
 
@@ -727,6 +750,63 @@ Future<bool> saveBackupNow(BuildContext context) async {
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(l10n.backupSaveFailed)));
     return false;
+  }
+}
+
+/// PAY-5, PAY-11: the one selling row, "Subscription", with the plan it's
+/// on; "Manage or cancel" while Premium is owned, which opens Google
+/// Play's page for it (two taps from Settings: this row, then Play's own
+/// cancel); and ADS-5's row to change the ad consent, where the law asks.
+class _PayingSection extends StatelessWidget {
+  const _PayingSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final purchases = context.watch<PurchasesState>();
+    final ads = context.watch<AdsState>();
+    final plan = switch (purchases.tier) {
+      Tier.free => l10n.tierFree,
+      Tier.pro => l10n.purchasePro,
+      Tier.premium => l10n.purchasePremium,
+      Tier.proAndPremium => l10n.purchaseTitle,
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(16, 20, 16, 4),
+          child: Text(
+            l10n.settingsPayingSection,
+            style: Theme.of(context).textTheme.titleSmall
+                ?.copyWith(color: scheme.primary),
+          ),
+        ),
+        _Group(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.workspace_premium_outlined),
+              title: Text(l10n.settingsSubscription),
+              subtitle: Text(plan),
+              onTap: () => openPurchaseScreen(context),
+            ),
+            if (purchases.ownsPremium)
+              ListTile(
+                leading: const Icon(Icons.open_in_new),
+                title: Text(l10n.purchaseManage),
+                onTap: () => manageSubscription(context),
+              ),
+            if (ads.showPrivacyChoices)
+              ListTile(
+                leading: const Icon(Icons.privacy_tip_outlined),
+                title: Text(l10n.settingsAdPrivacy),
+                onTap: ads.changeConsent,
+              ),
+          ],
+        ),
+      ],
+    );
   }
 }
 

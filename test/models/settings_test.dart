@@ -80,6 +80,104 @@ void main() {
     });
   });
 
+  group('RUN-3, RUN-4: firstRunComplete', () {
+    test('a fresh install (nothing stored) starts the first run', () {
+      expect(const AppSettings().firstRunComplete, isFalse);
+      expect(AppSettings.fromJson(null).firstRunComplete, isFalse);
+    });
+
+    test('both answers round-trip through JSON', () {
+      for (final done in [false, true]) {
+        final s = AppSettings(
+          firstRunComplete: done,
+          language: LanguagePref.en,
+        );
+        final back = AppSettings.fromJson(s.toJson());
+        expect(back.firstRunComplete, done);
+        expect(back, s);
+      }
+    });
+
+    test('settings stored without it — an install from before the first '
+        'run, or its backup restored by "replace" — read as complete', () {
+      final back = AppSettings.fromJson('{"language": "ar"}');
+      expect(back.firstRunComplete, isTrue);
+      expect(back.language, LanguagePref.ar);
+    });
+
+    test('copyWith sets it and leaves everything else', () {
+      const s = AppSettings(digits: DigitStyle.arabic);
+      final next = s.copyWith(firstRunComplete: true);
+      expect(next.firstRunComplete, isTrue);
+      expect(next.digits, DigitStyle.arabic);
+      expect(
+        next.copyWith(digits: DigitStyle.western).firstRunComplete,
+        isTrue,
+      );
+    });
+  });
+
+  group('RUN-5: reviewAskedAt', () {
+    test('never asked by default', () {
+      expect(const AppSettings().reviewAskedAt, isNull);
+      expect(AppSettings.fromJson('{}').reviewAskedAt, isNull);
+    });
+
+    test('round-trips through JSON, and copyWith keeps it', () {
+      final at = DateTime.utc(2026, 9, 25, 18, 30);
+      final s = AppSettings(reviewAskedAt: at);
+      expect(AppSettings.fromJson(s.toJson()).reviewAskedAt, at);
+      expect(s.copyWith(grid: true).reviewAskedAt, at);
+    });
+  });
+
+  group('RUN-5: importSaved', () {
+    test('no import saved by default, nor in settings from before it', () {
+      expect(const AppSettings().importSaved, isFalse);
+      expect(AppSettings.fromJson('{}').importSaved, isFalse);
+    });
+
+    test('round-trips through JSON, and copyWith keeps it', () {
+      const s = AppSettings(importSaved: true);
+      expect(AppSettings.fromJson(s.toJson()).importSaved, isTrue);
+      expect(s.copyWith(grid: true).importSaved, isTrue);
+    });
+  });
+
+  group('RUN-3: deviceDigits, the setup page\'s preselected digits', () {
+    test('Egyptian Arabic writes ١٢٣', () {
+      expect(deviceDigits(const [Locale('ar', 'EG')]), DigitStyle.arabic);
+    });
+
+    test('Gulf Arabic, plain Arabic and English keep Decision 5\'s 123', () {
+      for (final l in const [
+        Locale('ar', 'SA'),
+        Locale('ar', 'AE'),
+        Locale('ar'),
+        Locale('en', 'US'),
+        Locale('en'),
+      ]) {
+        expect(deviceDigits([l]), DigitStyle.western, reason: '$l');
+      }
+    });
+
+    test('the first locale Wasfati ships decides, like the language', () {
+      expect(
+        deviceDigits(const [Locale('fr', 'FR'), Locale('ar', 'EG')]),
+        DigitStyle.arabic,
+      );
+      expect(
+        deviceDigits(const [Locale('en', 'GB'), Locale('ar', 'EG')]),
+        DigitStyle.western,
+      );
+    });
+
+    test('no locale at all, or none Wasfati ships: 123', () {
+      expect(deviceDigits(const []), DigitStyle.western);
+      expect(deviceDigits(const [Locale('fr', 'FR')]), DigitStyle.western);
+    });
+  });
+
   group('copyWith', () {
     test('changes only the given Ramadan fields', () {
       const s = AppSettings(

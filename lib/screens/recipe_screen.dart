@@ -18,6 +18,7 @@ import '../providers/settings_state.dart';
 import '../services/recipe_pages.dart';
 import '../services/sharer.dart';
 import '../theme/decor.dart';
+import '../widgets/ad_slot.dart';
 import '../widgets/amount_line.dart';
 import '../widgets/content_direction.dart';
 import '../widgets/pressable_slab.dart';
@@ -124,6 +125,10 @@ class _RecipeScreenState extends State<RecipeScreen> {
                   factor: _factor,
                   onFactor: (f) => setState(() => _factor = f),
                 ),
+          // ADS-3, ADS-9: the recipe page's slot, in its bottom bar — never
+          // in the steps' scrolling list — and 8 dp clear of "ابدأ الطبخ".
+          // Cook mode itself has none (COOK-1).
+          bottomNavigationBar: const AdSlot(aboveSystemBar: true),
         );
       },
     );
@@ -243,9 +248,9 @@ class _RecipeBody extends StatelessWidget {
     // Servings live in the scaling stepper (SCALE-2), not here.
     final facts = <String>[
       if (r.prepMinutes != null)
-        '${l10n.prepTime} ${l10n.minutes(r.prepMinutes!, s.number(r.prepMinutes!))}',
+        l10n.prepTime(l10n.minutes(r.prepMinutes!, s.number(r.prepMinutes!))),
       if (r.cookMinutes != null)
-        '${l10n.cookTime} ${l10n.minutes(r.cookMinutes!, s.number(r.cookMinutes!))}',
+        l10n.cookTime(l10n.minutes(r.cookMinutes!, s.number(r.cookMinutes!))),
     ];
     final host = r.sourceUrl == null ? null : Uri.tryParse(r.sourceUrl!)?.host;
 
@@ -587,9 +592,9 @@ Future<void> openShareRecipe(
 
   String servingsLabel(int n) => l10n.servings(n, settings.number(n));
   String prepTimeLabel(int m) =>
-      '${l10n.prepTime} ${l10n.minutes(m, settings.number(m))}';
+      l10n.prepTime(l10n.minutes(m, settings.number(m)));
   String cookTimeLabel(int m) =>
-      '${l10n.cookTime} ${l10n.minutes(m, settings.number(m))}';
+      l10n.cookTime(l10n.minutes(m, settings.number(m)));
   String unscaledLineText(String line, String mark) =>
       l10n.shareUnscaledLine(line, mark);
 

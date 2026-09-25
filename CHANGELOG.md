@@ -4,6 +4,18 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-09-25
+
+### Added
+- A two-question welcome the first time you open Wasfati — your language and your digits — then a four-page tour you can skip at any page. It ends on a sample recipe in the language you chose.
+- Pro and Premium. Pro removes ads for good with one purchase; Premium removes them too and raises AI imports to 100 a month. Prices come from Google Play, cancelling is two taps from Settings, and everything already in Wasfati stays free. They go on sale once they're live in Google Play.
+- A small banner at the bottom of the library, a recipe's page, the meal plan and groceries — never while you cook, write a recipe or import one, and not until you've finished the welcome.
+- Once you've imported a recipe and cooked one, Wasfati may ask for a review — at most once every four months.
+
+### Changed
+- Arabic search finds a recipe however its hamza, taa marbuta or alef maqsura is written, with or without tashkeel.
+- The privacy policy covers ads, their consent and purchases through Google Play.
+
 ## [0.16.1] - 2026-09-25
 
 ### Changed

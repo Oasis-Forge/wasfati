@@ -116,6 +116,132 @@ abstract class AppLocalizations {
   /// **'Share a recipe from TikTok, Instagram or YouTube, or add your own.'**
   String get recipesEmptyBody;
 
+  /// RUN-3. The setup page's heading, on the first launch.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome to Wasfati'**
+  String get setupTitle;
+
+  /// RUN-3. Under the setup page's heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Two quick choices. You can change both later in Settings.'**
+  String get setupBody;
+
+  /// RUN-3. Setup page button; opens the walkthrough.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get setupContinue;
+
+  /// RUN-4. On every walkthrough page; ends the walkthrough.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get walkthroughSkip;
+
+  /// RUN-4. Moves to the next walkthrough page.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get walkthroughNext;
+
+  /// RUN-4. The last walkthrough page's button; opens the library.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to my recipes'**
+  String get walkthroughStart;
+
+  /// RUN-4. Screen-reader label of the walkthrough's page dots.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {n} of {total}'**
+  String walkthroughPageOf(String n, String total);
+
+  /// RUN-4. Walkthrough page 1 heading: importing.
+  ///
+  /// In en, this message translates to:
+  /// **'Save recipes from any post'**
+  String get walkthroughImportTitle;
+
+  /// RUN-4. Walkthrough page 1 text.
+  ///
+  /// In en, this message translates to:
+  /// **'Share a post from TikTok, Instagram or YouTube, a recipe site or a photo. Wasfati turns it into a clean recipe you check before saving.'**
+  String get walkthroughImportBody;
+
+  /// RUN-4. Walkthrough page 2 heading: scaling.
+  ///
+  /// In en, this message translates to:
+  /// **'Amounts that scale, in proper Arabic'**
+  String get walkthroughScaleTitle;
+
+  /// RUN-4. Walkthrough page 2 text.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the servings and every amount follows: fractions stay readable, and Arabic units agree with the number.'**
+  String get walkthroughScaleBody;
+
+  /// RUN-4. Walkthrough page 3 heading: cook mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Cook one step at a time'**
+  String get walkthroughCookTitle;
+
+  /// RUN-4. Walkthrough page 3 text.
+  ///
+  /// In en, this message translates to:
+  /// **'Big text, one step per page, timers straight from the step, and the screen stays on.'**
+  String get walkthroughCookBody;
+
+  /// RUN-4. Walkthrough page 4 heading: plan and groceries.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan the week, shop from one list'**
+  String get walkthroughPlanTitle;
+
+  /// RUN-4. Walkthrough page 4 text.
+  ///
+  /// In en, this message translates to:
+  /// **'Put recipes on your days, then add them to one grocery list, sorted by aisle and ready to share.'**
+  String get walkthroughPlanBody;
+
+  /// RUN-4. The made-up recipe the walkthrough's drawings show.
+  ///
+  /// In en, this message translates to:
+  /// **'Chicken kabsa'**
+  String get walkthroughDemoRecipe;
+
+  /// RUN-4. A demo ingredient line; the app parses and doubles it, so keep an amount and a unit.
+  ///
+  /// In en, this message translates to:
+  /// **'1½ cups rice'**
+  String get walkthroughDemoLine1;
+
+  /// RUN-4. A demo ingredient line; the app parses and doubles it, so keep an amount and a unit.
+  ///
+  /// In en, this message translates to:
+  /// **'2 tbsp olive oil'**
+  String get walkthroughDemoLine2;
+
+  /// RUN-4. A demo grocery item, shown ticked off.
+  ///
+  /// In en, this message translates to:
+  /// **'1 onion'**
+  String get walkthroughDemoLine3;
+
+  /// RUN-4. A demo cook-mode step; keep the time, the app reads a timer from it.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover and simmer for 25 minutes.'**
+  String get walkthroughDemoStep;
+
+  /// RUN-4. Settings row that replays the first-run walkthrough.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the walkthrough again'**
+  String get settingsReplayWalkthrough;
+
   /// RUN-1. The one clear first action on the empty list.
   ///
   /// In en, this message translates to:
@@ -125,7 +251,7 @@ abstract class AppLocalizations {
   /// Number of saved recipes. {shown} is {count} in the chosen digit style (QTY-5).
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{No recipes} =1{1 recipe} other{{shown} recipes}}'**
+  /// **'{count, plural, =0{No recipes} =1{{shown} recipe} other{{shown} recipes}}'**
   String recipesCount(int count, String shown);
 
   /// Reliable writes: shown when a database write fails and state was rolled back.
@@ -149,26 +275,26 @@ abstract class AppLocalizations {
   /// A duration in minutes on the recipe page.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 min} other{{shown} min}}'**
+  /// **'{count, plural, =1{{shown} min} other{{shown} min}}'**
   String minutes(int count, String shown);
 
   /// REC-7. Number of servings on the recipe page.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 serving} other{{shown} servings}}'**
+  /// **'{count, plural, =1{{shown} serving} other{{shown} servings}}'**
   String servings(int count, String shown);
 
-  /// Label before the prep time.
+  /// REC-3. The prep time on the recipe page, a shared recipe and the export; {time} is the minutes message, in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'Prep'**
-  String get prepTime;
+  /// **'Prep {time}'**
+  String prepTime(String time);
 
-  /// Label before the cook time.
+  /// REC-3. The cook time on the recipe page, a shared recipe and the export; {time} is the minutes message, in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'Cook'**
-  String get cookTime;
+  /// **'Cook {time}'**
+  String cookTime(String time);
 
   /// Recipe page and editor heading.
   ///
@@ -308,11 +434,11 @@ abstract class AppLocalizations {
   /// **'Servings'**
   String get fieldServings;
 
-  /// REC-7. Error for servings out of range.
+  /// REC-7. Error for servings out of range; the limits come in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'1 to 100'**
-  String get fieldServingsInvalid;
+  /// **'{min} to {max}'**
+  String fieldServingsInvalid(String min, String max);
 
   /// Editor field, minutes.
   ///
@@ -326,11 +452,11 @@ abstract class AppLocalizations {
   /// **'Cook (min)'**
   String get fieldCook;
 
-  /// REC-4, REC-5. Editor hint for the ingredients box.
+  /// REC-4, REC-5. Editor hint for the ingredients box; {n} (2) comes in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'One ingredient per line, e.g. 2 cups rice\nA line ending with : starts a group, e.g. For the sauce:'**
-  String get fieldIngredientsHint;
+  /// **'One ingredient per line, e.g. {n} cups rice\nA line ending with : starts a group, e.g. For the sauce:'**
+  String fieldIngredientsHint(String n);
 
   /// REC-6. Editor hint for the steps box.
   ///
@@ -344,11 +470,11 @@ abstract class AppLocalizations {
   /// **'Numbers only'**
   String get fieldNumberInvalid;
 
-  /// REC-6. Error when a step is too long.
+  /// REC-6. Error when a step is too long; {max} (2000) comes in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'A step is longer than 2,000 characters'**
-  String get stepTooLong;
+  /// **'A step is longer than {max} characters'**
+  String stepTooLong(String max);
 
   /// REC-8. Editor button.
   ///
@@ -626,22 +752,22 @@ abstract class AppLocalizations {
   /// **'Photo'**
   String get sourcePhoto;
 
-  /// ORG-6 time filter.
+  /// ORG-6 time filter; {n} (30) comes in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'Under 30 min'**
-  String get timeUnder30;
+  /// **'Under {n} min'**
+  String timeUnder30(String n);
+
+  /// ORG-6 time filter; {range} is "30–60" in the user's digits, kept left to right (LANG-5).
+  ///
+  /// In en, this message translates to:
+  /// **'{range} min'**
+  String time30to60(String range);
 
   /// ORG-6 time filter.
   ///
   /// In en, this message translates to:
-  /// **'30–60 min'**
-  String get time30to60;
-
-  /// ORG-6 time filter.
-  ///
-  /// In en, this message translates to:
-  /// **'Over 1 hour'**
+  /// **'Over an hour'**
   String get timeOver60;
 
   /// Filter option: no filter.
@@ -674,11 +800,11 @@ abstract class AppLocalizations {
   /// **'Name'**
   String get cookbookName;
 
-  /// ORG-1. Validation.
+  /// ORG-1. Validation; the limits (1 and 60) come in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'1 to 60 characters'**
-  String get cookbookNameInvalid;
+  /// **'{min} to {max} characters'**
+  String cookbookNameInvalid(String min, String max);
 
   /// ORG-1. Menu item.
   ///
@@ -701,7 +827,7 @@ abstract class AppLocalizations {
   /// ORG-1. Recipes in a cookbook.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{No recipes} =1{1 recipe} other{{shown} recipes}}'**
+  /// **'{count, plural, =0{No recipes} =1{{shown} recipe} other{{shown} recipes}}'**
   String cookbookRecipes(int count, String shown);
 
   /// RUN-1. Empty cookbooks tab.
@@ -728,11 +854,11 @@ abstract class AppLocalizations {
   /// **'Separate with commas, e.g. spicy, Ramadan'**
   String get fieldTagsHint;
 
-  /// ORG-2. Validation.
+  /// ORG-2. Validation; the limits (20 tags, 30 characters) come in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'Up to 20 tags, 30 characters each'**
-  String get tagsInvalid;
+  /// **'Up to {tags} tags, {chars} characters each'**
+  String tagsInvalid(String tags, String chars);
 
   /// ORG-1. Editor section.
   ///
@@ -779,7 +905,7 @@ abstract class AppLocalizations {
   /// SCALE-4. Header when some lines couldn't be scaled.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 ingredient wasn\'t scaled} other{{shown} ingredients weren\'t scaled}}'**
+  /// **'{count, plural, =1{{shown} ingredient wasn\'t scaled} other{{shown} ingredients weren\'t scaled}}'**
   String notScaledCount(int count, String shown);
 
   /// SCALE-5. Conversion view.
@@ -1034,17 +1160,23 @@ abstract class AppLocalizations {
   /// **'No mail app on this device. Write to us at {email}'**
   String reportMistakeNoMailApp(String email);
 
-  /// IMP-7: the always-visible quota counter, with the reset date.
+  /// IMP-7: the always-visible quota counter, with the reset date. {count} is the monthly quota (10 free, 100 with Premium), for the noun's agreement (QTY-6); {shown} and {quota} are the numbers in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'{shown} of {quota} AI imports left this month · resets on the 1st'**
-  String aiImportsLeftLine(String shown, String quota);
+  /// **'{count, plural, =1{{shown} of {quota} AI import left this month · resets at the start of each month} other{{shown} of {quota} AI imports left this month · resets at the start of each month}}'**
+  String aiImportsLeftLine(int count, String shown, String quota);
 
   /// IMP-7: shown instead of aiImportsLeftLine once the quota runs out.
   ///
   /// In en, this message translates to:
-  /// **'No AI imports left this month · resets on the 1st. Website imports still work, free.'**
+  /// **'No AI imports left this month · resets at the start of each month. Website imports still work, free.'**
   String get aiImportsOutLine;
+
+  /// PAY-5, IMP-7: the one line under the quota once the free AI imports run out. Opens the purchase screen.
+  ///
+  /// In en, this message translates to:
+  /// **'More AI imports with Premium'**
+  String get aiImportsPremiumLine;
 
   /// IMP-3: shown before an import is sent to the AI server, next to the progress indicator.
   ///
@@ -1175,7 +1307,7 @@ abstract class AppLocalizations {
   /// IMP-1: how many photos are about to be sent, next to their thumbnails.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 photo} other{{shown} photos}}'**
+  /// **'{count, plural, =1{{shown} photo} other{{shown} photos}}'**
   String importPhotoCount(int count, String shown);
 
   /// IMP-1: the system picker returned more photos than one import can send.
@@ -1358,11 +1490,11 @@ abstract class AppLocalizations {
   /// **'Eating out, leftovers…'**
   String get planNoteHint;
 
-  /// The note is empty or too long (PLAN-2)
+  /// The note is empty or too long (PLAN-2); the limits (1 and 60) come in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'1–60 characters'**
-  String get planNoteInvalid;
+  /// **'{min} to {max} characters'**
+  String planNoteInvalid(String min, String max);
 
   /// Button on a recipe page, and the title of its sheet (PLAN-3)
   ///
@@ -1427,14 +1559,14 @@ abstract class AppLocalizations {
   /// Snackbar after clearing a week (PLAN-4)
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{Nothing to clear} =1{1 meal removed} other{{shown} meals removed}}'**
+  /// **'{count, plural, =0{Nothing to clear} =1{{shown} meal removed} other{{shown} meals removed}}'**
   String planClearedCount(int count, String shown);
 
-  /// The slot already has PlanEntry.maxPerSlot entries (PLAN-2)
+  /// The slot already has PlanEntry.maxPerSlot entries (PLAN-2); {max} (10) comes in the user's digits.
   ///
   /// In en, this message translates to:
-  /// **'A meal holds up to 10 entries'**
-  String get planSlotFull;
+  /// **'A meal holds up to {max} entries'**
+  String planSlotFull(String max);
 
   /// Empty plan heading (PLAN-1, RUN-1)
   ///
@@ -1577,7 +1709,7 @@ abstract class AppLocalizations {
   /// DEL-2. Snackbar after Clear done or Clear all.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{Nothing to clear} =1{1 item cleared} other{{shown} items cleared}}'**
+  /// **'{count, plural, =0{Nothing to clear} =1{{shown} item cleared} other{{shown} items cleared}}'**
   String groceriesClearedCount(int count, String shown);
 
   /// GRO-5. View toggle.
@@ -1637,7 +1769,7 @@ abstract class AppLocalizations {
   /// GRO-2. Snackbar after adding a recipe's ticked lines to groceries.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 ingredient added} other{{shown} ingredients added}}'**
+  /// **'{count, plural, =1{{shown} ingredient added} other{{shown} ingredients added}}'**
   String groceriesAddedCount(int count, String shown);
 
   /// PLAN-5. Marker on an entry already sent to groceries.
@@ -1655,13 +1787,13 @@ abstract class AppLocalizations {
   /// PLAN-5. Snackbar after adding the week's ticked entries to groceries.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{Nothing to add} =1{1 meal added to groceries} other{{shown} meals added to groceries}}'**
+  /// **'{count, plural, =0{Nothing to add} =1{{shown} meal added to groceries} other{{shown} meals added to groceries}}'**
   String planGroceriesAddedCount(int count, String shown);
 
   /// RAM-3. The plan's card, 7 days before Ramadan through the day before it starts.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{Ramadan starts in 1 day. Switch the plan to suhoor and iftar?} other{Ramadan starts in {shown} days. Switch the plan to suhoor and iftar?}}'**
+  /// **'{count, plural, =1{Ramadan starts in {shown} day. Switch the plan to suhoor and iftar?} other{Ramadan starts in {shown} days. Switch the plan to suhoor and iftar?}}'**
   String ramadanCardSoon(int count, String shown);
 
   /// RAM-3. The plan's card, once Ramadan has started.
@@ -1787,25 +1919,25 @@ abstract class AppLocalizations {
   /// BAK-7. Recipe count in the restore preview sheet.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{No recipes} =1{1 recipe} other{{shown} recipes}}'**
+  /// **'{count, plural, =0{No recipes} =1{{shown} recipe} other{{shown} recipes}}'**
   String backupPreviewRecipes(int count, String shown);
 
   /// BAK-7. Cookbook count in the restore preview sheet.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{No cookbooks} =1{1 cookbook} other{{shown} cookbooks}}'**
+  /// **'{count, plural, =0{No cookbooks} =1{{shown} cookbook} other{{shown} cookbooks}}'**
   String backupPreviewCookbooks(int count, String shown);
 
   /// BAK-7. Distinct plan weeks in the restore preview sheet.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{No plan weeks} =1{1 plan week} other{{shown} plan weeks}}'**
+  /// **'{count, plural, =0{No plan weeks} =1{{shown} plan week} other{{shown} plan weeks}}'**
   String backupPreviewWeeks(int count, String shown);
 
   /// BAK-7. Grocery item count in the restore preview sheet.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =0{No grocery items} =1{1 grocery item} other{{shown} grocery items}}'**
+  /// **'{count, plural, =0{No grocery items} =1{{shown} grocery item} other{{shown} grocery items}}'**
   String backupPreviewGroceryItems(int count, String shown);
 
   /// No description provided for @backupMergeAction.
@@ -1913,7 +2045,7 @@ abstract class AppLocalizations {
   /// BAK-8. The library's reminder card, days since the last backup.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{Last backup was 1 day ago} other{Last backup was {shown} days ago}}'**
+  /// **'{count, plural, =1{Last backup was {shown} day ago} other{Last backup was {shown} days ago}}'**
   String backupReminderDaysAgo(int count, String shown);
 
   /// No description provided for @backupReminderNowAction.
@@ -1951,6 +2083,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'One day later'**
   String get ramadanShiftLater;
+
+  /// PAY-5: the one small target on the ad slot, above the banner. Opens the purchase screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove ads'**
+  String get adSlotRemoveAds;
+
+  /// PAY-10: the purchase screen's title; also the Settings subscription row's value when both are owned.
+  ///
+  /// In en, this message translates to:
+  /// **'Pro and Premium'**
+  String get purchaseTitle;
+
+  /// PAY-10: tooltip of the purchase screen's close button, there from the first frame.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get purchaseClose;
+
+  /// PAY-4, PAY-10: the purchase screen's first line.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything in Wasfati stays free. Pro removes the ads. Premium removes them too, and gives you more AI imports.'**
+  String get purchaseLead;
+
+  /// PAY-1: the one-time product's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Pro'**
+  String get purchasePro;
+
+  /// PAY-1: the subscription's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium'**
+  String get purchasePremium;
+
+  /// No description provided for @purchaseProKind.
+  ///
+  /// In en, this message translates to:
+  /// **'One-time purchase'**
+  String get purchaseProKind;
+
+  /// No description provided for @purchasePremiumKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get purchasePremiumKind;
+
+  /// PAY-7: what Pro and Premium include.
+  ///
+  /// In en, this message translates to:
+  /// **'No ads'**
+  String get purchaseNoAds;
+
+  /// PAY-7: AI imports a month with Pro (10) or Premium (100).
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{shown} AI import a month} other{{shown} AI imports a month}}'**
+  String purchaseAiImports(int count, String shown);
+
+  /// PAY-7, SRV-4: Premium's 100 AI imports are fair use.
+  ///
+  /// In en, this message translates to:
+  /// **'Fair use'**
+  String get purchaseFairUse;
+
+  /// PAY-7, PAY-10: shown on a product this store account already owns.
+  ///
+  /// In en, this message translates to:
+  /// **'Owned'**
+  String get purchaseOwned;
+
+  /// PAY-2, PAY-10: Pro's buy button; price is the store's own formatted price.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} once'**
+  String purchasePriceOnce(String price);
+
+  /// PAY-2, PAY-8: Premium's monthly plan button; price is the store's own formatted price.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} a month'**
+  String purchasePriceMonthly(String price);
+
+  /// PAY-2, PAY-8: Premium's yearly plan button; price is the store's own formatted price.
+  ///
+  /// In en, this message translates to:
+  /// **'{price} a year'**
+  String purchasePriceYearly(String price);
+
+  /// PAY-3: a product the store doesn't sell yet: no price, no button.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get purchaseComingSoon;
+
+  /// PAY-6: the store has no product configured, or can't sell on this device.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is for sale yet.'**
+  String get purchaseNothingYet;
+
+  /// PAY-1, PAY-10: next to the prices. In Arabic, avoid المشتريات: it names the grocery list.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore purchases'**
+  String get purchaseRestore;
+
+  /// No description provided for @purchaseRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Your purchases are restored.'**
+  String get purchaseRestored;
+
+  /// No description provided for @purchaseNothingToRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'This Google account has no Wasfati purchases.'**
+  String get purchaseNothingToRestore;
+
+  /// No description provided for @purchaseStoreUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach Google Play. Try again later.'**
+  String get purchaseStoreUnreachable;
+
+  /// PAY-6: a purchase the store reports as pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for Google Play to confirm the payment. Nothing changes until it does.'**
+  String get purchasePending;
+
+  /// PAY-6: the store reported an error for the last purchase.
+  ///
+  /// In en, this message translates to:
+  /// **'The purchase didn\'t go through.'**
+  String get purchaseFailed;
+
+  /// PAY-10, PAY-11: that Premium renews until cancelled, and where to cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium renews automatically until you cancel it. Cancel any time: Settings › Manage or cancel opens it in Google Play.'**
+  String get purchasePremiumRenews;
+
+  /// PAY-11: opens Google Play's page for the subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage or cancel'**
+  String get purchaseManage;
+
+  /// No description provided for @purchaseManageFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open Google Play.'**
+  String get purchaseManageFailed;
+
+  /// PAY-11, ADS-5: the Settings section heading. In Arabic, avoid المشتريات: it names the grocery list.
+  ///
+  /// In en, this message translates to:
+  /// **'Ads and subscription'**
+  String get settingsPayingSection;
+
+  /// PAY-5, PAY-11: the Settings row; its value is the plan. Opens the purchase screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get settingsSubscription;
+
+  /// PAY-11: the Settings subscription row's value when nothing is owned.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get tierFree;
+
+  /// ADS-5: opens the ad network's own consent form, where the law asks for one.
+  ///
+  /// In en, this message translates to:
+  /// **'Ad privacy choices'**
+  String get settingsAdPrivacy;
 }
 
 class _AppLocalizationsDelegate

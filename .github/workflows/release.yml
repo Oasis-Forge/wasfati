@@ -115,8 +115,14 @@ jobs:
         env:
           # INTERNET: website import (IMP-2), AI import and translation (IMP-1,
           # IMP-14). POST_NOTIFICATIONS: cook timers (COOK-5); VIBRATE comes with
-          # them. Checked against a real release build on 24 September 2026.
-          ALLOWED: 'android.permission.INTERNET android.permission.POST_NOTIFICATIONS android.permission.VIBRATE'
+          # them. ACCESS_NETWORK_STATE and AD_ID: the ad SDK (ADS-1, ADS-6).
+          # BILLING: Pro and Premium through Google Play (PAY-1). The ad SDK's
+          # other permissions are removed in AndroidManifest.xml. Checked
+          # against a real release build on 24 September 2026.
+          ALLOWED: >-
+            android.permission.INTERNET android.permission.POST_NOTIFICATIONS
+            android.permission.VIBRATE android.permission.ACCESS_NETWORK_STATE
+            com.google.android.gms.permission.AD_ID com.android.vending.BILLING
         run: |
           aapt2=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -n 1)
           "$aapt2" dump permissions build/app/outputs/flutter-apk/app-release.apk | tee permissions.txt
@@ -132,6 +138,41 @@ jobs:
             echo "::error::The release APK lacks permissions the app needs (RUN-2): $missing"
           fi
           [ -z "$unexpected" ] && [ -z "$missing" ]
+
+      # ADS-8: only a release asks with the real ad IDs, and it never carries
+      # Google's test ones: the manifest's AdMob app ID (set per build type in
+      # android/app/build.gradle.kts), and the Dart code's banner unit
+      # (lib/services/ads.dart picks it by kReleaseMode, so the test IDs are
+      # compiled out). A live ad served to a development build, or a test ad
+      # in the store, is how an ad account gets suspended.
+      - name: Check the APK's ad IDs
+        env:
+          REAL_APP_ID: 'ca-app-pub-8287765177319119~8706163515'
+          REAL_BANNER: 'ca-app-pub-8287765177319119/9667891390'
+          TEST_PUBLISHER: 'ca-app-pub-3940256099942544'
+        run: |
+          apk=build/app/outputs/flutter-apk/app-release.apk
+          aapt2=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -n 1)
+          # grep -c reads to the end (no early exit to break the pipe), and
+          # prints 0 rather than failing when nothing matches.
+          app_id=$("$aapt2" dump xmltree --file AndroidManifest.xml "$apk" | grep -cF "\"$REAL_APP_ID\"" || true)
+          test_ids=$(unzip -p "$apk" | grep -acF "$TEST_PUBLISHER" || true)
+          banner=$(unzip -p "$apk" 'lib/*/libapp.so' | grep -acF "$REAL_BANNER" || true)
+          echo "real app ID in the manifest: $app_id; test IDs anywhere: $test_ids; real banner in the Dart code: $banner"
+          ok=true
+          if [ "$app_id" = 0 ]; then
+            echo "::error::The release manifest lacks the real AdMob app ID (ADS-8)."
+            ok=false
+          fi
+          if [ "$test_ids" != 0 ]; then
+            echo "::error::The release APK carries Google's test ad IDs (ADS-8)."
+            ok=false
+          fi
+          if [ "$banner" = 0 ]; then
+            echo "::error::The release APK's Dart code lacks the real banner unit (ADS-8)."
+            ok=false
+          fi
+          $ok
 
       - name: Name the files after the version
         run: |

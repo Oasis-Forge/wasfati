@@ -17,6 +17,7 @@ import '../services/mail.dart';
 import '../services/photo_store.dart';
 import '../theme/decor.dart';
 import '../widgets/content_direction.dart';
+import '../widgets/digit_counter.dart';
 import 'translate_flow.dart';
 
 /// Adds or edits a recipe (REC-3–REC-8). Ingredients and steps are one line
@@ -68,7 +69,9 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     super.initState();
     final r = widget.recipe;
     _id = r?.id ?? context.read<RecipesState>().repository.newId();
-    String n(int? v) => v == null ? '' : '$v';
+    // The user's digits (QTY-5, LANG-3); the fields read both styles back.
+    final settings = context.read<SettingsState>();
+    String n(int? v) => v == null ? '' : settings.number(v);
     _title = TextEditingController(text: r?.title ?? '');
     _servings = TextEditingController(text: n(r?.servings));
     _prep = TextEditingController(text: n(r?.prepMinutes));
@@ -78,7 +81,8 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     );
     _steps = TextEditingController(text: r == null ? '' : stepsToText(r.steps));
     _notes = TextEditingController(text: r?.notes ?? '');
-    _tags = TextEditingController(text: (r?.tags ?? const []).join('، '));
+    final tags = r?.tags ?? const <String>[];
+    _tags = TextEditingController(text: tags.join(tagSeparator(tags)));
     _cookbooks = {
       ...?r?.cookbookIds,
       if (r == null && widget.initialCookbookId != null)
@@ -279,6 +283,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final settings = context.watch<SettingsState>();
     return PopScope(
       canPop: !_dirty,
       onPopInvokedWithResult: (didPop, _) async {
@@ -319,6 +324,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
               TextFormField(
                 controller: _title,
                 maxLength: Recipe.maxTitle,
+                buildCounter: digitCounter,
                 textInputAction: TextInputAction.next,
                 decoration: InputDecoration(labelText: l10n.fieldTitle),
                 validator: (v) =>
@@ -359,7 +365,10 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                       label: l10n.fieldServings,
                       validator: (n) =>
                           n != null && (n < 1 || n > Recipe.maxServings)
-                          ? l10n.fieldServingsInvalid
+                          ? l10n.fieldServingsInvalid(
+                              settings.number(1),
+                              settings.number(Recipe.maxServings),
+                            )
                           : null,
                     ),
                   ),
@@ -387,7 +396,12 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                 keyboardType: TextInputType.multiline,
                 decoration: InputDecoration(
                   labelText: l10n.ingredients,
-                  hintText: l10n.fieldIngredientsHint,
+                  // The example is an ingredient line: an English one keeps
+                  // 123 whatever the setting, an Arabic one follows it
+                  // (QTY-5).
+                  hintText: l10n.fieldIngredientsHint(
+                    l10n.localeName == 'ar' ? settings.number(2) : '2',
+                  ),
                   hintMaxLines: 3,
                   alignLabelWithHint: true,
                 ),
@@ -407,7 +421,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                     (v ?? '')
                         .split('\n')
                         .any((l) => l.trim().length > RecipeStep.maxLength)
-                    ? l10n.stepTooLong
+                    ? l10n.stepTooLong(settings.number(RecipeStep.maxLength))
                     : null,
               ),
               const SizedBox(height: 16),
@@ -421,7 +435,10 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                   final tags = parseTags(v ?? '');
                   return tags.length > Tag.maxPerRecipe ||
                           tags.any((t) => t.length > Tag.maxName)
-                      ? l10n.tagsInvalid
+                      ? l10n.tagsInvalid(
+                          settings.number(Tag.maxPerRecipe),
+                          settings.number(Tag.maxName),
+                        )
                       : null;
                 },
               ),
@@ -648,7 +665,9 @@ class _TagSuggestions extends StatelessWidget {
                   label: ContentText(t),
                   onPressed: () {
                     final text = value.text.trim();
-                    controller.text = text.isEmpty ? t : '$text، $t';
+                    controller.text = text.isEmpty
+                        ? t
+                        : '$text${tagSeparator([text, t])}$t';
                   },
                 ),
             ],

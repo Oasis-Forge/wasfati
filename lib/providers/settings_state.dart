@@ -16,20 +16,46 @@ class SettingsState extends ChangeNotifier {
   static const _key = 'settings';
 
   /// IMP-7, PAY-7: the free tier's AI imports a calendar month. Premium's
-  /// 100 (fair use, SRV-4) isn't wired here yet — pass it as [quota] to
-  /// [aiImportsLeft] once PAY-11 can tell Premium is owned.
+  /// 100 (fair use, SRV-4) comes from `PurchasesState.aiImportQuota`,
+  /// passed as [quota] to [aiImportsLeft].
   static const freeAiImportsPerMonth = 10;
 
   AppSettings _settings = const AppSettings();
   AppSettings get settings => _settings;
 
-  Future<void> load() async {
+  /// Reads the stored settings. With none stored yet — a fresh install —
+  /// the digit style starts as [deviceLocales]' own (RUN-3, [deviceDigits]),
+  /// so setup opens with the device's answer already chosen; nothing is
+  /// written until the user changes something.
+  Future<void> load({List<Locale> deviceLocales = const []}) async {
     final rows = await _db.query('meta', where: 'key = ?', whereArgs: [_key]);
-    _settings = AppSettings.fromJson(
-      rows.isEmpty ? null : rows.single['value'] as String,
-    );
+    _settings = rows.isEmpty
+        ? AppSettings(digits: deviceDigits(deviceLocales))
+        : AppSettings.fromJson(rows.single['value'] as String);
     notifyListeners();
   }
+
+  /// RUN-3: the setup page's language choice, `'ar'` or `'en'`. Choosing
+  /// the language the device already resolves to keeps "System default"
+  /// (LANG-1), so the app goes on following the phone; choosing the other
+  /// one pins it, exactly like the Settings row. Applies at once.
+  Future<void> chooseSetupLanguage(String code, List<Locale> deviceLocales) {
+    final device = appLanguage(LanguagePref.system, deviceLocales);
+    final pref = code == device.languageCode
+        ? LanguagePref.system
+        : (code == 'ar' ? LanguagePref.ar : LanguagePref.en);
+    return update(_settings.copyWith(language: pref));
+  }
+
+  /// RUN-3, QTY-5: the setup page's digit style. Applies at once.
+  Future<void> chooseDigits(DigitStyle digits) =>
+      update(_settings.copyWith(digits: digits));
+
+  /// RUN-4: setup and the walkthrough are done (finished or skipped), so
+  /// neither shows again on its own; Settings can still replay the
+  /// walkthrough.
+  Future<void> completeFirstRun() =>
+      update(_settings.copyWith(firstRunComplete: true));
 
   /// Writes first, then applies (reliable writes).
   Future<void> update(AppSettings next) async {
@@ -66,6 +92,13 @@ class SettingsState extends ChangeNotifier {
   DateTime get aiImportsResetAt {
     final local = _clock().toLocal();
     return DateTime(local.year, local.month + 1, 1);
+  }
+
+  /// RUN-5: an import was just saved from the import preview (a fetched
+  /// page or an AI import, never a by-hand draft). Written once.
+  Future<void> recordImportSaved() async {
+    if (_settings.importSaved) return;
+    await update(_settings.copyWith(importSaved: true));
   }
 
   /// IMP-7: the save path calls this, and only the save path — never a

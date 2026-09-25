@@ -4,6 +4,11 @@
 	<dict>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
+		<!-- ADS-8: Google's published test app ID. There is no iOS ad unit of
+		     our own until Phase 6, so an iOS release asks for no ads at all
+		     (lib/services/ads.dart); the SDK only needs an ID to start. -->
+		<key>GADApplicationIdentifier</key>
+		<string>ca-app-pub-3940256099942544~1458002511</string>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>

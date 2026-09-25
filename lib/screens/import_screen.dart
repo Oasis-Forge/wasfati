@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../models/recipe.dart';
 import '../models/recipe_import.dart' show normalizeSourceUrl;
+import '../providers/purchases_state.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../services/ai_import.dart';
@@ -16,6 +17,7 @@ import '../services/photo_store.dart';
 import '../services/web_import.dart';
 import '../theme/decor.dart';
 import 'home_screen.dart';
+import 'purchase_screen.dart';
 import 'recipe_editor_screen.dart';
 
 /// Import from a link (IMP-2), shared/pasted text (IMP-3) or photos
@@ -54,6 +56,12 @@ class _ImportScreenState extends State<ImportScreen> {
   ImportFailure? _failure;
   AiImportErrorKind? _aiError;
   bool _outOfQuota = false;
+
+  /// IMP-7, PAY-7: AI imports left this month, out of the quota the store's
+  /// entitlements give (100 with Premium, 10 otherwise).
+  int _aiImportsLeft(SettingsState settings) => settings.aiImportsLeft(
+    quota: context.read<PurchasesState>().aiImportQuota,
+  );
 
   /// Set once an AI attempt for a link comes back `unreachable` or
   /// `private_post` (IMP-12): the original link, kept so a pasted caption
@@ -181,7 +189,7 @@ class _ImportScreenState extends State<ImportScreen> {
   /// line first, with a real استيراد/إلغاء choice, before anything is sent.
   void _confirmAiSend(String text) {
     final settings = context.read<SettingsState>();
-    if (settings.aiImportsLeft() <= 0) {
+    if (_aiImportsLeft(settings) <= 0) {
       setState(() {
         _stage = _Stage.idle;
         _outOfQuota = true;
@@ -227,7 +235,7 @@ class _ImportScreenState extends State<ImportScreen> {
         ),
       );
     }
-    if (settings.aiImportsLeft() <= 0) {
+    if (_aiImportsLeft(settings) <= 0) {
       setState(() {
         _stage = _Stage.idle;
         _outOfQuota = true;
@@ -257,7 +265,7 @@ class _ImportScreenState extends State<ImportScreen> {
     List<Uint8List>? images,
   }) async {
     final settings = context.read<SettingsState>();
-    if (settings.aiImportsLeft() <= 0) {
+    if (_aiImportsLeft(settings) <= 0) {
       setState(() {
         _stage = _Stage.idle;
         _outOfQuota = true;
@@ -337,7 +345,15 @@ class _ImportScreenState extends State<ImportScreen> {
     await _openPreview(draft, usedAiImport: true);
   }
 
-  Future<void> _openPreview(Recipe draft, {required bool usedAiImport}) async {
+  /// IMP-5: the preview. Saving a fetched or AI draft from it is what
+  /// RUN-5 counts as "saved an import"; a [byHand] draft after a failed
+  /// import isn't one, whatever source it's tagged with.
+  Future<void> _openPreview(
+    Recipe draft, {
+    required bool usedAiImport,
+    bool byHand = false,
+  }) async {
+    final settings = context.read<SettingsState>();
     final saved = await Navigator.of(context).push<String>(
       MaterialPageRoute(
         builder: (_) => RecipeEditorScreen(
@@ -347,6 +363,7 @@ class _ImportScreenState extends State<ImportScreen> {
         ),
       ),
     );
+    if (saved != null && !byHand) await settings.recordImportSaved();
     if (saved != null && mounted) {
       Navigator.of(context).pop();
       await openRecipe(context, saved);
@@ -423,7 +440,7 @@ class _ImportScreenState extends State<ImportScreen> {
                 sourceUrl: normalizeSourceUrl(_link.text.trim()),
                 sourceType: SourceType.website,
               );
-    await _openPreview(draft, usedAiImport: false);
+    await _openPreview(draft, usedAiImport: false, byHand: true);
   }
 
   Future<void> _sendCaption() async {
@@ -478,10 +495,17 @@ class _ImportScreenState extends State<ImportScreen> {
       showAddByHand = _aiError == AiImportErrorKind.notARecipe;
     }
 
-    final left = settings.aiImportsLeft();
-    final quota = SettingsState.freeAiImportsPerMonth;
+    // PAY-7: Premium's 100 a month, the free 10 otherwise; the month's
+    // count is the same either way (PAY-11).
+    final purchases = context.watch<PurchasesState>();
+    final quota = purchases.aiImportQuota;
+    final left = settings.aiImportsLeft(quota: quota);
     final quotaLine = left > 0
-        ? l10n.aiImportsLeftLine(settings.number(left), settings.number(quota))
+        ? l10n.aiImportsLeftLine(
+            quota, // the noun agrees with the quota (LANG-2, QTY-6)
+            settings.number(left),
+            settings.number(quota),
+          )
         : l10n.aiImportsOutLine;
 
     return Scaffold(
@@ -514,6 +538,21 @@ class _ImportScreenState extends State<ImportScreen> {
           // reset date included, and it becomes the out-of-quota line once
           // the month's AI imports are used up.
           Text(quotaLine, style: Theme.of(context).textTheme.bodySmall),
+          // PAY-5, IMP-7: the one line where the free AI imports run out —
+          // only while Premium is on sale and not already owned (PAY-6),
+          // and never during the first run (RUN-3): a share can open this
+          // screen over setup or the walkthrough.
+          if (settings.settings.firstRunComplete &&
+              left <= 0 &&
+              !purchases.ownsPremium &&
+              purchases.sellsPremium)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton(
+                onPressed: () => openPurchaseScreen(context),
+                child: Text(l10n.aiImportsPremiumLine),
+              ),
+            ),
           const SizedBox(height: 16),
           if (!busy && !showingCaptionFallback)
             FilledButton.icon(

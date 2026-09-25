@@ -62,6 +62,14 @@ Created 20 September 2026. The IDs aren't secrets: they ship inside the app, so 
 - App ID: `ca-app-pub-8287765177319119~8706163515`
 - Banner unit, used by every slot (ADS-9): `ca-app-pub-8287765177319119/9667891390`
 
+Where they live, and what keeps test and real IDs apart (ADS-8):
+- The Dart side picks them in `lib/services/ads.dart` (`AdIds`) by `kReleaseMode`, a compile-time constant, so a release build carries only the real IDs and a debug or profile build only Google's test ones.
+- The manifest's `com.google.android.gms.ads.APPLICATION_ID` comes from `manifestPlaceholders["admobAppId"]` in `android/app/build.gradle.kts`: Google's test app ID in `defaultConfig`, the real one in the `release` build type only.
+- `test/services/ad_ids_test.dart` fails if the copies in the code, Gradle, the manifest, `ios/Runner/Info.plist` and this file drift apart, and the release workflow checks the built APK: the manifest carries the real app ID, the Dart code the real banner unit, and neither carries Google's test publisher ID.
+- iOS has no ad unit of our own until Phase 6: `Info.plist` carries Google's test app ID so the SDK starts, and an iOS release asks for no ads at all.
+
+**Consent (ADS-5), once before the first release with ads:** in AdMob → Privacy & messaging, create and publish a European regulations (GDPR) message for this app, in Arabic and English, with the privacy policy URL. The app shows Google's own form through the User Messaging Platform only where the law asks (the EEA, the UK, Switzerland). Without a published message there is no form to show, the SDK can't record an answer, and users there get no ads.
+
 ## One-time setup: Android
 
 1. Create the upload keystore and back it up with its passwords. Losing it means asking Google for an upload-key reset.
@@ -79,7 +87,13 @@ Created 20 September 2026. The IDs aren't secrets: they ship inside the app, so 
 7. New personal developer accounts need a closed test with at least 12 testers for 14 days before production access. Confirm the current rule and start early.
 8. **Contact details.** Play shows two public emails: the store listing's support email (App support) and the developer account's email (About the developer, on every app). Both are **oasisforge.support@gmail.com**, the one support address for every Oasis Forge app; keep the Play Console login private. A personal account also shows its legal name and country there; only an organization account (it needs a D-U-N-S number) shows the brand instead.
 9. **Payments profile → Public merchant profile:** the merchant name is the publisher, never a personal name, with the same support email (oasisforge.support@gmail.com).
-10. **In-app products:** a one-time product needs a purchase option (type Buy). Add the testers' Google accounts under Settings → Licence testing (account level, not per app), so their test purchases cost nothing. Products only show in a build installed from a Play testing track, once the product is Active.
+10. **In-app products** (PAY-8, Decisions 10 and 17). The IDs are permanent after the first upload, like the app ID:
+    - `pro`: a one-time product, AED 14.99.
+    - `premium`: a subscription with two auto-renewing base plans, `monthly` at AED 9.99 and `yearly` at AED 79.99, and **no offers**: no free trial (PAY-9, Decision 11) and no introductory price. The app lists only base plans and ignores any offer.
+    - Play converts the base prices for other countries; the app only ever shows Play's own price (PAY-2).
+    - Until these exist and are Active, the purchase screen says nothing is for sale (PAY-6). Premium's server-side quota needs a service account first (Decision 22, Phase 5).
+
+    A one-time product needs a purchase option (type Buy). Add the testers' Google accounts under Settings → Licence testing (account level, not per app), so their test purchases cost nothing. Products only show in a build installed from a Play testing track, once the product is Active.
 11. **EU trader status** (Digital Services Act): an app with ads or purchases makes you a trader, and Play then shows your address, phone and email to EU users. Declare it before applying for production; a virtual office address keeps a home address private. Apple asks the same for the EU App Store.
 12. **Release notes** for every release come from `/release`, in `store/play/release-notes/X.Y.Z.txt`. All store listing material lives in `store/` (gitignored).
 

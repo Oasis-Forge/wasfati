@@ -631,6 +631,13 @@ class BackupService {
     List<String> copiedPhotos,
     List<String> obsoletePhotos,
   ) async {
+    // RUN-5: read before anything is replaced (see [_keepReviewHistory]).
+    final localSettings = (await tx.query(
+      'meta',
+      columns: ['value'],
+      where: 'key = ?',
+      whereArgs: ['settings'],
+    )).firstOrNull?['value'];
     // should-fix (adversary review P8): every photo this phone currently
     // has, so replacing it can free the ones no row will point at any more
     // once the new rows are in.
@@ -662,11 +669,14 @@ class BackupService {
       }
       counts[table] = TableMergeCount(added: added, updated: updated);
     }
-    // BAK-7: replace takes the file's settings and install ID.
-    if (meta['settings'] != null) {
+    // BAK-7: replace takes the file's settings and install ID, keeping
+    // this phone's review-prompt history (RUN-5).
+    if (meta['settings'] case final Object fileSettings) {
       await tx.insert('meta', {
         'key': 'settings',
-        'value': meta['settings'],
+        'value': fileSettings is String
+            ? _keepReviewHistory(fileSettings, localSettings)
+            : fileSettings,
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
     if (meta['install_id'] != null) {
@@ -676,6 +686,46 @@ class BackupService {
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
     return RestoreResult(counts, RestoreMode.replace);
+  }
+
+  /// RUN-5: a replace (BAK-7) takes [fileSettings] as they are, except the
+  /// review prompt's history, which is about this phone's store account,
+  /// not the file: the later `reviewAskedAt` of the two stays, and
+  /// `importSaved` stays true if either has it. Otherwise restoring a
+  /// backup made before the ask, or on another phone, would make the
+  /// store's prompt due again within 120 days. Settings that don't parse
+  /// are left to [AppSettings.fromJson]'s defaults, as before.
+  static String _keepReviewHistory(String fileSettings, Object? local) {
+    Map<String, Object?>? parse(Object? text) {
+      if (text is! String) return null;
+      try {
+        final decoded = jsonDecode(text);
+        return decoded is Map<String, Object?> ? decoded : null;
+      } on FormatException {
+        return null;
+      }
+    }
+
+    int? askedAt(Map<String, Object?> m) => switch (m['reviewAskedAt']) {
+      final num ms => ms.toInt(),
+      _ => null,
+    };
+
+    final file = parse(fileSettings);
+    final here = parse(local);
+    if (file == null || here == null) return fileSettings;
+    final fileAsked = askedAt(file);
+    final hereAsked = askedAt(here);
+    final keepAsked =
+        hereAsked != null && (fileAsked == null || hereAsked > fileAsked);
+    final keepImport =
+        here['importSaved'] == true && file['importSaved'] != true;
+    if (!keepAsked && !keepImport) return fileSettings;
+    return jsonEncode({
+      ...file,
+      if (keepAsked) 'reviewAskedAt': hereAsked,
+      if (keepImport) 'importSaved': true,
+    });
   }
 
   /// BAK-3: per table, per row by id. Missing locally → added; present →

@@ -55,3 +55,6 @@ android/key.properties
 *.jks
 *.keystore
 .env*
+
+# Worktrees made by agent runs; never part of the app.
+/.claude/worktrees/

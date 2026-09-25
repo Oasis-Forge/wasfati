@@ -119,7 +119,8 @@ void main() {
       expect(AppSettings.fromJson(s.toJson()), s);
       expect(
         AppSettings.fromJson('{"digits":"roman","theme":"dark"}'),
-        const AppSettings(theme: ThemePref.dark),
+        // Stored settings without the RUN-4 key are an install in use.
+        const AppSettings(theme: ThemePref.dark, firstRunComplete: true),
       );
       expect(
         AppSettings.fromJson(null).digits,
