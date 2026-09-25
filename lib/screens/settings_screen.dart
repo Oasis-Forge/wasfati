@@ -15,6 +15,7 @@ import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../services/backup.dart';
 import '../services/backup_files.dart' show BackupFilesError;
+import '../theme/decor.dart';
 import '../widgets/content_direction.dart';
 
 /// Settings (roadmap 2a): language (LANG-1), digit style (QTY-5), units
@@ -144,51 +145,55 @@ class _RamadanSection extends StatelessWidget {
                 ?.copyWith(color: scheme.primary),
           ),
         ),
-        SwitchListTile(
-          title: Text(l10n.ramadanModeLabel),
-          value: settings.ramadanMode,
-          onChanged: (v) => onChanged(settings.copyWith(ramadanMode: v)),
-        ),
-        if (month != null)
-          ListTile(
-            title: Text(
-              l10n.ramadanStartLabel(
-                state.inDigits(
-                  MaterialLocalizations.of(context)
-                      .formatMediumDate(month.start),
+        _Group(
+          children: [
+            SwitchListTile(
+              title: Text(l10n.ramadanModeLabel),
+              value: settings.ramadanMode,
+              onChanged: (v) => onChanged(settings.copyWith(ramadanMode: v)),
+            ),
+            if (month != null)
+              ListTile(
+                title: Text(
+                  l10n.ramadanStartLabel(
+                    state.inDigits(
+                      MaterialLocalizations.of(context)
+                          .formatMediumDate(month.start),
+                    ),
+                  ),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: l10n.ramadanShiftEarlier,
+                      icon: const Icon(Icons.remove),
+                      onPressed: shift > -1
+                          ? () => onChanged(
+                              settings.copyWith(
+                                ramadanShift: shift - 1,
+                                ramadanShiftYear: month.hijriYear,
+                              ),
+                            )
+                          : null,
+                    ),
+                    IconButton(
+                      tooltip: l10n.ramadanShiftLater,
+                      icon: const Icon(Icons.add),
+                      onPressed: shift < 1
+                          ? () => onChanged(
+                              settings.copyWith(
+                                ramadanShift: shift + 1,
+                                ramadanShiftYear: month.hijriYear,
+                              ),
+                            )
+                          : null,
+                    ),
+                  ],
                 ),
               ),
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  tooltip: l10n.ramadanShiftEarlier,
-                  icon: const Icon(Icons.remove),
-                  onPressed: shift > -1
-                      ? () => onChanged(
-                          settings.copyWith(
-                            ramadanShift: shift - 1,
-                            ramadanShiftYear: month.hijriYear,
-                          ),
-                        )
-                      : null,
-                ),
-                IconButton(
-                  tooltip: l10n.ramadanShiftLater,
-                  icon: const Icon(Icons.add),
-                  onPressed: shift < 1
-                      ? () => onChanged(
-                          settings.copyWith(
-                            ramadanShift: shift + 1,
-                            ramadanShiftYear: month.hijriYear,
-                          ),
-                        )
-                      : null,
-                ),
-              ],
-            ),
-          ),
+          ],
+        ),
       ],
     );
   }
@@ -611,34 +616,38 @@ class _BackupSectionState extends State<_BackupSection> {
                 ?.copyWith(color: scheme.primary),
           ),
         ),
-        ListTile(
-          leading: const Icon(Icons.save_outlined),
-          title: Text(l10n.backupSaveAction),
-          enabled: !busy,
-          onTap: () => _save(),
-        ),
-        ListTile(
-          leading: const Icon(Icons.ios_share_outlined),
-          title: Text(l10n.backupShareAction),
-          enabled: !busy,
-          onTap: () => _share(),
-        ),
-        ListTile(
-          leading: const Icon(Icons.restore_outlined),
-          title: Text(l10n.backupRestoreAction),
-          enabled: !busy,
-          onTap: () => _restore(),
-        ),
-        ListTile(
-          leading: const Icon(Icons.description_outlined),
-          title: Text(l10n.backupExportAction),
-          enabled: !busy,
-          onTap: () => _export(),
-        ),
-        SwitchListTile(
-          title: Text(l10n.backupReminderSwitch),
-          value: !s.backupReminderOff,
-          onChanged: (v) => state.update(s.copyWith(backupReminderOff: !v)),
+        _Group(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.save_outlined),
+              title: Text(l10n.backupSaveAction),
+              enabled: !busy,
+              onTap: () => _save(),
+            ),
+            ListTile(
+              leading: const Icon(Icons.ios_share_outlined),
+              title: Text(l10n.backupShareAction),
+              enabled: !busy,
+              onTap: () => _share(),
+            ),
+            ListTile(
+              leading: const Icon(Icons.restore_outlined),
+              title: Text(l10n.backupRestoreAction),
+              enabled: !busy,
+              onTap: () => _restore(),
+            ),
+            ListTile(
+              leading: const Icon(Icons.description_outlined),
+              title: Text(l10n.backupExportAction),
+              enabled: !busy,
+              onTap: () => _export(),
+            ),
+            SwitchListTile(
+              title: Text(l10n.backupReminderSwitch),
+              value: !s.backupReminderOff,
+              onChanged: (v) => state.update(s.copyWith(backupReminderOff: !v)),
+            ),
+          ],
         ),
         Padding(
           padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 16, 4),
@@ -653,32 +662,37 @@ class _BackupSectionState extends State<_BackupSection> {
             padding: EdgeInsetsDirectional.all(16),
             child: Center(child: CircularProgressIndicator()),
           )
-        else if (autoBackups.isEmpty)
-          ListTile(title: Text(l10n.backupAutoEmpty))
         else
-          for (final auto in autoBackups)
-            ListTile(
-              // should-fix, platform review: a restore makes a new one at
-              // once, so same-day rows used to read identically ("نسخة
-              // السبت، ١٩ سبتمبر" twice); the time tells them apart.
-              title: Text(
-                l10n.backupAutoBackupDate(
-                  state.inDigits(
-                    MaterialLocalizations.of(context)
-                        .formatMediumDate(auto.createdAt.toLocal()),
-                  ),
-                  state.inDigits(
-                    MaterialLocalizations.of(context).formatTimeOfDay(
-                      TimeOfDay.fromDateTime(auto.createdAt.toLocal()),
+          _Group(
+            children: [
+              if (autoBackups.isEmpty)
+                ListTile(title: Text(l10n.backupAutoEmpty))
+              else
+                for (final auto in autoBackups)
+                  ListTile(
+                    // should-fix, platform review: a restore makes a new one at
+                    // once, so same-day rows used to read identically ("نسخة
+                    // السبت، ١٩ سبتمبر" twice); the time tells them apart.
+                    title: Text(
+                      l10n.backupAutoBackupDate(
+                        state.inDigits(
+                          MaterialLocalizations.of(context)
+                              .formatMediumDate(auto.createdAt.toLocal()),
+                        ),
+                        state.inDigits(
+                          MaterialLocalizations.of(context).formatTimeOfDay(
+                            TimeOfDay.fromDateTime(auto.createdAt.toLocal()),
+                          ),
+                        ),
+                      ),
+                    ),
+                    trailing: TextButton(
+                      onPressed: busy ? null : () => _restoreAuto(auto),
+                      child: Text(l10n.backupRestoreAction),
                     ),
                   ),
-                ),
-              ),
-              trailing: TextButton(
-                onPressed: busy ? null : () => _restoreAuto(auto),
-                child: Text(l10n.backupRestoreAction),
-              ),
-            ),
+            ],
+          ),
       ],
     );
   }
@@ -744,16 +758,56 @@ class _Choice<T> extends StatelessWidget {
                 ?.copyWith(color: scheme.primary),
           ),
         ),
-        for (final e in options.entries)
-          ListTile(
-            title: Text(e.value),
-            trailing: e.key == value
-                ? Icon(Icons.check, color: scheme.primary)
-                : null,
-            selected: e.key == value,
-            onTap: () => onChanged(e.key),
-          ),
+        _Group(
+          children: [
+            for (final e in options.entries)
+              ListTile(
+                title: Text(e.value),
+                trailing: e.key == value
+                    ? Icon(Icons.check, color: scheme.primary)
+                    : null,
+                selected: e.key == value,
+                onTap: () => onChanged(e.key),
+              ),
+          ],
+        ),
       ],
+    );
+  }
+}
+
+/// LOOK-6: one bounded group of Settings rows, drawn by the look — its
+/// grouped-row fill and card shape, 16dp in from the screen's edges, and
+/// its hairline between rows (none when the look has no hairline). A
+/// [Material] rather than a decorated box, so each row's ink and a chosen
+/// row's colour still paint on the group. Rows, their order and their
+/// text are exactly the caller's (LOOK-2).
+class _Group extends StatelessWidget {
+  const _Group({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final decor = Decor.of(context);
+    final hairline = decor.rowHairline;
+    return Padding(
+      padding: const EdgeInsetsDirectional.symmetric(horizontal: 16),
+      child: Material(
+        color: decor.groupedRowFill,
+        shape: decor.cardShape,
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final (i, row) in children.indexed) ...[
+              if (i > 0 && hairline != null)
+                Divider(height: 1, thickness: 1, indent: 16, color: hairline),
+              row,
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

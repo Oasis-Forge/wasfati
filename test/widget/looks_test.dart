@@ -6,9 +6,13 @@
 // two brightnesses of the same look are on screen, so the full eight-way
 // cross product would multiply run time for little extra confidence.
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show SemanticsNode;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wasfati/models/recipe.dart';
 import 'package:wasfati/models/settings.dart';
 import 'package:wasfati/theme/colors.dart' show wasfatiColorScheme;
+import 'package:wasfati/theme/decor.dart';
+import 'package:wasfati/widgets/digit_box.dart';
 
 import 'app_test.dart' show pumpApp, settle;
 
@@ -166,4 +170,193 @@ void main() {
       );
     },
   );
+
+  // LOOK-6: Decor's grouped-row fill, card shape and row hairline were
+  // built for both looks and read nowhere (Known bugs). Settings' groups
+  // and the plan's day cards now draw with them; LOOK-2 still holds, so
+  // every row, string and control is where it was.
+  for (final style in AppStyle.values) {
+    testWidgets('${style.name}: Settings groups its rows in the look\'s '
+        'fill, card shape and hairlines (LOOK-6)', (tester) async {
+      final (_, settings) = await pumpApp(tester);
+      await tester.runAsync(
+        () => settings.update(settings.settings.copyWith(style: style)),
+      );
+      await settle(tester);
+      await tester.tap(find.byIcon(Icons.settings_outlined).first);
+      await settle(tester);
+
+      final decor = Decor.of(tester.element(find.text('١٢٣')));
+      // The digit-style group: its two rows in one Material drawn with
+      // the look's own fill and card shape, split by one hairline.
+      final group = find.ancestor(
+        of: find.text('١٢٣'),
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is Material &&
+              w.shape == decor.cardShape &&
+              w.color == decor.groupedRowFill,
+        ),
+      );
+      expect(group, findsOneWidget);
+      expect(
+        find.descendant(of: group, matching: find.text('123')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: group,
+          matching: find.byWidgetPredicate(
+            (w) => w is Divider && w.color == decor.rowHairline,
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('${style.name}: the plan\'s day cards take the look\'s '
+        'fill and card shape, and only today carries its rail (LOOK-6)', (
+      tester,
+    ) async {
+      final (_, settings) = await pumpApp(tester, withRecipe: true);
+      await tester.runAsync(
+        () => settings.update(settings.settings.copyWith(style: style)),
+      );
+      await settle(tester);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(NavigationBar),
+          matching: find.byIcon(Icons.calendar_month_outlined),
+        ),
+      );
+      await settle(tester);
+
+      final decor = Decor.of(tester.element(find.text('اليوم')));
+      final dayCards = find.byWidgetPredicate(
+        (w) =>
+            w is Material &&
+            w.shape == decor.cardShape &&
+            w.color == decor.groupedRowFill,
+      );
+      final today = find.ancestor(of: find.text('اليوم'), matching: dayCards);
+      expect(today, findsOneWidget);
+      final rail = find.byWidgetPredicate(
+        (w) => w is ColoredBox && w.color == decor.railColor,
+      );
+      // One rail across every day card built, and it's today's.
+      expect(find.descendant(of: dayCards, matching: rail), findsOneWidget);
+      expect(find.descendant(of: today, matching: rail), findsOneWidget);
+      expect(
+        tester.getSize(find.descendant(of: today, matching: rail)).width,
+        decor.railWidth,
+      );
+    });
+
+    // must-fix, look-pass review: the day card's Card became a Material,
+    // which dropped the semantics container Card adds, and TalkBack read
+    // all seven days as one flat run of dates, meals and add buttons.
+    testWidgets('${style.name}: a screen reader still reads each day card '
+        'as one group: date, "اليوم", meals, then its add buttons', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      final (_, settings) = await pumpApp(tester, withRecipe: true);
+      await tester.runAsync(
+        () => settings.update(settings.settings.copyWith(style: style)),
+      );
+      await settle(tester);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(NavigationBar),
+          matching: find.byIcon(Icons.calendar_month_outlined),
+        ),
+      );
+      await settle(tester);
+
+      // Today (the fake clock's Saturday 19 September) is one node whose
+      // label runs date, "اليوم", then the four meals.
+      final today = find.bySemanticsLabel(
+        RegExp(r'^السبت، 19 سبتمبر\nاليوم\nفطور\nغداء\nعشاء\nوجبة خفيفة$'),
+      );
+      expect(today, findsOneWidget);
+      // The date is no longer a node of its own, loose among other days'.
+      expect(find.bySemanticsLabel('السبت، 19 سبتمبر'), findsNothing);
+      expect(find.bySemanticsLabel('اليوم'), findsNothing);
+      // Its four add buttons (IconButtons, named by their tooltip) sit
+      // inside it, one per meal.
+      final adds = <String>[];
+      void collect(SemanticsNode node) {
+        if (node.tooltip == 'إضافة') adds.add(node.tooltip);
+        node.visitChildren((child) {
+          collect(child);
+          return true;
+        });
+      }
+
+      collect(tester.getSemantics(today));
+      expect(adds, hasLength(4));
+      semantics.dispose();
+    });
+  }
+
+  // LOOK-5: the numbers that step in place go through DigitBox, which
+  // reads exactly like the plain Text it replaced (same find.text match).
+  testWidgets('cook mode\'s step numeral and running timer, and the '
+      'recipe\'s ×factor readout, are boxed digits (LOOK-5)', (tester) async {
+    final (recipes, _) = await pumpApp(tester, withRecipe: true);
+    Finder boxed(String text) =>
+        find.ancestor(of: find.text(text), matching: find.byType(DigitBox));
+
+    await tester.tap(find.text('كبسة لحم'));
+    await settle(tester);
+    await tester.ensureVisible(find.text('ابدأ الطبخ'));
+    await settle(tester);
+    await tester.tap(find.text('ابدأ الطبخ'));
+    await settle(tester);
+    expect(boxed('الخطوة 1 من 2'), findsWidgets);
+
+    await tester.tap(find.text('التالي'));
+    await settle(tester);
+    await tester.tap(find.text('15:00'));
+    await settle(tester);
+    // The countdown may already have ticked: this clock is real.
+    final running = find.textContaining(RegExp(r'^1[45]:\d\d · الخطوة 2$'));
+    expect(running, findsOneWidget);
+    expect(
+      find.ancestor(of: running, matching: find.byType(DigitBox)),
+      findsOneWidget,
+    );
+    await tester.tap(find.byTooltip('إغلاق وضع الطبخ'));
+    await settle(tester);
+    await tester.tap(find.byType(BackButton).first);
+    await settle(tester);
+
+    // Three servings at ×½ isn't a whole number of servings, so the
+    // stepper shows the factor itself (SCALE-2).
+    await tester.runAsync(() async {
+      final repo = recipes.repository;
+      final now = repo.now();
+      await recipes.save(
+        Recipe(
+          id: repo.newId(),
+          title: 'شوربة',
+          servings: 3,
+          ingredients: [
+            Section(
+              id: repo.newId(),
+              items: [IngredientLine.parse(repo.newId(), '3 كوب ماء')],
+            ),
+          ],
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+    });
+    await settle(tester);
+    await tester.tap(find.text('شوربة'));
+    await settle(tester);
+    await tester.tap(find.text('×½'));
+    await settle(tester);
+    expect(boxed('×½'), findsOneWidget);
+  });
 }

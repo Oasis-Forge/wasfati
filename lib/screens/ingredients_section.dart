@@ -9,6 +9,7 @@ import '../models/recipe.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../widgets/amount_line.dart';
+import '../widgets/digit_box.dart';
 import '../widgets/rail_heading.dart';
 
 /// The ingredients with scaling and conversion (SCALE-1–SCALE-6), both free
@@ -79,9 +80,13 @@ class IngredientsSection extends StatelessWidget {
                   padding: const EdgeInsetsDirectional.symmetric(
                     horizontal: 12,
                   ),
+                  // LOOK-5: the ×factor readout steps with the stepper, so
+                  // its digits are boxed (the servings sentence has no bare
+                  // number to box: the Arabic plural absorbs it).
                   child: wholeServings == null
-                      ? times(
-                          factor,
+                      ? DigitBox(
+                          '×${amount(factor)}',
+                          textDirection: TextDirection.ltr,
                           style: Theme.of(context).textTheme.titleMedium,
                         )
                       : Text(
