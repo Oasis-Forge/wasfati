@@ -538,6 +538,31 @@ class AppLocalizationsAr extends AppLocalizations {
   String get importedRecipe => 'راجع واحفظ';
 
   @override
+  String get reportMistake => 'أبلغ عن خطأ';
+
+  @override
+  String get reportMistakeExplainLink =>
+      'يُفتح بريدك برسالة فيها رابط المصدر وملاحظتك فقط، وأنت من يرسلها.';
+
+  @override
+  String get reportMistakeExplainNoLink =>
+      'يُفتح بريدك برسالة فيها ملاحظتك فقط، وأنت من يرسلها.';
+
+  @override
+  String get reportMistakeNoteHint => 'ما الخطأ؟ (اختياري)';
+
+  @override
+  String get reportMistakeSend => 'إرسال';
+
+  @override
+  String get reportMistakeSubject => 'وصفتي: خطأ في وصفة مستوردة';
+
+  @override
+  String reportMistakeNoMailApp(String email) {
+    return 'لا يوجد تطبيق بريد على هذا الجهاز. راسلنا على $email';
+  }
+
+  @override
   String aiImportsLeftLine(String shown, String quota) {
     return 'بقي $shown من $quota استيرادات ذكية هذا الشهر · تتجدد في الأول من كل شهر';
   }
@@ -597,7 +622,84 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر الاتصال. تحقّق من الإنترنت وحاول مرة أخرى.';
 
   @override
+  String get aiImportErrorTooLarge => 'الصور أكبر من أن تُرسل. جرّب صورًا أقل.';
+
+  @override
+  String get aiImportErrorUnreadablePhoto =>
+      'تعذّر فتح هذه الصورة. جرّب صورة أخرى.';
+
+  @override
   String get aiImportPasteHint => 'الصق نص الوصفة أو الوصف هنا';
+
+  @override
+  String importPhotoExplain(String max) {
+    return 'أو من صورة: صفحة من كتاب طبخ أو وصفة بخط اليد، حتى $max صور.';
+  }
+
+  @override
+  String get importPhotoCamera => 'التقط صورة';
+
+  @override
+  String get importPhotoGallery => 'اختر من الصور';
+
+  @override
+  String get importPhotoAddPage => 'أضف صفحة';
+
+  @override
+  String importPhotoCount(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown صورة',
+      many: '$shown صورة',
+      few: '$shown صور',
+      two: 'صورتان',
+      one: 'صورة واحدة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importPhotoFirstOnly(String max) {
+    return 'تُستخدم أول $max صور فقط.';
+  }
+
+  @override
+  String get aiImportScreenshotAction => 'أو صورة للشاشة';
+
+  @override
+  String get translateRecipe => 'ترجم إلى العربية';
+
+  @override
+  String get translateConfirm => 'ترجم';
+
+  @override
+  String get translateSending => 'جارٍ الترجمة…';
+
+  @override
+  String get translateKeptOriginal =>
+      'بقيت بعض الأسطر بنصّها الأصلي كي لا تتغيّر أرقامها.';
+
+  @override
+  String get translateErrorIncomplete =>
+      'عادت الترجمة ناقصة، ولم يُحتسب أي استيراد. حاول مرة أخرى.';
+
+  @override
+  String get translateErrorTooLarge =>
+      'هذه الوصفة أطول من أن تُترجم دفعة واحدة.';
+
+  @override
+  String translatedFromLine(String title) {
+    return 'مترجمة من: $title';
+  }
+
+  @override
+  String translationLine(String title) {
+    return 'الترجمة: $title';
+  }
+
+  @override
+  String get tryAgain => 'حاول مرة أخرى';
 
   @override
   String get planTitle => 'الخطة';

@@ -14,7 +14,9 @@ import 'providers/timers_state.dart';
 import 'services/backup.dart';
 import 'services/backup_files.dart';
 import 'services/cook_services.dart';
+import 'services/import_photos.dart';
 import 'services/importer.dart';
+import 'services/mail.dart';
 import 'services/photo_store.dart';
 import 'services/recipe_pages.dart' show ShareStorage;
 import 'services/sharer.dart';
@@ -47,6 +49,8 @@ class WasfatiApp extends StatelessWidget {
     required this.backup,
     required this.backupFiles,
     required this.backupState,
+    required this.mail,
+    required this.importPhotos,
   });
 
   final RecipesState recipes;
@@ -88,6 +92,15 @@ class WasfatiApp extends StatelessWidget {
   /// rebuilt on every frame, so it keeps its state across rebuilds.
   final BackupState backupState;
 
+  /// Opens the user's mail app for "Report a mistake" (IMP-8, Decision 19).
+  /// No default, for the same reason as [sharer]: the test fake records
+  /// every draft, so a test that forgot one should fail loudly.
+  final MailComposer mail;
+
+  /// The camera and photo picker for a photo import (IMP-1, IMP-10,
+  /// IMP-12). No default, like [mail]: the test fake is scripted per test.
+  final ImportPhotoPicker importPhotos;
+
   static final navigatorKey = GlobalKey<NavigatorState>();
 
   @override
@@ -108,6 +121,8 @@ class WasfatiApp extends StatelessWidget {
         Provider<BackupService>.value(value: backup),
         Provider<BackupFiles>.value(value: backupFiles),
         ChangeNotifierProvider.value(value: backupState),
+        Provider<MailComposer>.value(value: mail),
+        Provider<ImportPhotoPicker>.value(value: importPhotos),
       ],
       child: _RamadanSync(
         settings: settings,

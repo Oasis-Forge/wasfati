@@ -93,6 +93,54 @@ void main() {
     });
 
     test(
+      'step 6 upgrades a step-5 database: its recipes keep everything, '
+      'have no translation link, and can link a translated copy (IMP-14)',
+      () async {
+        sqfliteFfiInit();
+        final path =
+            '${Directory.systemTemp.path}/wasfati_translate_upgrade.db';
+        await databaseFactoryFfi.deleteDatabase(path);
+        final clock = FakeClock();
+        final ids = CountingIds();
+
+        final old = await DBHelper.open(databaseFactoryFfi, path, upTo: 5);
+        final oldRepo = RecipeRepository(old, clock: clock.call, ids: ids.call);
+        final original = await oldRepo.save(kabsa(oldRepo));
+        await old.close();
+
+        final db = await DBHelper.open(databaseFactoryFfi, path);
+        expect(await _version(db), 6);
+        final cols = (await db.rawQuery('PRAGMA table_info(recipes)'))
+            .map((c) => c['name'])
+            .toSet();
+        expect(cols, contains('translated_from'));
+        final repo = RecipeRepository(db, clock: clock.call, ids: ids.call);
+        final back = (await repo.get(original.id))!;
+        expect(back.title, 'كبسة لحم');
+        expect(back.ingredients.first.items.first.min, Rational(1));
+        expect(back.translatedFrom, isNull);
+        expect(await repo.translationLinks(original.id), (
+          from: null,
+          translation: null,
+        ));
+
+        final copy = await repo.save(
+          kabsa(
+            repo,
+            title: 'Lamb kabsa',
+          ).copyWith(translatedFrom: original.id),
+        );
+        expect((await repo.get(copy.id))!.translatedFrom, original.id);
+        expect((await repo.translationLinks(original.id)).translation, (
+          id: copy.id,
+          title: 'Lamb kabsa',
+        ));
+        await db.close();
+        await databaseFactoryFfi.deleteDatabase(path);
+      },
+    );
+
+    test(
       'REC-1, REC-2, DEL-1: every record table has id, times, deleted_at',
       () async {
         final db = await memoryDb();
@@ -113,6 +161,63 @@ void main() {
         }
       },
     );
+  });
+
+  group('IMP-14: a translated copy and its original', () {
+    test('each links to the other; deleting either leaves the other whole '
+        'and the link just disappears, and Undo brings it back', () async {
+      final (repo, clock, _) = await testRepo();
+      final original = await repo.save(kabsa(repo));
+      clock.advance(const Duration(minutes: 1));
+      final copy = await repo.save(
+        kabsa(repo, title: 'Lamb kabsa').copyWith(translatedFrom: original.id),
+      );
+
+      expect(await repo.translationLinks(copy.id), (
+        from: (id: original.id, title: 'كبسة لحم'),
+        translation: null,
+      ));
+      expect(await repo.translationLinks(original.id), (
+        from: null,
+        translation: (id: copy.id, title: 'Lamb kabsa'),
+      ));
+
+      await repo.delete(original.id);
+      expect((await repo.translationLinks(copy.id)).from, isNull);
+      final copyBack = (await repo.get(copy.id))!;
+      expect(copyBack.title, 'Lamb kabsa');
+      expect(copyBack.ingredients.expand((s) => s.items), hasLength(4));
+      await repo.restore(original.id);
+      expect((await repo.translationLinks(copy.id)).from?.id, original.id);
+
+      await repo.delete(copy.id);
+      expect((await repo.translationLinks(original.id)).translation, isNull);
+      expect((await repo.get(original.id))!.title, 'كبسة لحم');
+
+      // DEL-2: purging the copy never touches the original.
+      clock.advance(const Duration(days: 31));
+      await repo.purgeTrash();
+      expect((await repo.get(original.id))!.steps.single.items, hasLength(2));
+      expect(await repo.translationLinks(original.id), (
+        from: null,
+        translation: null,
+      ));
+    });
+
+    test('the newest live translation is the one the original shows', () async {
+      final (repo, clock, _) = await testRepo();
+      final original = await repo.save(kabsa(repo));
+      for (final t in ['First', 'Second']) {
+        clock.advance(const Duration(minutes: 1));
+        await repo.save(
+          kabsa(repo, title: t).copyWith(translatedFrom: original.id),
+        );
+      }
+      expect(
+        (await repo.translationLinks(original.id)).translation?.title,
+        'Second',
+      );
+    });
   });
 
   group('RecipeRepository', () {

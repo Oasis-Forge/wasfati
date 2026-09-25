@@ -133,7 +133,9 @@ ParsedLine parseIngredient(String line) {
   if (hit == null) {
     for (var k = 1; k < tokens.length; k++) {
       final h = _amountAndUnitAt(tokens, norm, k);
-      if (h != null && (h.min != null)) {
+      // A bare "0" after the name ("ملح 0") is the same placeholder as one
+      // at the start: dropped, leaving the line with no amount (QTY-1).
+      if (h != null && (h.min != null || h.placeholder)) {
         hit = h;
         nameTokens = tokens.sublist(0, k);
         break;
@@ -206,11 +208,15 @@ String _cutPhrase(String name, String normalizedPhrase) {
 }
 
 class _Hit {
-  _Hit(this.min, this.max, this.unit, this.end);
+  _Hit(this.min, this.max, this.unit, this.end, {this.placeholder = false});
   final Rational? min;
   final Rational? max;
   final Unit? unit;
   final int end;
+
+  /// The amount was a bare "0": a site's placeholder for "no amount given",
+  /// read as no amount rather than the number zero (QTY-1).
+  final bool placeholder;
 }
 
 /// Reads an amount (optional), then a unit (optional), from token [i].
@@ -234,11 +240,19 @@ _Hit? _amountAndUnitAt(List<String> tokens, List<String> norm, int i) {
     }
   }
 
+  // Some recipe sites print a bare "0" (or "٠") where no amount was given
+  // (QTY-1; found measuring the import server, 23 September 2026). Only a
+  // zero that is the whole amount counts: "0.5", "10", "٠٫٥", "0 1/2" and
+  // a range starting at zero ("0-1") are read as numbers, as before.
+  final placeholder =
+      first != null && max == null && first.$2 == i + 1 && min == Rational.zero;
+  if (placeholder) min = null;
+
   final u = _unitAt(norm, j);
   Unit? unit;
   if (u != null) {
     unit = u.$1;
-    if (min == null) {
+    if (min == null && !placeholder) {
       if (u.$3) {
         min = Rational(2); // a dual form means two (QTY-8)
       } else if (unit.kind != UnitKind.informal) {
@@ -248,6 +262,9 @@ _Hit? _amountAndUnitAt(List<String> tokens, List<String> norm, int i) {
     }
     j = u.$2;
   }
+  // A placeholder with no amount: the "0" is dropped, and a unit after it
+  // is still the line's unit ("0 رشة ملح" reads as "رشة ملح").
+  if (placeholder) return _Hit(null, null, unit, j, placeholder: true);
   if (min == null && unit == null) return null;
   if (min == null && unit != null && unit.kind == UnitKind.informal) {
     return _Hit(null, null, unit, j); // "رشة زعفران" is to taste (QTY-2)

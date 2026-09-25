@@ -4,6 +4,19 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-09-24
+
+### Added
+- Import a recipe from a photo: take a picture of a cookbook page or a handwritten card, or pick up to four from your gallery, and it comes back as a recipe to check before saving. The first photo becomes the recipe's picture, and where the photo was taken never leaves your phone.
+- Translate a recipe: one written in another language offers "ترجم إلى العربية". It saves a translated copy beside the original, and every amount, unit and timer stays exactly as it was — only the words change.
+- "أبلغ عن خطأ" in the import preview opens your own mail app with just the link and your note, so you see exactly what is sent before you send it.
+
+### Fixed
+- A recipe site's "0", printed where it has no amount to give, is no longer read as zero.
+
+### Changed
+- The privacy policy now covers photo imports, translation and reports.
+
 ## [0.15.0] - 2026-09-24
 
 ### Added

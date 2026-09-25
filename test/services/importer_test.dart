@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 import 'package:wasfati/models/quantity/rational.dart';
 import 'package:wasfati/models/recipe.dart';
 import 'package:wasfati/models/recipe_import.dart';
@@ -296,4 +297,131 @@ void main() {
       }
     });
   });
+
+  group('fromPhotos (IMP-1, IMP-10)', () {
+    const found = AiImportSuccess(
+      ImportedRecipe(
+        title: 'معمول',
+        ingredients: [
+          (null, ['٣ أكواب سميد', '0 ماء ورد']),
+        ],
+        steps: [
+          (null, ['يعجن السميد']),
+        ],
+      ),
+      model: 'haiku',
+      promptVersion: '1',
+      cached: false,
+    );
+
+    test('each photo is resized to at most 1600 px JPEG before it is sent, '
+        'with no url or text', () async {
+      final (repo, _, _) = await testRepo();
+      final ai = NoopAiImportClient()..nextResult = found;
+      final importer = Importer(
+        FakeFetcher({}),
+        repo,
+        savePhoto: (_, _) async => null,
+        aiClient: ai,
+      );
+      final wide = pngOf(3200, 1200);
+      final tall = pngOf(900, 2400);
+      await importer.fromPhotos(installId: 'inst-1', images: [wide, tall]);
+
+      final sent = ai.requests.single;
+      expect((sent.installId, sent.url, sent.text), ('inst-1', null, null));
+      expect(sent.images, hasLength(2));
+      final first = img.decodeJpg(sent.images![0])!;
+      final second = img.decodeJpg(sent.images![1])!;
+      expect((first.width, first.height), (1600, 600)); // order kept
+      expect((second.width, second.height), (600, 1600));
+    });
+
+    test('the first photo becomes the recipe photo, and the lines go through '
+        'QTY-1 on the device', () async {
+      final (repo, _, _) = await testRepo();
+      final ai = NoopAiImportClient()..nextResult = found;
+      final saved = <(String, Uint8List)>[];
+      final importer = Importer(
+        FakeFetcher({}),
+        repo,
+        savePhoto: (id, bytes) async {
+          saved.add((id, bytes));
+          return '/photos/$id.jpg';
+        },
+        aiClient: ai,
+      );
+      final page1 = pngOf(40, 30);
+      final page2 = pngOf(30, 40);
+      final r = await importer.fromPhotos(
+        installId: 'inst-1',
+        images: [page1, page2],
+      );
+
+      expect(r.title, 'معمول');
+      expect(r.sourceType, SourceType.photo);
+      expect(r.sourceUrl, isNull); // a photo has no link (IMP-8)
+      expect(r.photoPath, '/photos/${r.id}.jpg');
+      expect(saved.single, (r.id, page1)); // the first page, only
+      final lines = r.ingredients.single.items;
+      expect((lines[0].min, lines[0].unitId), (Rational(3), 'cup'));
+      expect(lines[1].min, isNull); // "0" is no amount (QTY-1)
+      expect(await repo.library(), isEmpty); // nothing saved yet (IMP-5)
+    });
+
+    test('a failed import saves no photo file', () async {
+      final (repo, _, _) = await testRepo();
+      final ai = NoopAiImportClient()
+        ..nextResult = const AiImportError(AiImportErrorKind.tooLarge);
+      var saves = 0;
+      final importer = Importer(
+        FakeFetcher({}),
+        repo,
+        savePhoto: (_, _) async {
+          saves++;
+          return '/photos/x.jpg';
+        },
+        aiClient: ai,
+      );
+      await expectLater(
+        importer.fromPhotos(installId: 'i', images: [pngOf(20, 20)]),
+        throwsA(
+          isA<AiImportException>().having(
+            (e) => e.kind,
+            'kind',
+            AiImportErrorKind.tooLarge,
+          ),
+        ),
+      );
+      expect(saves, 0);
+    });
+
+    test('a picture the device cannot read sends nothing at all', () async {
+      final (repo, _, _) = await testRepo();
+      final ai = NoopAiImportClient()..nextResult = found;
+      final importer = Importer(FakeFetcher({}), repo, aiClient: ai);
+      await expectLater(
+        importer.fromPhotos(
+          installId: 'i',
+          images: [
+            pngOf(20, 20),
+            Uint8List.fromList(const [1, 2, 3]),
+          ],
+        ),
+        throwsA(
+          isA<AiImportException>().having(
+            (e) => e.kind,
+            'kind',
+            AiImportErrorKind.unreadablePhoto,
+          ),
+        ),
+      );
+      expect(ai.requests, isEmpty);
+    });
+  });
 }
+
+/// A plain PNG of the given size, like a screenshot straight from the
+/// picker.
+Uint8List pngOf(int width, int height) =>
+    img.encodePng(img.Image(width: width, height: height));

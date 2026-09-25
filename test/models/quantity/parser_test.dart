@@ -109,6 +109,21 @@ const _table = <(String, String?, String?, String?, String)>[
   ('ليمون', null, null, null, 'ليمون'),
   ('قطع الدجاج', null, null, null, 'قطع الدجاج'),
   ('حبات هال', null, null, null, 'حبات هال'),
+  // A bare "0" is a site's placeholder for "no amount given", not the
+  // number zero (Known bug found measuring the import server, 23 September
+  // 2026): the line has no amount, and a unit after it is still read.
+  ('0 ملح', null, null, null, 'ملح'),
+  ('٠ فلفل أسود', null, null, null, 'فلفل أسود'),
+  ('0 رشة ملح', null, null, 'pinch', 'ملح'),
+  ('0 ملح حسب الرغبة', null, null, null, 'ملح'),
+  ('ملح 0', null, null, null, 'ملح'),
+  // …but a zero that is only part of the amount still reads as a number.
+  ('0.5 كوب حليب', '1/2', null, 'cup', 'حليب'),
+  ('10 حبات تمر', '10', null, 'piece', 'تمر'),
+  ('٠٫٥ كيلو لحم', '1/2', null, 'kg', 'لحم'),
+  ('0 1/2 كوب سكر', '1/2', null, 'cup', 'سكر'),
+  ('0-1 ملعقة صغيرة شطة', '0', '1', 'tsp', 'شطة'),
+  ('٠ - ١ ملعقة صغيرة شطة', '0', '1', 'tsp', 'شطة'),
 ];
 
 Rational? _r(String? s) {
@@ -204,6 +219,27 @@ void main() {
       final s = scaleLine(parseIngredient('ملح حسب الذوق'), Rational(2));
       expect(s.scaled, isFalse);
       expect(s.line.min, isNull);
+    });
+  });
+
+  group('QTY-1: a bare "0" means no amount given', () {
+    test('it is never shown, and never scaled up to "½" (SCALE-4)', () {
+      final line = parseIngredient('0 ملح');
+      expect(formatLine(line), 'ملح');
+      final s = scaleLine(line, Rational(2));
+      expect(s.scaled, isFalse);
+      expect(formatLine(s.line), 'ملح');
+    });
+    test('a unit after it is still the unit, with no amount', () {
+      final line = parseIngredient('0 كوب سكر');
+      expect((line.min, line.max, line.unitId), (null, null, 'cup'));
+      expect(line.name, 'سكر');
+      expect(line.toTaste, isTrue);
+    });
+    test('a zero inside a range still scales from zero', () {
+      final s = scaleLine(parseIngredient('0-2 ملعقة صغيرة شطة'), Rational(2));
+      expect(s.scaled, isTrue);
+      expect(s.line.max, Rational(4));
     });
   });
 }

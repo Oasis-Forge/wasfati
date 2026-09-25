@@ -7,13 +7,17 @@ import '../l10n/app_localizations.dart';
 import '../models/cookbook.dart';
 import '../models/library.dart';
 import '../models/quantity/arabic_text.dart';
+import '../models/quantity/convert.dart' show UnitView;
 import '../models/recipe.dart';
 import '../models/recipe_text.dart';
+import '../models/recipe_translation.dart';
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
+import '../services/mail.dart';
 import '../services/photo_store.dart';
 import '../theme/decor.dart';
 import '../widgets/content_direction.dart';
+import 'translate_flow.dart';
 
 /// Adds or edits a recipe (REC-3–REC-8). Ingredients and steps are one line
 /// each; a line ending with ":" starts a group (REC-4, REC-6). Pops the saved
@@ -25,6 +29,7 @@ class RecipeEditorScreen extends StatefulWidget {
     this.initialCookbookId,
     this.imported = false,
     this.usedAiImport = false,
+    this.translation = false,
   });
   final Recipe? recipe;
 
@@ -39,6 +44,10 @@ class RecipeEditorScreen extends StatefulWidget {
   /// the AI quota (IMP-7) — never a cancelled preview, and never a website
   /// or by-hand import, which cost nothing.
   final bool usedAiImport;
+
+  /// [recipe] is a translated copy (IMP-14): it offers no second
+  /// translation.
+  final bool translation;
 
   @override
   State<RecipeEditorScreen> createState() => _RecipeEditorScreenState();
@@ -121,19 +130,14 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     }
   }
 
-  Future<void> _save() async {
-    // A second tap before the first save's own async work settles must be
-    // a no-op: the button's disabled look (below) only takes effect once
-    // Flutter rebuilds, which a same-frame double tap can outrun
-    // (should-fix, review) — this guard is checked on entry, not the UI.
-    if (_saving) return;
-    if (!_form.currentState!.validate()) return;
+  /// The recipe exactly as the form now shows it.
+  Recipe _fromForm() {
     final state = context.read<RecipesState>();
     final repo = state.repository;
     final before = widget.recipe;
     final now = repo.now();
     final notes = _notes.text.trim();
-    final recipe = Recipe(
+    return Recipe(
       id: _id,
       title: _title.text.trim(),
       photoPath: _photo,
@@ -157,9 +161,25 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           if (_cookbooks.contains(c.id)) c.id,
       ],
       tags: parseTags(_tags.text),
+      // SCALE-5: the remembered view survives an edit; IMP-14: so does a
+      // translated copy's link to its original.
+      unitView: before?.unitView ?? UnitView.asWritten,
+      translatedFrom: before?.translatedFrom,
       createdAt: before?.createdAt ?? now,
       updatedAt: now,
     );
+  }
+
+  Future<void> _save() async {
+    // A second tap before the first save's own async work settles must be
+    // a no-op: the button's disabled look (below) only takes effect once
+    // Flutter rebuilds, which a same-frame double tap can outrun
+    // (should-fix, review) — this guard is checked on entry, not the UI.
+    if (_saving) return;
+    if (!_form.currentState!.validate()) return;
+    final state = context.read<RecipesState>();
+    final before = widget.recipe;
+    final recipe = _fromForm();
     setState(() => _saving = true);
     final saved = await state.save(recipe);
     if (!mounted) return;
@@ -185,6 +205,54 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
       await context.read<SettingsState>().recordAiImportSaved();
     }
     if (mounted) Navigator.of(context).pop(saved.id);
+  }
+
+  /// IMP-14, IMP-16: translates the preview as it now reads. Inside an AI
+  /// import's preview it's part of that import and costs nothing more;
+  /// otherwise the cost line shows first. When the translated copy is
+  /// saved, it's saved instead of this import: this draft is discarded,
+  /// with its photo, and closes onto the copy.
+  Future<void> _translate() async {
+    if (!_form.currentState!.validate()) return;
+    final photos = context.read<PhotoStore>();
+    final saved = await translateAndPreview(
+      context,
+      _fromForm(),
+      free: widget.usedAiImport,
+      linkToOriginal: false,
+    );
+    if (saved == null || !mounted) return;
+    for (final path in {widget.recipe?.photoPath, _photo}.nonNulls) {
+      await photos.delete(path);
+    }
+    if (mounted) Navigator.of(context).pop(saved);
+  }
+
+  /// IMP-8, Decision 19: an optional note, then the user's own mail app
+  /// with a draft to [supportEmail] holding only the import's source link
+  /// (none for a photo or pasted text) and that note. The recipe, its
+  /// photos and any caption never go in it, nothing goes through our
+  /// server, and the user reads the draft and sends it themselves.
+  Future<void> _reportMistake() async {
+    final l10n = AppLocalizations.of(context);
+    final mail = context.read<MailComposer>();
+    final messenger = ScaffoldMessenger.of(context);
+    final link = widget.recipe?.sourceUrl;
+    final note = await showDialog<String>(
+      context: context,
+      builder: (_) => _ReportMistakeDialog(hasLink: link != null),
+    );
+    if (note == null) return; // cancelled: nothing opens
+    final opened = await mail.compose(
+      to: supportEmail,
+      subject: l10n.reportMistakeSubject,
+      body: mistakeReportBody(sourceUrl: link, note: note),
+    );
+    if (!opened) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.reportMistakeNoMailApp(supportEmail))),
+      );
+    }
   }
 
   Future<bool> _confirmDiscard() async {
@@ -264,6 +332,23 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                   _dirty = true;
                 }),
               ),
+              // IMP-14: an import written mostly in another language.
+              if (widget.imported &&
+                  !widget.translation &&
+                  widget.recipe != null &&
+                  offersTranslation(
+                    widget.recipe!,
+                    arabicApp:
+                        Localizations.localeOf(context).languageCode == 'ar',
+                  ))
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: TextButton.icon(
+                    onPressed: _saving ? null : _translate,
+                    icon: const Icon(Icons.translate),
+                    label: Text(l10n.translateRecipe),
+                  ),
+                ),
               const SizedBox(height: 12),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,10 +443,84 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                   alignLabelWithHint: true,
                 ),
               ),
+              // IMP-5, IMP-8: a quiet action, last in the preview.
+              if (widget.imported) ...[
+                const SizedBox(height: 24),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: TextButton.icon(
+                    onPressed: _reportMistake,
+                    icon: const Icon(Icons.flag_outlined),
+                    label: Text(l10n.reportMistake),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// IMP-8: says exactly what the mail will hold, takes an optional note, and
+/// pops that note on Send (null on Cancel).
+class _ReportMistakeDialog extends StatefulWidget {
+  const _ReportMistakeDialog({required this.hasLink});
+
+  /// Whether the import has a source link to include (a photo or pasted
+  /// text has none).
+  final bool hasLink;
+
+  @override
+  State<_ReportMistakeDialog> createState() => _ReportMistakeDialogState();
+}
+
+class _ReportMistakeDialogState extends State<_ReportMistakeDialog> {
+  final _note = TextEditingController();
+
+  @override
+  void dispose() {
+    _note.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l10n.reportMistake),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              widget.hasLink
+                  ? l10n.reportMistakeExplainLink
+                  : l10n.reportMistakeExplainNoLink,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _note,
+              minLines: 2,
+              maxLines: 5,
+              decoration: InputDecoration(hintText: l10n.reportMistakeNoteHint),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _note.text),
+          child: Text(l10n.reportMistakeSend),
+        ),
+      ],
     );
   }
 }
@@ -437,17 +596,25 @@ class _PhotoRow extends StatelessWidget {
               ),
             ),
           ),
-        TextButton.icon(
-          onPressed: onPick,
-          icon: const Icon(Icons.add_photo_alternate_outlined),
-          label: Text(l10n.photoAdd),
-        ),
-        if (path != null)
-          TextButton.icon(
-            onPressed: onRemove,
-            icon: const Icon(Icons.delete_outline),
-            label: Text(l10n.photoRemove),
+        // Wraps under itself on a phone: next to a photo, both buttons don't
+        // fit on one 360 dp line (an imported photo, IMP-10).
+        Expanded(
+          child: Wrap(
+            children: [
+              TextButton.icon(
+                onPressed: onPick,
+                icon: const Icon(Icons.add_photo_alternate_outlined),
+                label: Text(l10n.photoAdd),
+              ),
+              if (path != null)
+                TextButton.icon(
+                  onPressed: onRemove,
+                  icon: const Icon(Icons.delete_outline),
+                  label: Text(l10n.photoRemove),
+                ),
+            ],
           ),
+        ),
       ],
     );
   }

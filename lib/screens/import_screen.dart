@@ -10,17 +10,21 @@ import '../models/recipe_import.dart' show normalizeSourceUrl;
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../services/ai_import.dart';
+import '../services/import_photos.dart';
 import '../services/importer.dart';
+import '../services/photo_store.dart';
 import '../services/web_import.dart';
+import '../theme/decor.dart';
 import 'home_screen.dart';
 import 'recipe_editor_screen.dart';
 
-/// Import from a link (IMP-2) or shared/pasted text (IMP-3): a link is read
-/// on the device first, free and unlimited; when that fails for any reason
-/// but an invalid link, or for plain text, it goes to the AI server instead
-/// (IMP-1, IMP-3). Shows progress (IMP-4), checks for a duplicate (IMP-9),
-/// then opens the preview, where nothing is saved — and no AI quota spent —
-/// until the user taps Save (IMP-5, IMP-7).
+/// Import from a link (IMP-2), shared/pasted text (IMP-3) or photos
+/// (IMP-1, IMP-10): a link is read on the device first, free and unlimited;
+/// when that fails for any reason but an invalid link, or for plain text or
+/// photos, it goes to the AI server instead (IMP-1, IMP-3). Shows progress
+/// (IMP-4), checks for a duplicate (IMP-9), then opens the preview, where
+/// nothing is saved — and no AI quota spent — until the user taps Save
+/// (IMP-5, IMP-7).
 class ImportScreen extends StatefulWidget {
   const ImportScreen({super.key, this.initialUrl, this.initialText});
 
@@ -72,6 +76,18 @@ class _ImportScreenState extends State<ImportScreen> {
   /// decision) waits here for [_Stage.aiConfirm] until the user actually
   /// chooses to spend an AI import.
   String? _pendingAiText;
+
+  /// IMP-1, IMP-10: picked photos waiting at [_Stage.aiConfirm], like
+  /// [_pendingAiText], until the user chooses to spend an AI import.
+  List<Uint8List>? _pendingPhotos;
+
+  /// [_pendingPhotos] came from the camera, one page at a time, so the
+  /// confirm step offers "أضف صفحة" for the next one.
+  bool _photosFromCamera = false;
+
+  /// The last AI attempt sent photos: "أضفها بنفسك" then starts a blank
+  /// photo-sourced draft, not one tagged with whatever the link field holds.
+  bool _lastWasPhotos = false;
 
   /// IMP-4: shown once [_keepWaitingAfter] passes during [_Stage.aiSending].
   bool _showKeepWaiting = false;
@@ -170,25 +186,76 @@ class _ImportScreenState extends State<ImportScreen> {
         _stage = _Stage.idle;
         _outOfQuota = true;
         _lastText = text;
+        _lastWasPhotos = false;
       });
       return;
     }
     setState(() {
       _stage = _Stage.aiConfirm;
       _pendingAiText = text;
+      _pendingPhotos = null;
     });
   }
 
   void _cancelAiConfirm() => setState(() {
     _stage = _Stage.idle;
     _pendingAiText = null;
+    _pendingPhotos = null;
   });
 
-  /// IMP-3, SRV-1: sends exactly one of [url] or [text] to the AI server.
-  /// The cost line (IMP-3) and progress (IMP-4) show before anything is
-  /// sent; a quota already at 0 is told to the user instead of trying a
-  /// request the server would only reject (IMP-7).
-  Future<void> _sendToAi({String? url, String? text}) async {
+  /// IMP-1, IMP-10, IMP-12: the system camera or photo picker. Adds to any
+  /// photos already waiting (the camera's next page), up to
+  /// [maxImportImages], then shows IMP-3's cost line with a real choice
+  /// before anything is sent — the same confirm step as a shared text.
+  Future<void> _pickPhotos({required bool camera}) async {
+    final picker = context.read<ImportPhotoPicker>();
+    final have = _pendingPhotos ?? const <Uint8List>[];
+    final room = maxImportImages - have.length;
+    if (room <= 0) return;
+    final picked = camera
+        ? await picker.camera()
+        : await picker.gallery(max: room);
+    if (!mounted || picked.isEmpty) return; // cancelled: nothing changes
+    final settings = context.read<SettingsState>();
+    if (picked.length > room) {
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n.importPhotoFirstOnly(settings.number(maxImportImages)),
+          ),
+        ),
+      );
+    }
+    if (settings.aiImportsLeft() <= 0) {
+      setState(() {
+        _stage = _Stage.idle;
+        _outOfQuota = true;
+        _lastText = null;
+        _lastWasPhotos = true;
+        _pendingPhotos = null;
+      });
+      return;
+    }
+    setState(() {
+      _stage = _Stage.aiConfirm;
+      _failure = null;
+      _aiError = null;
+      _pendingAiText = null;
+      _pendingPhotos = [...have, ...picked.take(room)];
+      _photosFromCamera = camera;
+    });
+  }
+
+  /// IMP-3, SRV-1: sends exactly one of [url], [text] or [images] to the AI
+  /// server. The cost line (IMP-3) and progress (IMP-4) show before
+  /// anything is sent; a quota already at 0 is told to the user instead of
+  /// trying a request the server would only reject (IMP-7).
+  Future<void> _sendToAi({
+    String? url,
+    String? text,
+    List<Uint8List>? images,
+  }) async {
     final settings = context.read<SettingsState>();
     if (settings.aiImportsLeft() <= 0) {
       setState(() {
@@ -198,6 +265,8 @@ class _ImportScreenState extends State<ImportScreen> {
         _unreadableLink = null;
         _captionFallbackReason = null;
         _lastText = text;
+        _lastWasPhotos = images != null;
+        _pendingPhotos = null;
       });
       return;
     }
@@ -207,19 +276,24 @@ class _ImportScreenState extends State<ImportScreen> {
       _aiError = null;
       _outOfQuota = false;
       _lastText = text;
+      _lastWasPhotos = images != null;
       _pendingAiText = null;
+      _pendingPhotos = null;
       _showKeepWaiting = false;
     });
     _keepWaitingTimer?.cancel();
     _keepWaitingTimer = Timer(_keepWaitingAfter, () {
       if (mounted && run == _run) setState(() => _showKeepWaiting = true);
     });
+    final photoStore = context.read<PhotoStore>();
     final installId = await context.read<RecipesState>().repository.installId();
     if (!mounted || run != _run) return;
     final importer = context.read<Importer>();
     Recipe draft;
     try {
-      draft = await importer.fromAi(installId: installId, url: url, text: text);
+      draft = images != null
+          ? await importer.fromPhotos(installId: installId, images: images)
+          : await importer.fromAi(installId: installId, url: url, text: text);
     } on AiImportException catch (e) {
       _keepWaitingTimer?.cancel();
       if (!mounted || run != _run) return;
@@ -241,11 +315,17 @@ class _ImportScreenState extends State<ImportScreen> {
       return;
     }
     _keepWaitingTimer?.cancel();
-    if (!mounted || run != _run) return;
+    if (!mounted || run != _run) {
+      // A cancelled photo import (IMP-4) leaves no photo file behind.
+      final photo = draft.photoPath;
+      if (photo != null) await photoStore.delete(photo);
+      return;
+    }
     setState(() => _stage = _Stage.idle);
-    // IMP-12: a pasted caption still saves with the original link as its
-    // source, so IMP-9's duplicate check and "open original" keep working.
-    if (url == null && text != null) {
+    // IMP-12: a pasted caption or a screenshot still saves with the
+    // original link as its source, so IMP-9's duplicate check and "open
+    // original" keep working.
+    if (url == null) {
       final original = _unreadableLink;
       if (original != null) {
         draft = draft.copyWith(
@@ -332,6 +412,8 @@ class _ImportScreenState extends State<ImportScreen> {
     final text = _lastText;
     final draft = text != null
         ? importer.fromText(text)
+        : _lastWasPhotos
+        ? importer.fromText('').copyWith(sourceType: SourceType.photo)
         : importer
               .fromText('')
               .copyWith(
@@ -386,6 +468,10 @@ class _ImportScreenState extends State<ImportScreen> {
         AiImportErrorKind.limitReached => l10n.aiImportErrorLimitReached,
         AiImportErrorKind.busy => l10n.aiImportErrorBusy,
         AiImportErrorKind.misconfigured => l10n.aiImportErrorMisconfigured,
+        AiImportErrorKind.tooLarge => l10n.aiImportErrorTooLarge,
+        AiImportErrorKind.unreadablePhoto => l10n.aiImportErrorUnreadablePhoto,
+        // Only a translation answers this (IMP-15); listed for completeness.
+        AiImportErrorKind.badTranslation => l10n.translateErrorIncomplete,
         AiImportErrorKind.unknown => l10n.aiImportErrorUnknown,
         AiImportErrorKind.network => l10n.aiImportErrorNetwork,
       };
@@ -436,9 +522,21 @@ class _ImportScreenState extends State<ImportScreen> {
               label: Text(l10n.importAction),
             )
           else if (_stage == _Stage.aiConfirm) ...[
-            // IMP-3: shown before a share or a plain paste is sent to AI
-            // import, with a real choice — the one case nothing else on
-            // this screen already counts as the user's decision.
+            // IMP-3: shown before a share, a plain paste or picked photos
+            // are sent to AI import, with a real choice — the cases where
+            // nothing else on this screen already counts as the user's
+            // decision.
+            if (_pendingPhotos case final photos?) ...[
+              _PhotoStrip(photos: photos),
+              const SizedBox(height: 4),
+              Text(
+                l10n.importPhotoCount(
+                  photos.length,
+                  settings.number(photos.length),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
             Text(
               l10n.aiImportCostLine(
                 settings.number(left),
@@ -447,13 +545,24 @@ class _ImportScreenState extends State<ImportScreen> {
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 8),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 FilledButton(
-                  onPressed: () => _sendToAi(text: _pendingAiText),
+                  onPressed: () => _pendingPhotos != null
+                      ? _sendToAi(images: _pendingPhotos)
+                      : _sendToAi(text: _pendingAiText),
                   child: Text(l10n.importAction),
                 ),
-                const SizedBox(width: 8),
+                if (_photosFromCamera &&
+                    (_pendingPhotos?.length ?? maxImportImages) <
+                        maxImportImages)
+                  OutlinedButton.icon(
+                    onPressed: () => _pickPhotos(camera: true),
+                    icon: const Icon(Icons.add_a_photo_outlined),
+                    label: Text(l10n.importPhotoAddPage),
+                  ),
                 OutlinedButton(
                   onPressed: _cancelAiConfirm,
                   child: Text(l10n.cancel),
@@ -518,7 +627,11 @@ class _ImportScreenState extends State<ImportScreen> {
             ] else
               OutlinedButton(onPressed: _cancel, child: Text(l10n.cancel)),
           ],
-          if (showingCaptionFallback) ...[
+          // Out of the way while a screenshot from it is being confirmed or
+          // sent, so the screen offers one "استيراد", not two.
+          if (showingCaptionFallback &&
+              _stage != _Stage.aiConfirm &&
+              !(_stage == _Stage.aiSending && _lastWasPhotos)) ...[
             const SizedBox(height: 16),
             Text(
               _captionFallbackReason == AiImportErrorKind.privatePost
@@ -553,6 +666,17 @@ class _ImportScreenState extends State<ImportScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            // IMP-12: a screenshot of the post goes through the same photo
+            // import (IMP-10), and still saves with the post's link.
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton.icon(
+                onPressed: busy ? null : () => _pickPhotos(camera: false),
+                icon: const Icon(Icons.screenshot_outlined),
+                label: Text(l10n.aiImportScreenshotAction),
+              ),
+            ),
           ],
           if (message != null) ...[
             const SizedBox(height: 16),
@@ -569,8 +693,72 @@ class _ImportScreenState extends State<ImportScreen> {
                 ),
               ),
           ],
+          // IMP-1, IMP-10: a cookbook page or a handwritten recipe, through
+          // the system camera or photo picker. Last, so a failed attempt's
+          // message stays next to the button that caused it.
+          if (!busy && !showingCaptionFallback) ...[
+            const SizedBox(height: 24),
+            Text(
+              l10n.importPhotoExplain(settings.number(maxImportImages)),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => _pickPhotos(camera: true),
+                  icon: const Icon(Icons.photo_camera_outlined),
+                  label: Text(l10n.importPhotoCamera),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _pickPhotos(camera: false),
+                  icon: const Icon(Icons.photo_library_outlined),
+                  label: Text(l10n.importPhotoGallery),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+/// Thumbnails of the photos about to be sent (IMP-1), so the user sees
+/// exactly which pictures leave the device before tapping استيراد.
+class _PhotoStrip extends StatelessWidget {
+  const _PhotoStrip({required this.photos});
+  final List<Uint8List> photos;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final photo in photos)
+          ClipPath(
+            // LOOK-6: the same shape as a library thumbnail (Decor).
+            clipper: ShapeBorderClipper(
+              shape: Decor.of(context).thumbnailShape,
+              textDirection: Directionality.of(context),
+            ),
+            child: Image.memory(
+              photo,
+              width: 64,
+              height: 64,
+              cacheWidth: 192,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => const SizedBox(
+                width: 64,
+                height: 64,
+                child: Icon(Icons.image_outlined),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

@@ -15,6 +15,7 @@ class DBHelper {
     _v3PlanEntries,
     _v4Groceries,
     _v5SampleOffered,
+    _v6TranslatedFrom,
   ];
 
   static int get version => steps.length;
@@ -242,4 +243,16 @@ Future<void> _v5SampleOffered(DatabaseExecutor db) async {
       'value': '1',
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
+}
+
+/// Step 6: a translated copy's link to the recipe it was translated from
+/// (IMP-14, Decision 9). No foreign key on purpose: deleting either recipe
+/// leaves the other whole, and the trash purge (DEL-2) hard-deletes rows,
+/// which a reference would block — a link to a recipe that is gone simply
+/// stops showing. The index serves the original's "الترجمة" lookup.
+Future<void> _v6TranslatedFrom(DatabaseExecutor db) async {
+  await db.execute('ALTER TABLE recipes ADD COLUMN translated_from TEXT');
+  await db.execute(
+    'CREATE INDEX recipes_translated_from ON recipes(translated_from)',
+  );
 }

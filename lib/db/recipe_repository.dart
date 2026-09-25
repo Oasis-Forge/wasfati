@@ -32,6 +32,9 @@ class RecipeSummary {
   final DateTime createdAt;
 }
 
+/// Another recipe one recipe points at: its ID and its title (IMP-14).
+typedef RecipeLink = ({String id, String title});
+
 /// Reads and writes recipes. Every save is one transaction, so a recipe is
 /// never half written (reliable writes).
 class RecipeRepository {
@@ -412,6 +415,36 @@ class RecipeRepository {
       limit: 1,
     );
     return rows.isEmpty ? null : rows.single['id']! as String;
+  }
+
+  /// IMP-14's two links for recipe [id]: the live recipe it was translated
+  /// from, and its newest live translation. A link whose other end is in
+  /// the trash, purged, or never existed is simply null — deleting one
+  /// recipe never touches the other.
+  Future<({RecipeLink? from, RecipeLink? translation})> translationLinks(
+    String id,
+  ) async {
+    final from = await _db.rawQuery(
+      'SELECT o.id, o.title FROM recipes r JOIN recipes o '
+      'ON o.id = r.translated_from '
+      'WHERE r.id = ? AND o.deleted_at IS NULL',
+      [id],
+    );
+    final translation = await _db.query(
+      'recipes',
+      columns: ['id', 'title'],
+      where: 'translated_from = ? AND deleted_at IS NULL',
+      whereArgs: [id],
+      orderBy: 'created_at DESC',
+      limit: 1,
+    );
+    RecipeLink? link(List<Map<String, Object?>> rows) => rows.isEmpty
+        ? null
+        : (
+            id: rows.single['id']! as String,
+            title: rows.single['title']! as String,
+          );
+    return (from: link(from), translation: link(translation));
   }
 
   /// "Mark as cooked" (REC-9, COOK-6): one more cook, and when.

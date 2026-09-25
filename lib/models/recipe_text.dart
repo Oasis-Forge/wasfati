@@ -4,6 +4,12 @@
 /// group ("للصلصة:"); "ملح: 1 ملعقة" is still an ingredient, because text
 /// follows the colon. Lines keep their IDs when their text is unchanged, so
 /// a backup merge sees an edit, not a delete and an insert (BAK-3).
+///
+/// An ingredient line whose text is unchanged also keeps what was read from
+/// it; only a line the user edited is parsed again (REC-5). A translated
+/// copy's lines (IMP-15) carry the original's amount, range and unit beside
+/// text in another language, and saving the copy's preview must never
+/// re-read those from the new words.
 library;
 
 import 'recipe.dart';
@@ -18,19 +24,14 @@ List<Section<IngredientLine>> ingredientsFromText(
 ) {
   final oldLines = [for (final s in before) ...s.items];
   final used = <String>{};
-  String idFor(String line) {
+  IngredientLine lineFor(String line) {
     for (final l in oldLines) {
-      if (l.original == line && used.add(l.id)) return l.id;
+      if (l.original == line && used.add(l.id)) return l;
     }
-    return newId();
+    return IngredientLine.parse(newId(), line);
   }
 
-  return _group<IngredientLine>(
-    text,
-    before,
-    newId,
-    (line) => IngredientLine.parse(idFor(line), line),
-  );
+  return _group<IngredientLine>(text, before, newId, lineFor);
 }
 
 List<Section<RecipeStep>> stepsFromText(
