@@ -311,7 +311,9 @@ void main() {
         await settle(tester);
         await tester.tap(find.text(l.settingsSubscription));
         await settle(tester);
-        expect(find.text('${ownIsolate(price)} $once'), findsOneWidget);
+        // The price over its period (PAY-10's two-line pill).
+        expect(find.text(ownIsolate(price)), findsOneWidget);
+        expect(find.text(once), findsOneWidget);
         expect(shown(easternDigits(price)), findsNothing);
       });
     }

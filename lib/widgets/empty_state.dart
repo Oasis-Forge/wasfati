@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'ornament.dart';
 
 /// One composition for every empty state (the library, cookbooks, no
-/// results, an empty cookbook, an empty plan, an empty grocery list): the
-/// drawn [Ornament], the caller's own heading and body text and the
-/// caller's own action(s) — this widget invents or changes no string of its
-/// own.
+/// results, an empty cookbook, an empty plan, an empty grocery list), in
+/// Sufra's own terms (design-styles.md, Decision 23): a soft accent disc
+/// with the drawn khatam [Ornament] in it, and the caller's [icon] on top
+/// when it has one; the caller's heading at `title` (19/700) and body in
+/// `ink2`; and the caller's own action(s) — this widget invents or changes
+/// no string of its own (RUN-1: one clear first action).
 ///
 /// [scrollable] wraps the composition in its own centred
 /// [SingleChildScrollView], so 1.3× text (LANG-6) scrolls instead of
@@ -20,6 +22,7 @@ class EmptyState extends StatelessWidget {
     super.key,
     required this.title,
     this.body,
+    this.icon,
     this.actions = const [],
     this.scrollable = true,
   });
@@ -30,6 +33,10 @@ class EmptyState extends StatelessWidget {
   /// The caller's own body string, if it has one.
   final String? body;
 
+  /// What the screen holds when it isn't empty (a book for recipes, a
+  /// magnifier for a search): drawn in `onAccentSoft` on the disc.
+  final IconData? icon;
+
   /// The caller's own action widget(s) (a button), in order, each given
   /// its usual spacing below the last.
   final List<Widget> actions;
@@ -39,15 +46,49 @@ class EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
     final column = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Ornament(),
-        const SizedBox(height: 16),
-        Text(title, style: text.headlineSmall, textAlign: TextAlign.center),
+        // Decoration: the heading below says what this is.
+        ExcludeSemantics(
+          child: Container(
+            width: 112,
+            height: 112,
+            decoration: BoxDecoration(
+              color: cs.primaryContainer,
+              shape: BoxShape.circle,
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Ornament(
+                  size: 84,
+                  opacity: icon == null ? 0.5 : 0.18,
+                  color: cs.onPrimaryContainer,
+                ),
+                if (icon != null)
+                  Icon(icon, size: 40, color: cs.onPrimaryContainer),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Semantics(
+          header: true,
+          child: Text(
+            title,
+            style: text.headlineSmall,
+            textAlign: TextAlign.center,
+          ),
+        ),
         if (body != null) ...[
           const SizedBox(height: 8),
-          Text(body!, style: text.bodyMedium, textAlign: TextAlign.center),
+          Text(
+            body!,
+            style: text.bodyLarge?.copyWith(color: cs.onSurfaceVariant),
+            textAlign: TextAlign.center,
+          ),
         ],
         if (actions.isNotEmpty) const SizedBox(height: 24),
         for (var i = 0; i < actions.length; i++)

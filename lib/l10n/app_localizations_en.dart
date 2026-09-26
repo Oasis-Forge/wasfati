@@ -75,6 +75,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get walkthroughDemoRecipe => 'Chicken kabsa';
 
   @override
+  String get walkthroughTileSoup => 'Lentil soup';
+
+  @override
+  String get walkthroughTileFattoush => 'Fattoush';
+
+  @override
   String get walkthroughDemoLine1 => '1½ cups rice';
 
   @override
@@ -287,6 +293,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settings => 'Settings';
+
+  @override
+  String get settingsGroupLook => 'Look and language';
+
+  @override
+  String get settingsGroupCooking => 'Cooking and the plan';
+
+  @override
+  String get settingsGroupData => 'Your data';
+
+  @override
+  String get settingsGroupAbout => 'About Wasfati';
+
+  @override
+  String get settingsPrivacyPolicy => 'Privacy policy';
+
+  @override
+  String get settingsContact => 'Contact us';
+
+  @override
+  String get settingsVersion => 'Version';
 
   @override
   String get settingsLanguage => 'Language';
@@ -1147,12 +1174,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ramadanEidLabel => 'Eid al-Fitr';
 
   @override
-  String get settingsRamadanSection => 'Ramadan';
-
-  @override
-  String get settingsBackupSection => 'Backup';
-
-  @override
   String get backupSaveAction => 'Save a backup';
 
   @override
@@ -1398,6 +1419,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get purchasePeriodOnce => 'once';
+
+  @override
+  String get purchasePeriodMonthly => 'a month';
+
+  @override
+  String get purchasePeriodYearly => 'a year';
+
+  @override
   String get purchaseComingSoon => 'Coming soon';
 
   @override
@@ -1439,6 +1469,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsSubscription => 'Subscription';
+
+  @override
+  String settingsProCardBody(String count) {
+    return 'Remove the ads, or raise AI imports to $count a month.';
+  }
+
+  @override
+  String get settingsProCardOwnsPro => 'You have Pro: no ads.';
+
+  @override
+  String settingsProCardOwnsPremium(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'You have Premium: no ads, and $shown AI imports a month.',
+      one: 'You have Premium: no ads, and $shown AI import a month.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String settingsProCardOwnsBoth(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'You have Pro and Premium: no ads, and $shown AI imports a month.',
+      one: 'You have Pro and Premium: no ads, and $shown AI import a month.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get tierFree => 'Free';

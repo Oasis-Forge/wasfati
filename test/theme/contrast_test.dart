@@ -107,16 +107,15 @@ void main() {
             cs.errorContainer,
           ),
           // Every SnackBar and its action (app_theme.dart's snackBarTheme):
-          // the content text on `inverseSurface`, and the action label
-          // (`inversePrimary`) on the same fill.
-          'onInverseSurface/inverseSurface (SnackBar text)': (
-            cs.onInverseSurface,
-            cs.inverseSurface,
-          ),
-          'inversePrimary/inverseSurface (SnackBar action)': (
-            cs.inversePrimary,
-            cs.inverseSurface,
-          ),
+          // in light, the content text on `inverseSurface` and the action
+          // label (`inversePrimary`) on the same fill; in dark, ink and the
+          // accent on the card fill.
+          'SnackBar text': brightness == Brightness.light
+              ? (cs.onInverseSurface, cs.inverseSurface)
+              : (n.ink, n.card),
+          'SnackBar action': brightness == Brightness.light
+              ? (cs.inversePrimary, cs.inverseSurface)
+              : (cs.primary, n.card),
           // A selected `FilterChip`'s label (chipTheme.labelStyle, resolved
           // selected) and a selected `ChoiceChip`'s (secondaryLabelStyle):
           // both `card` on the chip's `selectedColor` fill (`onSurface`).

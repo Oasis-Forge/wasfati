@@ -16,6 +16,7 @@ class SegmentedPill<T> extends StatelessWidget {
     required this.onChanged,
     this.height = 48,
     this.raised = true,
+    this.dense = false,
   });
 
   final Map<T, String> options;
@@ -31,9 +32,50 @@ class SegmentedPill<T> extends StatelessWidget {
   /// card's own (design spec §1 "Components").
   final bool raised;
 
+  /// An inline mini pill for a row's end (Settings' الأرقام, 08-settings
+  /// .png): a 28dp `sunk` track with a 2dp inset, 24dp segments with
+  /// labelSmall (12/600) labels, as wide as its labels. The tap target
+  /// stays 48dp tall: the track is centred in each option's 48dp cell,
+  /// the way a 36dp chip sits on a 48dp target (design-styles.md,
+  /// "Heights"). [height] is ignored.
+  final bool dense;
+
   @override
   Widget build(BuildContext context) {
     final decor = Decor.of(context);
+    if (dense) {
+      return SizedBox(
+        height: 48,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned(
+              left: 0,
+              right: 0,
+              child: Container(
+                height: 28,
+                decoration: BoxDecoration(
+                  color: decor.sunk,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final e in options.entries)
+                  _DenseOption(
+                    selected: e.key == value,
+                    label: e.value,
+                    raised: raised,
+                    onTap: () => onChanged(e.key),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
     return Container(
       height: height,
       decoration: BoxDecoration(
@@ -115,6 +157,89 @@ class _SegmentedOption extends StatelessWidget {
                         color: selected
                             ? (raised ? cs.onSurface : cs.onPrimaryContainer)
                             : cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One [SegmentedPill.dense] option: a 48dp-tall cell (at least 48dp
+/// wide) holding a 24dp segment, the thumb drawn on the segment only.
+class _DenseOption extends StatelessWidget {
+  const _DenseOption({
+    required this.selected,
+    required this.label,
+    required this.raised,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final String label;
+  final bool raised;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final decor = Decor.of(context);
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final thumbColor = raised ? cs.surfaceContainerLowest : cs.primaryContainer;
+    return Semantics(
+      selected: selected,
+      button: true,
+      inMutuallyExclusiveGroup: true,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const StadiumBorder(),
+          // The moving thumb is the feedback; a 48dp ripple would spill
+          // past the 28dp track. Keyboard focus still shows.
+          overlayColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.focused)
+                ? cs.onSurface.withValues(alpha: 0.12)
+                : Colors.transparent,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Center(
+                widthFactor: 1,
+                child: DecoratedBox(
+                  decoration: ShapeDecoration(
+                    shape: const StadiumBorder(),
+                    color: selected ? thumbColor : Colors.transparent,
+                    shadows: selected && raised ? decor.liftShadow : const [],
+                  ),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minWidth: 44,
+                      minHeight: 24,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Center(
+                        widthFactor: 1,
+                        heightFactor: 1,
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: selected
+                                ? (raised
+                                      ? cs.onSurface
+                                      : cs.onPrimaryContainer)
+                                : cs.onSurfaceVariant,
+                          ),
+                        ),
                       ),
                     ),
                   ),

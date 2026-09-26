@@ -96,8 +96,8 @@ class Decor extends ThemeExtension<Decor> {
   final Color amountColor;
   final FontWeight amountWeight;
 
-  /// Decision 23 drops Saffron's one press ledge; kept at 0/transparent so
-  /// `PressableSlab` (unchanged) renders every wrapped button flat.
+  /// Decision 23 drops Saffron's one press ledge; unread since the press
+  /// slab was retired, and removed once the plan and groceries are in.
   final double ledgeDepth;
   final Color ledgeColor;
 

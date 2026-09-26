@@ -17,13 +17,27 @@ import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../services/backup.dart';
 import '../services/backup_files.dart' show BackupFilesError;
+import '../services/links.dart';
+import '../services/mail.dart';
+import '../theme/colors.dart' show sufraAccent;
 import '../theme/decor.dart';
 import '../widgets/content_direction.dart';
+import '../widgets/segmented_pill.dart';
+import '../widgets/sufra_card.dart';
 import 'purchase_screen.dart';
 import 'walkthrough_screen.dart';
 
-/// Settings (roadmap 2a): language (LANG-1), digit style (QTY-5), units
-/// (SCALE-5), week start and theme. Changes apply at once.
+/// The published privacy policy (docs/RELEASING.md): one bilingual page.
+const privacyPolicyUrl = 'https://oasis-forge.github.io/wasfati/privacy-policy';
+
+/// Settings (roadmap 2a; Sufra, Decision 23): the Pro card, then grouped
+/// cards of rows — look and language (LOOK-1, LANG-1, QTY-5), cooking and
+/// the plan (SCALE-5, PLAN-1, RAM-1–RAM-3), your data (BAK-1–BAK-10), ads
+/// and the subscription (PAY-5, PAY-11, ADS-5), and about (RUN-4, the
+/// privacy policy, contact, the version). Each choice row opens a sheet
+/// with its options, the current one ticked; every change applies at once,
+/// without a restart (LANG-1). A tab of its own, so it never carries a
+/// banner (ADS-9).
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -32,6 +46,8 @@ class SettingsScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final state = context.watch<SettingsState>();
     final plan = context.watch<PlanState>();
+    final theme = Theme.of(context);
+    final decor = Decor.of(context);
     final s = state.settings;
     void set(AppSettings next) => state.update(next);
     // RAM-2: null until the calendar (ramadanTable) has this year's dates.
@@ -39,185 +55,244 @@ class SettingsScreen extends StatelessWidget {
     // stay put while its shift is being edited, even right at the
     // boundary where that shift makes "today" Eid (should-fix).
     final ramadanMonth = plan.ramadanMonthForShiftRowAt(plan.today);
+    // Pushed as a route from somewhere else, it gets a way back; as the
+    // navigation pill's own tab it needs none (LOOK-7).
+    final canPop = ModalRoute.of(context)?.canPop ?? false;
+
+    final lookNames = {
+      AppStyle.saffron: l10n.lookSaffron,
+      AppStyle.ink: l10n.lookInk,
+    };
+    final themeNames = {
+      ThemePref.system: l10n.themeSystem,
+      ThemePref.light: l10n.themeLight,
+      ThemePref.dark: l10n.themeDark,
+    };
+    final languageNames = {
+      LanguagePref.system: l10n.languageSystem,
+      LanguagePref.ar: 'العربية', // each language in its own name
+      LanguagePref.en: 'English',
+    };
+    final unitNames = {
+      UnitSystem.metric: l10n.unitsMetric,
+      UnitSystem.kitchen: l10n.unitsKitchen,
+    };
+    final weekStartNames = {
+      WeekStart.auto: l10n.weekStartAuto,
+      WeekStart.saturday: l10n.saturday,
+      WeekStart.sunday: l10n.sunday,
+      WeekStart.monday: l10n.monday,
+    };
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.settings)),
-      body: ListView(
-        padding: const EdgeInsetsDirectional.only(bottom: 32),
-        children: [
-          _Choice<LanguagePref>(
-            title: l10n.settingsLanguage,
-            value: s.language,
-            options: {
-              LanguagePref.system: l10n.languageSystem,
-              LanguagePref.ar: 'العربية', // each language in its own name
-              LanguagePref.en: 'English',
-            },
-            onChanged: (v) => set(s.copyWith(language: v)),
+      body: SafeArea(
+        bottom: false,
+        child: ListView(
+          padding: EdgeInsetsDirectional.fromSTEB(
+            decor.gutter,
+            canPop ? 4 : 16,
+            decor.gutter,
+            32,
           ),
-          _Choice<DigitStyle>(
-            title: l10n.settingsDigits,
-            value: s.digits,
-            options: const {
-              DigitStyle.western: '123',
-              DigitStyle.arabic: '١٢٣',
-            },
-            onChanged: (v) => set(s.copyWith(digits: v)),
-          ),
-          _Choice<UnitSystem>(
-            title: l10n.settingsUnits,
-            value: s.units,
-            options: {
-              UnitSystem.metric: l10n.unitsMetric,
-              UnitSystem.kitchen: l10n.unitsKitchen,
-            },
-            onChanged: (v) => set(s.copyWith(units: v)),
-          ),
-          _Choice<WeekStart>(
-            title: l10n.settingsWeekStart,
-            value: s.weekStart,
-            options: {
-              WeekStart.auto: l10n.weekStartAuto,
-              WeekStart.saturday: l10n.saturday,
-              WeekStart.sunday: l10n.sunday,
-              WeekStart.monday: l10n.monday,
-            },
-            onChanged: (v) => set(s.copyWith(weekStart: v)),
-          ),
-          _Choice<ThemePref>(
-            title: l10n.settingsTheme,
-            value: s.theme,
-            options: {
-              ThemePref.system: l10n.themeSystem,
-              ThemePref.light: l10n.themeLight,
-              ThemePref.dark: l10n.themeDark,
-            },
-            onChanged: (v) => set(s.copyWith(theme: v)),
-          ),
-          // LOOK-1: independent of the theme (light/dark) row above —
-          // built the same way, placed right next to it — and applies at
-          // once, since `set` rebuilds through the same Consumer as every
-          // other row here (no restart, LANG-1's pattern).
-          _Choice<AppStyle>(
-            title: l10n.settingsLook,
-            value: s.style,
-            options: {
-              AppStyle.ink: l10n.lookInk,
-              AppStyle.saffron: l10n.lookSaffron,
-            },
-            onChanged: (v) => set(s.copyWith(style: v)),
-          ),
-          _RamadanSection(settings: s, month: ramadanMonth, onChanged: set),
-          const _BackupSection(),
-          const _PayingSection(),
-          // RUN-4: the walkthrough can be replayed; it just closes at the
-          // end, and changes nothing.
-          Padding(
-            padding: const EdgeInsetsDirectional.only(top: 20),
-            child: _Group(
+          children: [
+            Row(
               children: [
-                ListTile(
-                  leading: const Icon(Icons.auto_stories_outlined),
-                  title: Text(l10n.settingsReplayWalkthrough),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const WalkthroughScreen(),
+                if (canPop) const BackButton(),
+                Expanded(
+                  child: Semantics(
+                    header: true,
+                    // Pushed as a route of its own, its title names it.
+                    namesRoute: canPop,
+                    child: Text(
+                      l10n.settings,
+                      style: theme.textTheme.headlineMedium,
                     ),
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            const _ProCard(),
+            _Section(
+              title: l10n.settingsGroupLook,
+              children: [
+                // LOOK-1: independent of المظهر (light/dark) below, and
+                // applied at once, since `set` rebuilds the app's theme
+                // through the same Consumer as every other row here.
+                _Row(
+                  icon: Icons.contrast,
+                  label: l10n.settingsLook,
+                  value: lookNames[s.style],
+                  valueLeading: _AccentDot(color: theme.colorScheme.primary),
+                  onTap: () => _choose<AppStyle>(
+                    context,
+                    title: l10n.settingsLook,
+                    value: s.style,
+                    options: lookNames,
+                    leading: (style) => _AccentDot(
+                      size: 28,
+                      color: sufraAccent(style, theme.brightness).accent,
+                    ),
+                    onChosen: (v) => set(s.copyWith(style: v)),
+                  ),
+                ),
+                _Row(
+                  icon: Icons.light_mode_outlined,
+                  label: l10n.settingsTheme,
+                  value: themeNames[s.theme],
+                  onTap: () => _choose<ThemePref>(
+                    context,
+                    title: l10n.settingsTheme,
+                    value: s.theme,
+                    options: themeNames,
+                    onChosen: (v) => set(s.copyWith(theme: v)),
+                  ),
+                ),
+                _Row(
+                  icon: Icons.language,
+                  label: l10n.settingsLanguage,
+                  value: languageNames[s.language],
+                  onTap: () => _choose<LanguagePref>(
+                    context,
+                    title: l10n.settingsLanguage,
+                    value: s.language,
+                    options: languageNames,
+                    onChosen: (v) => set(s.copyWith(language: v)),
+                  ),
+                ),
+                // QTY-5, Decision 5: a toggle, not a picker — inline.
+                _Row(
+                  icon: Icons.onetwothree,
+                  label: l10n.settingsDigits,
+                  mergeSemantics: false,
+                  trailing: SegmentedPill<DigitStyle>(
+                    dense: true,
+                    options: const {
+                      DigitStyle.western: '123',
+                      DigitStyle.arabic: '١٢٣',
+                    },
+                    value: s.digits,
+                    onChanged: (v) => set(s.copyWith(digits: v)),
+                  ),
+                ),
+              ],
+            ),
+            _Section(
+              title: l10n.settingsGroupCooking,
+              children: [
+                _Row(
+                  icon: Icons.tune,
+                  label: l10n.settingsUnits,
+                  value: unitNames[s.units],
+                  onTap: () => _choose<UnitSystem>(
+                    context,
+                    title: l10n.settingsUnits,
+                    value: s.units,
+                    options: unitNames,
+                    onChosen: (v) => set(s.copyWith(units: v)),
+                  ),
+                ),
+                // PLAN-1: the day the plan's week starts on.
+                _Row(
+                  icon: Icons.calendar_today_outlined,
+                  label: l10n.settingsWeekStart,
+                  value: weekStartNames[s.weekStart],
+                  onTap: () => _choose<WeekStart>(
+                    context,
+                    title: l10n.settingsWeekStart,
+                    value: s.weekStart,
+                    options: weekStartNames,
+                    onChosen: (v) => set(s.copyWith(weekStart: v)),
+                  ),
+                ),
+                // RAM-1, RAM-3: the mode never turns itself on; this switch
+                // is where it's turned on and off.
+                _Row(
+                  icon: Icons.dark_mode_outlined,
+                  label: l10n.ramadanModeLabel,
+                  onTap: () => set(s.copyWith(ramadanMode: !s.ramadanMode)),
+                  trailing: Switch(
+                    value: s.ramadanMode,
+                    onChanged: (v) => set(s.copyWith(ramadanMode: v)),
+                  ),
+                ),
+                // RAM-2: the shift shows whether the mode is on or off. It
+                // also moves RAM-3's countdown and the Eid label, which
+                // show while the mode is off, so its control never hides.
+                if (ramadanMonth != null)
+                  _RamadanShiftRow(
+                    settings: s,
+                    month: ramadanMonth,
+                    onChanged: set,
+                  ),
+              ],
+            ),
+            const _BackupSection(),
+            const _PayingSection(),
+            const _AboutSection(),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// RAM-1's switch, and RAM-2's shift row once a Ramadan is current or
-/// upcoming (null until the built-in calendar has this year's dates).
-/// RAM-5: no prayer or iftar times here, and nothing that needs a
-/// permission the release build doesn't already declare (RUN-2).
-class _RamadanSection extends StatelessWidget {
-  const _RamadanSection({
+/// RAM-2: this year's first day, one day earlier or later for the local
+/// moon sighting. RAM-5: no prayer or iftar times here, and nothing that
+/// needs a permission the release build doesn't already declare (RUN-2).
+class _RamadanShiftRow extends StatelessWidget {
+  const _RamadanShiftRow({
     required this.settings,
     required this.month,
     required this.onChanged,
   });
 
   final AppSettings settings;
-  final RamadanMonth? month;
+  final RamadanMonth month;
   final ValueChanged<AppSettings> onChanged;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final state = context.watch<SettingsState>();
-    final scheme = Theme.of(context).colorScheme;
-    final month = this.month;
-    final shift = month == null ? 0 : settings.ramadanShiftFor(month.hijriYear);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(16, 20, 16, 4),
-          child: Text(
-            l10n.settingsRamadanSection,
-            style: Theme.of(context).textTheme.titleSmall
-                ?.copyWith(color: scheme.primary),
-          ),
-        ),
-        _Group(
+    final theme = Theme.of(context);
+    final shift = settings.ramadanShiftFor(month.hijriYear);
+    AppSettings shifted(int by) => settings.copyWith(
+      ramadanShift: shift + by,
+      ramadanShiftYear: month.hijriYear,
+    );
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: _Row.minHeight),
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(_Row.textStart, 4, 8, 4),
+        child: Row(
           children: [
-            SwitchListTile(
-              title: Text(l10n.ramadanModeLabel),
-              value: settings.ramadanMode,
-              onChanged: (v) => onChanged(settings.copyWith(ramadanMode: v)),
-            ),
-            if (month != null)
-              ListTile(
-                title: Text(
-                  l10n.ramadanStartLabel(
-                    state.inDigits(
-                      MaterialLocalizations.of(context)
-                          .formatMediumDate(month.start),
-                    ),
+            Expanded(
+              child: Text(
+                l10n.ramadanStartLabel(
+                  state.inDigits(
+                    MaterialLocalizations.of(context)
+                        .formatMediumDate(month.start),
                   ),
                 ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      tooltip: l10n.ramadanShiftEarlier,
-                      icon: const Icon(Icons.remove),
-                      onPressed: shift > -1
-                          ? () => onChanged(
-                              settings.copyWith(
-                                ramadanShift: shift - 1,
-                                ramadanShiftYear: month.hijriYear,
-                              ),
-                            )
-                          : null,
-                    ),
-                    IconButton(
-                      tooltip: l10n.ramadanShiftLater,
-                      icon: const Icon(Icons.add),
-                      onPressed: shift < 1
-                          ? () => onChanged(
-                              settings.copyWith(
-                                ramadanShift: shift + 1,
-                                ramadanShiftYear: month.hijriYear,
-                              ),
-                            )
-                          : null,
-                    ),
-                  ],
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+            ),
+            IconButton(
+              tooltip: l10n.ramadanShiftEarlier,
+              icon: const Icon(Icons.remove),
+              onPressed: shift > -1 ? () => onChanged(shifted(-1)) : null,
+            ),
+            IconButton(
+              tooltip: l10n.ramadanShiftLater,
+              icon: const Icon(Icons.add),
+              onPressed: shift < 1 ? () => onChanged(shifted(1)) : null,
+            ),
           ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -621,101 +696,96 @@ class _BackupSectionState extends State<_BackupSection> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final scheme = Theme.of(context).colorScheme;
     final state = context.watch<SettingsState>();
     final s = state.settings;
     final backupState = context.watch<BackupState>();
     final busy = backupState.busy;
     final autoBackups = backupState.autoBackups;
+    final localizations = MaterialLocalizations.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(16, 20, 16, 4),
-          child: Text(
-            l10n.settingsBackupSection,
-            style: Theme.of(context).textTheme.titleSmall
-                ?.copyWith(color: scheme.primary),
-          ),
-        ),
-        _Group(
+        _Section(
+          title: l10n.settingsGroupData,
+          busy: busy,
           children: [
-            ListTile(
-              leading: const Icon(Icons.save_outlined),
-              title: Text(l10n.backupSaveAction),
+            _Row(
+              icon: Icons.save_outlined,
+              label: l10n.backupSaveAction,
               enabled: !busy,
               onTap: () => _save(),
             ),
-            ListTile(
-              leading: const Icon(Icons.ios_share_outlined),
-              title: Text(l10n.backupShareAction),
+            _Row(
+              icon: Icons.ios_share_outlined,
+              label: l10n.backupShareAction,
               enabled: !busy,
               onTap: () => _share(),
             ),
-            ListTile(
-              leading: const Icon(Icons.restore_outlined),
-              title: Text(l10n.backupRestoreAction),
+            _Row(
+              icon: Icons.restore_outlined,
+              label: l10n.backupRestoreAction,
               enabled: !busy,
               onTap: () => _restore(),
             ),
-            ListTile(
-              leading: const Icon(Icons.description_outlined),
-              title: Text(l10n.backupExportAction),
+            _Row(
+              icon: Icons.description_outlined,
+              label: l10n.backupExportAction,
               enabled: !busy,
               onTap: () => _export(),
             ),
-            SwitchListTile(
-              title: Text(l10n.backupReminderSwitch),
-              value: !s.backupReminderOff,
-              onChanged: (v) => state.update(s.copyWith(backupReminderOff: !v)),
+            // BAK-8: off for good here; "لاحقًا" on the card only snoozes.
+            _Row(
+              icon: Icons.notifications_none_outlined,
+              label: l10n.backupReminderSwitch,
+              onTap: () => state.update(
+                s.copyWith(backupReminderOff: !s.backupReminderOff),
+              ),
+              trailing: Switch(
+                value: !s.backupReminderOff,
+                onChanged: (v) =>
+                    state.update(s.copyWith(backupReminderOff: !v)),
+              ),
             ),
           ],
         ),
-        Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 16, 4),
-          child: Text(
-            l10n.backupAutoSection,
-            style: Theme.of(context).textTheme.titleSmall
-                ?.copyWith(color: scheme.primary),
-          ),
-        ),
-        if (autoBackups == null)
-          const Padding(
-            padding: EdgeInsetsDirectional.all(16),
-            child: Center(child: CircularProgressIndicator()),
-          )
-        else
-          _Group(
-            children: [
-              if (autoBackups.isEmpty)
-                ListTile(title: Text(l10n.backupAutoEmpty))
-              else
-                for (final auto in autoBackups)
-                  ListTile(
-                    // should-fix, platform review: a restore makes a new one at
-                    // once, so same-day rows used to read identically ("نسخة
-                    // السبت، ١٩ سبتمبر" twice); the time tells them apart.
-                    title: Text(
-                      l10n.backupAutoBackupDate(
-                        state.inDigits(
-                          MaterialLocalizations.of(context)
-                              .formatMediumDate(auto.createdAt.toLocal()),
-                        ),
-                        state.inDigits(
-                          MaterialLocalizations.of(context).formatTimeOfDay(
-                            TimeOfDay.fromDateTime(auto.createdAt.toLocal()),
-                          ),
-                        ),
+        // BAK-2, BAK-7: the copies made before every restore.
+        _Section(
+          title: l10n.backupAutoSection,
+          children: [
+            if (autoBackups == null)
+              const Padding(
+                padding: EdgeInsetsDirectional.all(16),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (autoBackups.isEmpty)
+              _Row(icon: Icons.history, label: l10n.backupAutoEmpty)
+            else
+              for (final auto in autoBackups)
+                _Row(
+                  icon: Icons.history,
+                  // should-fix, platform review: a restore makes a new one
+                  // at once, so same-day rows used to read identically
+                  // ("نسخة السبت، ١٩ سبتمبر" twice); the time tells them
+                  // apart.
+                  label: l10n.backupAutoBackupDate(
+                    state.inDigits(
+                      localizations.formatMediumDate(auto.createdAt.toLocal()),
+                    ),
+                    state.inDigits(
+                      localizations.formatTimeOfDay(
+                        TimeOfDay.fromDateTime(auto.createdAt.toLocal()),
                       ),
                     ),
-                    trailing: TextButton(
-                      onPressed: busy ? null : () => _restoreAuto(auto),
-                      child: Text(l10n.backupRestoreAction),
-                    ),
                   ),
-            ],
-          ),
+                  mergeSemantics: false,
+                  trailing: TextButton(
+                    onPressed: busy ? null : () => _restoreAuto(auto),
+                    child: Text(l10n.backupRestoreAction),
+                  ),
+                ),
+          ],
+        ),
       ],
     );
   }
@@ -753,17 +823,82 @@ Future<bool> saveBackupNow(BuildContext context) async {
   }
 }
 
-/// PAY-5, PAY-11: the one selling row, "Subscription", with the plan it's
-/// on; "Manage or cancel" while Premium is owned, which opens Google
-/// Play's page for it (two taps from Settings: this row, then Play's own
-/// cancel); and ADS-5's row to change the ad consent, where the law asks.
+/// PAY-5, PAY-10: the Pro card at the top — what Pro and Premium give, in
+/// one line, opening the purchase screen. No price, no badge, no countdown;
+/// once something is owned it says what, instead of selling.
+class _ProCard extends StatelessWidget {
+  const _ProCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final purchases = context.watch<PurchasesState>();
+    final settings = context.watch<SettingsState>();
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    const quota = PurchasesState.premiumAiImportsPerMonth;
+    final count = settings.number(quota);
+    final body = switch (purchases.tier) {
+      Tier.free => l10n.settingsProCardBody(count),
+      Tier.pro => l10n.settingsProCardOwnsPro,
+      Tier.premium => l10n.settingsProCardOwnsPremium(quota, count),
+      Tier.proAndPremium => l10n.settingsProCardOwnsBoth(quota, count),
+    };
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        child: SufraCard(
+          radius: 24,
+          onTap: () => openPurchaseScreen(context),
+          padding: const EdgeInsetsDirectional.all(18),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.auto_awesome, color: cs.onPrimaryContainer),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.purchaseTitle, style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 4),
+                    Text(
+                      body,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.chevron_right, color: cs.primary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// PAY-5, PAY-11: the "Subscription" row with the plan it's on, opening
+/// the purchase screen; "Manage or cancel" while Premium is owned, which
+/// opens Google Play's page for it (two taps from Settings: this row, then
+/// Play's own cancel); "Restore purchases" (PAY-1); and ADS-5's row to
+/// change the ad consent, where the law asks.
 class _PayingSection extends StatelessWidget {
   const _PayingSection();
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final scheme = Theme.of(context).colorScheme;
     final purchases = context.watch<PurchasesState>();
     final ads = context.watch<AdsState>();
     final plan = switch (purchases.tier) {
@@ -772,122 +907,401 @@ class _PayingSection extends StatelessWidget {
       Tier.premium => l10n.purchasePremium,
       Tier.proAndPremium => l10n.purchaseTitle,
     };
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return _Section(
+      title: l10n.settingsPayingSection,
       children: [
-        Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(16, 20, 16, 4),
-          child: Text(
-            l10n.settingsPayingSection,
-            style: Theme.of(context).textTheme.titleSmall
-                ?.copyWith(color: scheme.primary),
+        _Row(
+          icon: Icons.workspace_premium_outlined,
+          label: l10n.settingsSubscription,
+          value: plan,
+          onTap: () => openPurchaseScreen(context),
+        ),
+        if (purchases.ownsPremium)
+          _Row(
+            icon: Icons.open_in_new,
+            label: l10n.purchaseManage,
+            onTap: () => manageSubscription(context),
+          ),
+        _Row(
+          icon: Icons.restore,
+          label: l10n.purchaseRestore,
+          onTap: () => restorePurchases(context),
+        ),
+        if (ads.showPrivacyChoices)
+          _Row(
+            icon: Icons.privacy_tip_outlined,
+            label: l10n.settingsAdPrivacy,
+            onTap: ads.changeConsent,
+          ),
+      ],
+    );
+  }
+}
+
+/// RUN-4's replay, the privacy policy, the one support address
+/// (CLAUDE.md: never a personal one) and the app's version.
+class _AboutSection extends StatelessWidget {
+  const _AboutSection();
+
+  Future<void> _openPolicy(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final opened = await context.read<LinkOpener>().open(
+      Uri.parse(privacyPolicyUrl),
+    );
+    if (opened) return;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(l10n.linkOpenFailed)));
+  }
+
+  /// A draft the user reads and sends themselves (Decision 19); with no
+  /// mail app, the address to write to instead.
+  Future<void> _contact(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final opened = await context.read<MailComposer>().compose(
+      to: supportEmail,
+      subject: l10n.appTitle,
+      body: '',
+    );
+    if (opened) return;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(l10n.reportMistakeNoMailApp(supportEmail))),
+      );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final version = context.read<BackupService>().appVersion;
+    return _Section(
+      title: l10n.settingsGroupAbout,
+      children: [
+        // RUN-4: the walkthrough can be replayed; it just closes at the
+        // end, and changes nothing.
+        _Row(
+          icon: Icons.auto_stories_outlined,
+          label: l10n.settingsReplayWalkthrough,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const WalkthroughScreen()),
           ),
         ),
-        _Group(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.workspace_premium_outlined),
-              title: Text(l10n.settingsSubscription),
-              subtitle: Text(plan),
-              onTap: () => openPurchaseScreen(context),
-            ),
-            if (purchases.ownsPremium)
-              ListTile(
-                leading: const Icon(Icons.open_in_new),
-                title: Text(l10n.purchaseManage),
-                onTap: () => manageSubscription(context),
-              ),
-            if (ads.showPrivacyChoices)
-              ListTile(
-                leading: const Icon(Icons.privacy_tip_outlined),
-                title: Text(l10n.settingsAdPrivacy),
-                onTap: ads.changeConsent,
-              ),
-          ],
+        _Row(
+          icon: Icons.shield_outlined,
+          label: l10n.settingsPrivacyPolicy,
+          onTap: () => _openPolicy(context),
+        ),
+        _Row(
+          icon: Icons.mail_outline,
+          label: l10n.settingsContact,
+          subtitle: supportEmail,
+          onTap: () => _contact(context),
+        ),
+        _Row(
+          icon: Icons.info_outline,
+          label: l10n.settingsVersion,
+          value: version,
+          valueIsLtr: true,
         ),
       ],
     );
   }
 }
 
-/// A heading and one row per option, the chosen one ticked.
-class _Choice<T> extends StatelessWidget {
-  const _Choice({
+/// A small caption heading over one card of rows, the rows split by
+/// hairlines that start where their text does (design-styles.md,
+/// "Settings").
+class _Section extends StatelessWidget {
+  const _Section({
     required this.title,
-    required this.value,
-    required this.options,
-    required this.onChanged,
+    required this.children,
+    this.busy = false,
   });
 
   final String title;
-  final T value;
-  final Map<T, String> options;
-  final ValueChanged<T> onChanged;
+  final List<Widget> children;
+
+  /// True while this card's work runs (a backup, BAK-6): a thin progress
+  /// line under the heading, beside the rows' own disabled look.
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(16, 20, 16, 4),
-          child: Text(
-            title,
-            style: Theme.of(context).textTheme.titleSmall
-                ?.copyWith(color: scheme.primary),
-          ),
-        ),
-        _Group(
-          children: [
-            for (final e in options.entries)
-              ListTile(
-                title: Text(e.value),
-                trailing: e.key == value
-                    ? Icon(Icons.check, color: scheme.primary)
-                    : null,
-                selected: e.key == value,
-                onTap: () => onChanged(e.key),
+    final theme = Theme.of(context);
+    final decor = Decor.of(context);
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(top: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsetsDirectional.symmetric(horizontal: 4),
+            child: Semantics(
+              header: true,
+              child: Text(
+                title,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
-          ],
-        ),
-      ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          SizedBox(
+            height: 2,
+            child: busy
+                ? LinearProgressIndicator(
+                    borderRadius: BorderRadius.circular(999),
+                  )
+                : null,
+          ),
+          SufraCard(
+            child: Material(
+              type: MaterialType.transparency,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final (i, row) in children.indexed) ...[
+                    if (i > 0)
+                      Divider(
+                        height: 1,
+                        thickness: 1,
+                        indent: _Row.textStart,
+                        endIndent: 16,
+                        color:
+                            decor.rowHairline ??
+                            theme.colorScheme.outlineVariant,
+                      ),
+                    row,
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-/// LOOK-6: one bounded group of Settings rows, drawn by the look — its
-/// grouped-row fill and card shape, 16dp in from the screen's edges, and
-/// its hairline between rows (none when the look has no hairline). A
-/// [Material] rather than a decorated box, so each row's ink and a chosen
-/// row's colour still paint on the group. Rows, their order and their
-/// text are exactly the caller's (LOOK-2).
-class _Group extends StatelessWidget {
-  const _Group({required this.children});
+/// One Settings row, at least 60dp: a 36dp tinted rounded-square icon tile,
+/// the label (and an optional line under it), the current value, and a
+/// chevron when it opens something — or [trailing] instead (a switch, the
+/// digits pill). Label and value are read together as one button.
+///
+/// The label takes the row's free width; the value and chevron hug the end
+/// edge (08-settings.png), so every chevron in a card lines up, and a value
+/// wraps only once it passes [valueMaxShare] of the row (LOOK-8 at 1.3x).
+class _Row extends StatelessWidget {
+  const _Row({
+    required this.icon,
+    required this.label,
+    this.subtitle,
+    this.value,
+    this.valueLeading,
+    this.valueIsLtr = false,
+    this.trailing,
+    this.onTap,
+    this.enabled = true,
+    this.mergeSemantics = true,
+  });
 
-  final List<Widget> children;
+  static const minHeight = 60.0;
+
+  /// Where a row's text starts: 16 padding + the 36dp tile + a 12dp gap.
+  static const textStart = 64.0;
+
+  /// The most of the row's inner width a value may take before it wraps.
+  static const valueMaxShare = 0.45;
+
+  final IconData icon;
+  final String label;
+  final String? subtitle;
+  final String? value;
+  final Widget? valueLeading;
+  final bool valueIsLtr;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  /// False while the row can't be used (the backup rows during a backup,
+  /// BAK-6): drawn in LOOK-3's disabled colour, its chevron kept in place,
+  /// and read as a disabled button.
+  final bool enabled;
+
+  /// False when [trailing] holds controls of its own (the digits pill, a
+  /// restore button) that a screen reader must reach one by one.
+  final bool mergeSemantics;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final decor = Decor.of(context);
-    final hairline = decor.rowHairline;
-    return Padding(
-      padding: const EdgeInsetsDirectional.symmetric(horizontal: 16),
-      child: Material(
-        color: decor.groupedRowFill,
-        shape: decor.cardShape,
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (final (i, row) in children.indexed) ...[
-              if (i > 0 && hairline != null)
-                Divider(height: 1, thickness: 1, indent: 16, color: hairline),
-              row,
+    final value = this.value;
+    final subtitle = this.subtitle;
+    // LOOK-3: the theme's disabled colour, already composited to 3:1.
+    final muted = enabled ? null : theme.disabledColor;
+    final secondary = theme.textTheme.bodyMedium?.copyWith(
+      color: muted ?? cs.onSurfaceVariant,
+    );
+    Widget row = ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: minHeight),
+      child: Padding(
+        // 6dp above and below: a 48dp control (a switch, the digits pill)
+        // makes exactly the 60dp every other row has.
+        padding: const EdgeInsetsDirectional.fromSTEB(16, 6, 12, 6),
+        child: LayoutBuilder(
+          builder: (context, constraints) => Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: enabled ? cs.primaryContainer : decor.sunk,
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color: muted ?? cs.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
+                      style: theme.textTheme.bodyLarge?.copyWith(color: muted),
+                    ),
+                    if (subtitle != null)
+                      Text(
+                        subtitle,
+                        style: secondary,
+                        textDirection: TextDirection.ltr,
+                      ),
+                  ],
+                ),
+              ),
+              if (value != null) ...[
+                const SizedBox(width: 8),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: constraints.maxWidth * valueMaxShare,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (valueLeading != null) ...[
+                        valueLeading!,
+                        const SizedBox(width: 6),
+                      ],
+                      Flexible(
+                        child: Text(
+                          value,
+                          style: secondary,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                          textDirection: valueIsLtr ? TextDirection.ltr : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (trailing != null) ...[
+                const SizedBox(width: 8),
+                trailing!,
+              ] else if (onTap != null) ...[
+                const SizedBox(width: 4),
+                Icon(Icons.chevron_right, color: muted ?? cs.onSurfaceVariant),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
+    if (onTap != null || trailing == null) {
+      row = InkWell(onTap: enabled ? onTap : null, child: row);
+    }
+    if (!mergeSemantics) return row;
+    final isButton = onTap != null && trailing == null;
+    return MergeSemantics(
+      child: Semantics(
+        button: isButton,
+        enabled: isButton ? enabled : null,
+        child: row,
+      ),
+    );
   }
+}
+
+/// LOOK-1: an accent colour's swatch — beside الطراز's value, and larger
+/// beside each option in its sheet.
+class _AccentDot extends StatelessWidget {
+  const _AccentDot({required this.color, this.size = 14});
+
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+  );
+}
+
+/// A choice row's sheet: its options, the current one ticked. Choosing
+/// one closes the sheet and applies it at once (LANG-1, LOOK-1).
+Future<void> _choose<T>(
+  BuildContext context, {
+  required String title,
+  required T value,
+  required Map<T, String> options,
+  required ValueChanged<T> onChosen,
+  Widget Function(T option)? leading,
+}) async {
+  final chosen = await showModalBottomSheet<T>(
+    context: context,
+    builder: (ctx) {
+      final theme = Theme.of(ctx);
+      return SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 12, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(8, 0, 8, 8),
+                child: Semantics(
+                  header: true,
+                  child: Text(title, style: theme.textTheme.headlineSmall),
+                ),
+              ),
+              for (final e in options.entries)
+                ListTile(
+                  minTileHeight: 56,
+                  leading: leading?.call(e.key),
+                  title: Text(e.value),
+                  selected: e.key == value,
+                  trailing: e.key == value
+                      ? Icon(Icons.check, color: theme.colorScheme.primary)
+                      : null,
+                  onTap: () => Navigator.pop(ctx, e.key),
+                ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+  if (chosen != null && chosen != value) onChosen(chosen);
 }

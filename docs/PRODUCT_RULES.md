@@ -110,7 +110,9 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 - **PAY-2** Prices come from the store, in the buyer's currency. Never hard-coded, and nothing to do with any currency setting in the app.
 - **PAY-3** Nothing is sold before it exists. A tier that isn't finished is shown as "coming soon", with no price and no button.
 - **PAY-4** Nothing that already works moves behind a payment. Paying removes ads and adds what is new.
-- **PAY-5** Selling is quiet: one row in Settings, one small target on the ad slot, and one line where the free import quota runs out. No interstitial upsell, no countdown. A Premium trial is allowed only if the app reminds the user before it charges (at least 24 hours ahead) and cancelling is at most two taps from Settings (it opens the store's subscription page).
+- **PAY-5** Selling is quiet: one Pro card at the top of Settings, one small target on the ad slot, and one line where the free import quota runs out. No interstitial upsell, no countdown.
+  - The Pro card says in one line what Pro and Premium give: no price, no badge, no countdown. Once something is owned, it says what is owned instead of selling. (Amended 26 September 2026, Decision 23; it used to be one row in Settings.)
+  - PAY-11's "Subscription" row, further down Settings, shows the plan and also opens the purchase screen. A Premium trial is allowed only if the app reminds the user before it charges (at least 24 hours ahead) and cancelling is at most two taps from Settings (it opens the store's subscription page).
 - **PAY-6** A purchase that fails or is left pending never charges twice and never leaves the app half-paid: the app finishes every purchase with the store whatever the outcome, and the slots stay as they were until it is confirmed. A store with no such product configured is a real state — show "nothing to sell yet" rather than a button that only fails.
 - **PAY-7** Tiers at launch (round 2, 20 September 2026):
 
@@ -127,7 +129,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
   - `premium`: a subscription with two auto-renewing base plans, `monthly` at AED 9.99 and `yearly` at AED 79.99.
   - These are the Play Console base prices. Other countries get Play's local prices, and the app only ever shows the store's price (PAY-2).
 - **PAY-9** No free trial in v1 (Decision 11): the 10 free AI imports a month are how anyone tries Premium. If a trial is ever added, PAY-5's reminder and two-tap cancel come with it.
-- **PAY-10** The purchase screen opens only from PAY-5's three places. It shows:
+- **PAY-10** The purchase screen opens only from PAY-5's places: Settings' Pro card and its "Subscription" row (PAY-11), the ad slot's target, and the import screen's quota line. It shows:
   - Pro and Premium side by side, with store prices (Premium monthly and yearly), what each includes (PAY-7), and "Owned" on what's bought.
   - "Restore purchases" next to the prices (PAY-1).
   - A close button at the top from the first frame, never delayed or hidden.

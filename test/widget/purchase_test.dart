@@ -25,11 +25,12 @@ const yearly = StoreOffer(
 );
 const allOffers = [proOffer, monthly, yearly];
 
-/// The price lines as drawn: the store's price as the store wrote it, in
-/// its own direction isolate (PAY-2, LANG-5).
-final proOnce = '${ownIsolate('AED 14.99')} مرة واحدة';
-final premiumMonthly = '${ownIsolate('AED 9.99')} شهريًا';
-final premiumYearly = '${ownIsolate('AED 79.99')} سنويًا';
+/// Each price button's first line: the store's price as the store wrote
+/// it, in its own direction isolate (PAY-2, LANG-5). Its period is the
+/// line under it.
+final proOnce = ownIsolate('AED 14.99');
+final premiumMonthly = ownIsolate('AED 9.99');
+final premiumYearly = ownIsolate('AED 79.99');
 
 /// Opens Settings and scrolls to its Subscription section.
 Future<void> openSettings(WidgetTester tester) async {
@@ -81,7 +82,9 @@ void main() {
     await settle(tester);
     await tester.tap(find.byTooltip('إغلاق'));
     await settle(tester);
-    expect(find.text('برو وبريميوم'), findsNothing);
+    // The screen is gone (Settings' own Pro card carries the same title,
+    // so the close button is what tells the two apart).
+    expect(find.byTooltip('إغلاق'), findsNothing);
     expect(find.text('الاشتراك'), findsOneWidget); // back on Settings
   });
 
@@ -113,6 +116,37 @@ void main() {
     expect(find.text(proOnce), findsOneWidget);
     expect(find.text(premiumMonthly), findsOneWidget);
     expect(find.text(premiumYearly), findsOneWidget);
+    final semantics = tester.ensureSemantics();
+    // Each price over its period, on two lines on purpose, so every pill is
+    // the same height (LOOK-8), and read aloud as one phrase.
+    for (final (price, period) in [
+      (proOnce, 'مرة واحدة'),
+      (premiumMonthly, 'شهريًا'),
+      (premiumYearly, 'سنويًا'),
+    ]) {
+      final button = find.ancestor(
+        of: find.text(price),
+        matching: find.byType(OutlinedButton),
+      );
+      expect(
+        find.descendant(of: button, matching: find.text(period)),
+        findsOneWidget,
+      );
+      expect(
+        tester.getRect(find.text(period)).top,
+        greaterThanOrEqualTo(tester.getRect(find.text(price)).bottom),
+      );
+      expect(
+        tester.getSemantics(button),
+        isSemantics(label: '$price $period', isButton: true),
+      );
+    }
+    semantics.dispose();
+    final heights = {
+      for (final b in tester.widgetList(find.byType(OutlinedButton)))
+        tester.getSize(find.byWidget(b)).height,
+    };
+    expect(heights, hasLength(1));
     // PAY-10: every plan the same kind of button, none preselected.
     expect(find.byType(OutlinedButton), findsNWidgets(3));
     expect(find.byType(FilledButton), findsNothing);
@@ -142,6 +176,30 @@ void main() {
     expect(shown('AED'), findsNothing);
   });
 
+  testWidgets('PAY-10: the third state — both owned: each card says so, no '
+      'price is offered, Premium says where to cancel, and the close button '
+      'stays at the top however far the screen scrolls', (tester) async {
+    await pumpApp(
+      tester,
+      withRecipe: true,
+      storeOverride: NoopPurchaseStore(
+        owned: {Product.pro, Product.premium},
+        offers: allOffers,
+      ),
+    );
+    await openPurchaseScreen(tester);
+    expect(find.text('تملكه'), findsNWidgets(2));
+    expect(find.byType(OutlinedButton), findsNothing);
+    expect(find.text(proOnce), findsNothing);
+    expect(find.text('لا شيء معروض للشراء بعد.'), findsNothing);
+    expect(find.text('إدارة أو إلغاء'), findsOneWidget);
+
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -2000));
+    await settle(tester);
+    expect(find.byTooltip('إغلاق'), findsOneWidget);
+    expect(tester.getTopLeft(find.byTooltip('إغلاق')).dy, lessThan(80));
+  });
+
   testWidgets('PAY-6: a pending purchase waits, a failed one says so', (
     tester,
   ) async {
@@ -151,8 +209,11 @@ void main() {
       storeOverride: NoopPurchaseStore(offers: allOffers),
     );
     await openPurchaseScreen(tester);
+    await tester.ensureVisible(find.text(proOnce));
+    await settle(tester);
     await tester.tap(find.text(proOnce));
     await settle(tester);
+    expect(store.bought, [proOffer]);
     store.emit(Product.pro, PurchaseOutcome.pending);
     await settle(tester);
     expect(shown('بانتظار أن يؤكد Google Play الدفع'), findsOneWidget);

@@ -10,6 +10,8 @@ import 'package:wasfati/l10n/app_localizations.dart';
 import 'package:wasfati/models/settings.dart' show AppStyle;
 import 'package:wasfati/theme/app_theme.dart';
 import 'package:wasfati/theme/decor.dart';
+import 'package:wasfati/widgets/empty_state.dart';
+import 'package:wasfati/widgets/ornament.dart';
 import 'package:wasfati/widgets/round_icon_button.dart';
 import 'package:wasfati/widgets/segmented_pill.dart';
 import 'package:wasfati/widgets/servings_stepper.dart';
@@ -241,6 +243,95 @@ void main() {
       );
       await tester.tap(find.text('كتب الطبخ'));
       expect(picked, 1);
+    });
+  });
+
+  group('SegmentedPill.dense', () {
+    testWidgets('a 28dp track that hugs its labels, each option still a '
+        '48dp tap target that picks it', (tester) async {
+      var picked = 0;
+      await tester.pumpWidget(
+        _themed(
+          StatefulBuilder(
+            builder: (context, setState) => SegmentedPill<int>(
+              dense: true,
+              options: const {0: '123', 1: '١٢٣'},
+              value: picked,
+              onChanged: (v) => setState(() => picked = v),
+            ),
+          ),
+        ),
+      );
+      final pill = find.byType(SegmentedPill<int>);
+      expect(tester.getSize(pill).height, 48);
+      expect(tester.getSize(pill).width, lessThan(128));
+      expect(
+        find.descendant(
+          of: pill,
+          matching: find.byWidgetPredicate(
+            (w) => w is Container && w.constraints?.maxHeight == 28,
+          ),
+        ),
+        findsOneWidget,
+      );
+      // 12/600 labels (labelSmall).
+      final label = tester.widget<Text>(find.text('١٢٣'));
+      expect(label.style?.fontSize, 12);
+      expect(label.style?.fontWeight, FontWeight.w600);
+      await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+      await tester.tap(find.text('١٢٣'));
+      await tester.pump();
+      expect(picked, 1);
+      final handle = tester.ensureSemantics();
+      expect(
+        tester.getSemantics(find.text('١٢٣')),
+        isSemantics(isSelected: true, isButton: true),
+      );
+      handle.dispose();
+    });
+  });
+
+  group('EmptyState', () {
+    testWidgets('draws the caller\'s icon on the disc, its title as a '
+        'heading, and its body', (tester) async {
+      await tester.pumpWidget(
+        _themed(
+          const EmptyState(
+            title: 'لا وصفات بعد',
+            body: 'أضف أول وصفة.',
+            icon: Icons.menu_book_outlined,
+          ),
+        ),
+      );
+      final disc = find.byWidgetPredicate(
+        (w) =>
+            w is Container &&
+            w.decoration is BoxDecoration &&
+            (w.decoration! as BoxDecoration).shape == BoxShape.circle,
+      );
+      expect(tester.getSize(disc), const Size(112, 112));
+      expect(
+        find.descendant(
+          of: disc,
+          matching: find.byIcon(Icons.menu_book_outlined),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('أضف أول وصفة.'), findsOneWidget);
+      final handle = tester.ensureSemantics();
+      expect(
+        tester.getSemantics(find.text('لا وصفات بعد')),
+        isSemantics(label: 'لا وصفات بعد', isHeader: true),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('with no icon, the disc holds the ornament alone', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_themed(const EmptyState(title: 'فارغة')));
+      expect(find.byType(Icon), findsNothing);
+      expect(find.byType(Ornament), findsOneWidget);
     });
   });
 }

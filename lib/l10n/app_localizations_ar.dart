@@ -75,6 +75,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get walkthroughDemoRecipe => 'كبسة دجاج';
 
   @override
+  String get walkthroughTileSoup => 'شوربة عدس';
+
+  @override
+  String get walkthroughTileFattoush => 'فتوش';
+
+  @override
   String get walkthroughDemoLine1 => '1½ كوب أرز';
 
   @override
@@ -296,6 +302,27 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settings => 'الإعدادات';
+
+  @override
+  String get settingsGroupLook => 'المظهر واللغة';
+
+  @override
+  String get settingsGroupCooking => 'الطبخ والخطة';
+
+  @override
+  String get settingsGroupData => 'بياناتك';
+
+  @override
+  String get settingsGroupAbout => 'عن وصفاتي';
+
+  @override
+  String get settingsPrivacyPolicy => 'سياسة الخصوصية';
+
+  @override
+  String get settingsContact => 'راسلنا';
+
+  @override
+  String get settingsVersion => 'الإصدار';
 
   @override
   String get settingsLanguage => 'اللغة';
@@ -1179,12 +1206,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ramadanEidLabel => 'عيد الفطر';
 
   @override
-  String get settingsRamadanSection => 'رمضان';
-
-  @override
-  String get settingsBackupSection => 'النسخ الاحتياطي';
-
-  @override
   String get backupSaveAction => 'احفظ نسخة احتياطية';
 
   @override
@@ -1453,6 +1474,15 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get purchasePeriodOnce => 'مرة واحدة';
+
+  @override
+  String get purchasePeriodMonthly => 'شهريًا';
+
+  @override
+  String get purchasePeriodYearly => 'سنويًا';
+
+  @override
   String get purchaseComingSoon => 'قريبًا';
 
   @override
@@ -1494,6 +1524,42 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsSubscription => 'الاشتراك';
+
+  @override
+  String settingsProCardBody(String count) {
+    return 'أزل الإعلانات، أو ارفع الاستيراد الذكي إلى $count شهريًا.';
+  }
+
+  @override
+  String get settingsProCardOwnsPro => 'لديك برو: بلا إعلانات.';
+
+  @override
+  String settingsProCardOwnsPremium(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'لديك بريميوم: بلا إعلانات، و$shown استيراد ذكي شهريًا.',
+      many: 'لديك بريميوم: بلا إعلانات، و$shown استيرادًا ذكيًا شهريًا.',
+      few: 'لديك بريميوم: بلا إعلانات، و$shown استيرادات ذكية شهريًا.',
+      two: 'لديك بريميوم: بلا إعلانات، واستيرادان ذكيان شهريًا.',
+      one: 'لديك بريميوم: بلا إعلانات، واستيراد ذكي واحد شهريًا.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String settingsProCardOwnsBoth(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'لديك برو وبريميوم: بلا إعلانات، و$shown استيراد ذكي شهريًا.',
+      many: 'لديك برو وبريميوم: بلا إعلانات، و$shown استيرادًا ذكيًا شهريًا.',
+      few: 'لديك برو وبريميوم: بلا إعلانات، و$shown استيرادات ذكية شهريًا.',
+      two: 'لديك برو وبريميوم: بلا إعلانات، واستيرادان ذكيان شهريًا.',
+      one: 'لديك برو وبريميوم: بلا إعلانات، واستيراد ذكي واحد شهريًا.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get tierFree => 'مجاني';

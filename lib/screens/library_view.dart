@@ -770,6 +770,7 @@ class _NoResults extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return EmptyState(
+      icon: searching ? Icons.search_off : Icons.menu_book_outlined,
       title: searching
           ? l10n.noResults
           : cookbook
