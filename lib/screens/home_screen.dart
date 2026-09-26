@@ -432,6 +432,7 @@ Future<void> openRecipe(BuildContext context, String id) async {
         SnackBar(
           content: Text(l10n.deletedSnack),
           duration: const Duration(seconds: 5),
+          persist: false,
           action: SnackBarAction(
             label: l10n.undo,
             onPressed: () => recipes.restore(id),
@@ -592,9 +593,11 @@ class _CookbookTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final decor = Decor.of(context);
     final radius = decor.photoCardRadius;
+    final l10n = AppLocalizations.of(context);
     return Semantics(
       button: true,
-      label: '$name، $subtitle',
+      // LANG-6: the language's own comma, never a hardcoded «،».
+      label: [name, subtitle].join(l10n.labelSeparator),
       onTap: onTap,
       child: ExcludeSemantics(
         child: SufraCard(
@@ -790,7 +793,7 @@ class CookbookScreen extends StatelessWidget {
         label: Text(l10n.recipesAdd),
       ),
       // ADS-9: a pushed screen (LOOK-7 gives it no navigation pill) still
-      // carries its own banner, "aboveSystemBar" like the recipe page's.
+      // carries its own banner, clear of the system bar ("aboveSystemBar").
       bottomNavigationBar: const AdSlot(aboveSystemBar: true),
       body: LibraryView(cookbookId: cookbookId),
     );

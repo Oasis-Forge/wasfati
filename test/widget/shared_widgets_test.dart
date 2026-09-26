@@ -38,6 +38,36 @@ void main() {
       expect(find.byTooltip('شارك'), findsOneWidget);
     });
 
+    testWidgets('is read as a button, enabled or not, as IconButton is', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _themed(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RoundIconButton(
+                icon: Icons.share,
+                tooltip: 'شارك',
+                onPressed: () {},
+              ),
+              const RoundIconButton(
+                icon: Icons.edit,
+                tooltip: 'تعديل',
+                onPressed: null,
+              ),
+            ],
+          ),
+        ),
+      );
+      final on = tester.getSemantics(find.byTooltip('شارك'));
+      expect(on.flagsCollection.isButton, isTrue);
+      expect(on.flagsCollection.isEnabled, Tristate.isTrue);
+      final off = tester.getSemantics(find.byTooltip('تعديل'));
+      expect(off.flagsCollection.isButton, isTrue);
+      expect(off.flagsCollection.isEnabled, Tristate.isFalse);
+    });
+
     testWidgets('its tap target is never under 48dp, even at the default '
         '44dp visual size', (tester) async {
       await tester.pumpWidget(
@@ -123,6 +153,26 @@ void main() {
         ),
       );
       await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+    });
+
+    testWidgets('each step is a button; at a bound it is read as disabled', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _themed(
+          ServingsStepper(
+            label: '١ حصة',
+            onDecrement: null,
+            onIncrement: () {},
+          ),
+        ),
+      );
+      final less = tester.getSemantics(find.byTooltip('Fewer servings'));
+      expect(less.flagsCollection.isButton, isTrue);
+      expect(less.flagsCollection.isEnabled, Tristate.isFalse);
+      final more = tester.getSemantics(find.byTooltip('More servings'));
+      expect(more.flagsCollection.isButton, isTrue);
+      expect(more.flagsCollection.isEnabled, Tristate.isTrue);
     });
 
     testWidgets('+ and - call their own callback', (tester) async {

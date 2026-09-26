@@ -4,13 +4,66 @@ import 'quantity/arabic_text.dart';
 /// "دقيقتين", "نص ساعة", "10-15 min" (the upper end), "1 hour 20 minutes"
 /// (one timer), Eastern Arabic digits too. Returns each once, in order.
 List<Duration> findDurations(String text) {
-  final tokens = normalizeArabic(westernDigits(text))
-      // "و20" is "and 20".
-      .replaceAllMapped(RegExp(r'(^|\s)و(?=\d)'), (m) => '${m[1]}و ')
-      .split(RegExp(r'[^\p{L}\p{N}.\-–]+', unicode: true))
-      .map((t) => t.replaceAll(RegExp(r'\.+$'), '')) // "mins." → "mins"
-      .where((t) => t.isNotEmpty)
-      .toList();
+  final seen = <Duration>{};
+  return [
+    for (final span in findDurationSpans(text))
+      if (seen.add(span.duration)) span.duration,
+  ];
+}
+
+/// One duration found in a step's text (COOK-4, LOOK-13): where it sits in
+/// the text as written (UTF-16 offsets, end exclusive) and how long it is.
+typedef DurationSpan = ({int start, int end, Duration duration});
+
+/// A word of a step: its normalized form, for reading, and where it sits
+/// in the text as written, for highlighting.
+typedef _Token = ({String text, int start, int end});
+
+/// A run of word characters, plus the ones [normalizeArabic] drops
+/// (harakat, superscript alef, direction marks and isolates) and the
+/// Arabic decimal mark [westernDigits] turns into a point, so a word keeps
+/// the same boundaries it would have after both.
+final _word = RegExp(
+  '[\\p{L}\\p{N}.\\-–\u064B-\u065F\u0670\u0640\u066B'
+  '\u200E\u200F\u2066-\u2069]+',
+  unicode: true,
+);
+
+/// The first character of a word that [normalizeArabic] keeps.
+final _letter = RegExp('[^\u064B-\u065F\u0670\u0640\u200E\u200F\u2066-\u2069]');
+
+/// Characters that end a word as written but are dropped from its reading.
+final _trailing = RegExp('[.\u200E\u200F\u2066-\u2069]+\$');
+
+List<_Token> _tokens(String text) {
+  final tokens = <_Token>[];
+  for (final m in _word.allMatches(text)) {
+    final raw = m[0]!;
+    var norm = normalizeArabic(westernDigits(raw));
+    var start = m.start;
+    // "و20" is "and 20", when the و starts a word.
+    if (RegExp(r'^و\d').hasMatch(norm) &&
+        (start == 0 || RegExp(r'\s').hasMatch(text[start - 1]))) {
+      // Past the letter itself, whatever silent marks come before it.
+      final cut = start + raw.indexOf(_letter) + 1;
+      tokens.add((text: 'و', start: start, end: cut));
+      norm = norm.substring(1);
+      start = cut;
+    }
+    norm = norm.replaceAll(RegExp(r'\.+$'), ''); // "mins." → "mins"
+    if (norm.isEmpty) continue;
+    final kept = text.substring(start, m.end).replaceFirst(_trailing, '');
+    tokens.add((text: norm, start: start, end: start + kept.length));
+  }
+  return tokens;
+}
+
+/// Every duration in [text] (COOK-4), in order, with where it sits: the
+/// recipe page highlights each one, and cook mode offers each as a timer.
+/// The same phrase twice is found twice; [findDurations] keeps one.
+List<DurationSpan> findDurationSpans(String text) {
+  final words = _tokens(text);
+  final tokens = [for (final w in words) w.text];
   final found = <(int start, int end, Duration d)>[];
 
   for (var i = 0; i < tokens.length; i++) {
@@ -32,10 +85,10 @@ List<Duration> findDurations(String text) {
     found.add((i, end, d));
     i = end - 1;
   }
-  final seen = <Duration>{};
   return [
-    for (final (_, _, d) in found)
-      if (d > Duration.zero && d <= const Duration(hours: 24) && seen.add(d)) d,
+    for (final (s, e, d) in found)
+      if (d > Duration.zero && d <= const Duration(hours: 24))
+        (start: words[s].start, end: words[e - 1].end, duration: d),
   ];
 }
 

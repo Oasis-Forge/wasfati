@@ -107,15 +107,15 @@ void main() {
         final l = _l10n(language);
         await pumpApp(tester, language: language, withRecipe: true);
         await _openRecipe(tester);
-        await tester.drag(find.byType(ListView).first, const Offset(0, -2000));
-        await settle(tester);
-        await tester.tap(find.byIcon(Icons.soup_kitchen_outlined));
+        await tester.tap(find.text(l.startCooking));
         await settle(tester);
         final icon = tester.widget<Icon>(
-          find.descendant(
-            of: find.byTooltip(l.ingredients),
-            matching: find.byType(Icon),
-          ),
+          find
+              .descendant(
+                of: find.byTooltip(l.ingredients),
+                matching: find.byType(Icon),
+              )
+              .first,
         );
         expect(
           icon.icon,
@@ -194,11 +194,14 @@ void main() {
     ) async {
       await pumpApp(tester, digits: DigitStyle.arabic, withRecipe: true);
       await _openRecipe(tester);
-      expect(shown('التحضير ٦٠ دقيقة'), findsOneWidget);
-      expect(shown('الطبخ ١٢٠ دقيقة'), findsOneWidget);
+      // LOOK-13: each fact tile's caption, then its value in one message.
+      expect(find.text('التحضير'), findsOneWidget);
+      expect(find.text('٦٠ دقيقة'), findsOneWidget);
+      expect(find.text('الطبخ'), findsOneWidget);
+      expect(find.text('١٢٠ دقيقة'), findsOneWidget);
     });
 
-    testWidgets('English with ١٢٣: "Prep ٦٠ min"', (tester) async {
+    testWidgets('English with ١٢٣: "Prep" over "٦٠ min"', (tester) async {
       await pumpApp(
         tester,
         language: LanguagePref.en,
@@ -206,8 +209,10 @@ void main() {
         withRecipe: true,
       );
       await _openRecipe(tester);
-      expect(shown('Prep ٦٠ min'), findsOneWidget);
-      expect(shown('Cook ١٢٠ min'), findsOneWidget);
+      expect(find.text('Prep'), findsOneWidget);
+      expect(find.text('٦٠ min'), findsOneWidget);
+      expect(find.text('Cook'), findsOneWidget);
+      expect(find.text('١٢٠ min'), findsOneWidget);
     });
 
     testWidgets('the editor: its numbers, its title counter and its limits '

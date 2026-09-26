@@ -29,6 +29,7 @@ import 'services/cook_services.dart';
 import 'services/google_ads.dart';
 import 'services/import_photos.dart';
 import 'services/importer.dart';
+import 'services/links.dart';
 import 'services/mail.dart';
 import 'services/play_store.dart';
 import 'services/recipe_pages.dart';
@@ -148,6 +149,7 @@ Future<void> main() async {
       backupFiles: backupFiles,
       backupState: backupState,
       mail: const DeviceMailComposer(),
+      links: const DeviceLinkOpener(),
       importPhotos: DeviceImportPhotoPicker(),
       purchases: purchases,
       ads: ads,

@@ -211,6 +211,26 @@
   "@shareTooltip": {
     "description": "SHARE-1. Recipe page app-bar action, opening the share sheet."
   },
+  "moreActions": "More",
+  "@moreActions": {
+    "description": "LOOK-13. Tooltip of the recipe page's round 'more' button, which opens every other action (translate, delete)."
+  },
+  "factPrep": "Prep",
+  "@factPrep": {
+    "description": "LOOK-13, REC-3. Caption of the recipe page's prep-time tile."
+  },
+  "factCook": "Cook",
+  "@factCook": {
+    "description": "LOOK-13, REC-3. Caption of the recipe page's cook-time tile."
+  },
+  "factServings": "Servings",
+  "@factServings": {
+    "description": "LOOK-13, REC-3. Caption of the recipe page's servings tile."
+  },
+  "linkOpenFailed": "Couldn't open the link.",
+  "@linkOpenFailed": {
+    "description": "LOOK-13. Shown when the recipe's source link can't be opened (no browser)."
+  },
   "shareAsText": "As text",
   "@shareAsText": {
     "description": "SHARE-1. Share-sheet option: plain text."
@@ -1401,6 +1421,10 @@
     }
   },
   "groceriesNameSeparator": ", ",
+  "labelSeparator": ", ",
+  "@labelSeparator": {
+    "description": "LANG-6. Joins the parts of one spoken label (a library row's title, details and source) for screen readers: the language's own comma and a space."
+  },
   "groceriesAddedCount": "{count, plural, =1{{shown} ingredient added} other{{shown} ingredients added}}",
   "@groceriesAddedCount": {
     "description": "GRO-2. Snackbar after adding a recipe's ticked lines to groceries.",

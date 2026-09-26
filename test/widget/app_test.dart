@@ -36,6 +36,7 @@ import 'package:wasfati/services/backup_files.dart';
 import 'package:wasfati/services/cook_services.dart';
 import 'package:wasfati/services/importer.dart';
 import 'package:wasfati/services/import_photos.dart';
+import 'package:wasfati/services/links.dart';
 import 'package:wasfati/services/mail.dart';
 import 'package:wasfati/services/photo_store.dart';
 import 'package:wasfati/services/recipe_pages.dart';
@@ -44,6 +45,7 @@ import 'package:wasfati/services/store.dart';
 import 'package:wasfati/services/store_review.dart';
 import 'package:wasfati/services/web_import.dart';
 import 'package:wasfati/widgets/content_direction.dart';
+import 'package:wasfati/widgets/segmented_pill.dart';
 
 import '../services/importer_test.dart' show FakeFetcher, kabsaPage;
 
@@ -107,6 +109,9 @@ late BackupState backupState;
 
 /// The mail drafts the last [pumpApp] opened (IMP-8, Decision 19).
 late NoopMailComposer mail;
+
+/// The links the last [pumpApp] was asked to open (LOOK-13).
+late NoopLinkOpener links;
 
 /// The camera and photo picker of the last [pumpApp] (IMP-1, IMP-10): set
 /// its `next` before tapping a photo button.
@@ -237,6 +242,9 @@ Future<(RecipesState, SettingsState)> pumpApp(
   bool disableAnimations = false,
   // LOOK-12: fixes the library greeting's time of day.
   DateTime Function()? libraryClock,
+  // The system bars' insets (an edge-to-edge phone's status and
+  // navigation bars); none by default.
+  EdgeInsets systemInsets = EdgeInsets.zero,
 }) async {
   late RecipesState recipes;
   late SettingsState settings;
@@ -309,6 +317,7 @@ Future<(RecipesState, SettingsState)> pumpApp(
   );
   backupFiles = NoopBackupFiles();
   mail = NoopMailComposer();
+  links = NoopLinkOpener();
   importPhotos = NoopImportPhotoPicker();
   storeReview = NoopStoreReview();
   reviewPrompt = ReviewPrompt(
@@ -339,6 +348,8 @@ Future<(RecipesState, SettingsState)> pumpApp(
       data: MediaQueryData(
         textScaler: TextScaler.linear(textScale),
         disableAnimations: disableAnimations,
+        padding: systemInsets,
+        viewPadding: systemInsets,
       ),
       child: WasfatiApp(
         recipes: recipes,
@@ -354,6 +365,7 @@ Future<(RecipesState, SettingsState)> pumpApp(
         backupFiles: backupFilesOverride ?? backupFiles,
         backupState: backupState,
         mail: mail,
+        links: links,
         importPhotos: importPhotos,
         photos: photoStore,
         purchases: purchases,
@@ -375,11 +387,14 @@ Future<(RecipesState, SettingsState)> pumpApp(
 }
 
 final _isolates = RegExp(
-  '[${String.fromCharCode(0x2066)}-${String.fromCharCode(0x2069)}]',
+  '[${String.fromCharCode(0x2066)}-${String.fromCharCode(0x2069)}'
+  '${String.fromCharCode(0xFFFC)}]',
 );
 
 /// Text as the user reads it: without the invisible left-to-right isolates
-/// that wrap amounts inside Arabic lines (QTY-5). Matches a plain `Text`
+/// that wrap amounts inside Arabic lines (QTY-5), nor the object
+/// replacement character a `WidgetSpan` (an inline icon or pill) flattens
+/// to. Matches a plain `Text`
 /// (`.data`) or `AmountLine`'s `Text.rich` (LOOK-4: it colours the amount
 /// span in a separate `TextSpan`, so `.data` is null there — `.toPlainText`
 /// flattens the spans back to the same string `formatLine` produced).
@@ -391,6 +406,33 @@ Finder shown(String text) => find.byWidgetPredicate((w) {
 
 TextDirection dirOf(WidgetTester tester, Finder f) =>
     Directionality.of(tester.element(f.first));
+
+/// Scrolls the recipe page (LOOK-13) until [f] sits mid-screen — clear of
+/// the floating buttons at the top and the action bar at the bottom — so
+/// a tap lands on it.
+Future<void> reveal(WidgetTester tester, Finder f) async {
+  await Scrollable.ensureVisible(tester.element(f.first), alignment: 0.5);
+  await tester.pump();
+}
+
+/// Taps [f] on the recipe page once [reveal] has brought it into view.
+Future<void> tapOnPage(WidgetTester tester, Finder f) async {
+  await reveal(tester, f);
+  await tester.tap(f.first);
+  await settle(tester);
+}
+
+/// LOOK-13: the recipe page's Steps tab ("طريقة التحضير").
+Future<void> openStepsTab(
+  WidgetTester tester, {
+  String label = 'طريقة التحضير',
+}) => tapOnPage(
+  tester,
+  find.descendant(
+    of: find.byWidgetPredicate((w) => w is SegmentedPill),
+    matching: find.text(label),
+  ),
+);
 
 void main() {
   testWidgets('Arabic: right to left, empty state (LANG-5, RUN-1)', (
@@ -434,6 +476,11 @@ void main() {
     expect(find.text('للدقوس'), findsOneWidget); // REC-4 group heading
     expect(shown('1 كيلو دجاج'), findsOneWidget); // "١ ك" → 1 kg
     expect(shown('2 كوبان ارز'), findsOneWidget); // dual → 2 cups
+    expect(
+      find.text('يحمر الدجاج'),
+      findsNothing,
+    ); // LOOK-13: Ingredients first
+    await openStepsTab(tester);
     expect(find.text('يحمر الدجاج'), findsOneWidget); // numbering removed
     expect(find.text('2'), findsWidgets); // step 2's number
 
@@ -592,7 +639,9 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('حفظ'));
     await settle(tester);
-    expect(find.widgetWithText(Chip, 'رمضان'), findsOneWidget); // on the page
+    // On the page: the cookbook's badge, with its book icon.
+    expect(find.text('رمضان'), findsOneWidget);
+    expect(find.byIcon(Icons.menu_book_outlined), findsOneWidget);
 
     await tester.binding.handlePopRoute();
     await settle(tester);
@@ -637,8 +686,7 @@ void main() {
     await settle(tester);
     expect(find.text('6 حصص'), findsWidgets);
 
-    await tester.tap(find.text('×2'));
-    await settle(tester);
+    await tapOnPage(tester, find.text('×2'));
     // "×" stays before the number in right-to-left (seen as "2×" on the
     // emulator before this was fixed).
     expect(
@@ -651,13 +699,11 @@ void main() {
     expect(find.text('لم يُعدَّل'), findsOneWidget); // "ملح حسب الذوق"
     expect(find.text('مكوّن واحد لم يُعدَّل'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('حصص أقل'));
-    await settle(tester);
+    await tapOnPage(tester, find.byTooltip('حصص أقل'));
     expect(find.text('11 حصة'), findsOneWidget);
     expect(shown('1.83 كيلو لحم ضأن'), findsOneWidget); // 11/6 kg
 
-    await tester.tap(find.text('إعادة'));
-    await settle(tester);
+    await tapOnPage(tester, find.text('إعادة'));
     expect(shown('1 كيلو لحم ضأن'), findsOneWidget);
     expect(find.text('لم يُعدَّل'), findsNothing);
   });
@@ -668,8 +714,7 @@ void main() {
     final (recipes, _) = await pumpApp(tester, withRecipe: true);
     await tester.tap(find.text('كبسة لحم'));
     await settle(tester);
-    await tester.tap(find.text('غ / مل'));
-    await settle(tester);
+    await tapOnPage(tester, find.text('غ / مل'));
     expect(shown('555 غرامًا ارز بسمتي'), findsOneWidget); // 3 cups × 185 g
     expect(shown('1 كيلو لحم ضأن'), findsOneWidget); // already metric
 
@@ -798,27 +843,17 @@ void main() {
     final (recipes, _) = await pumpApp(tester, withRecipe: true);
     await tester.tap(find.text('كبسة لحم'));
     await settle(tester);
-    await tester.tap(find.text('×2')); // SCALE-6: the scale goes along
-    await settle(tester);
-    // Decision 23's larger type scale pushes "ابدأ الطبخ" out of the
-    // ListView's initial build range, so it isn't in the tree to begin
-    // with — scrollUntilVisible drags a little at a time, letting the
-    // list build further down each time, instead of assuming it's already
-    // there (ensureVisible needs that).
-    await tester.scrollUntilVisible(
-      find.text('ابدأ الطبخ'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await settle(tester);
+    await tapOnPage(tester, find.text('×2')); // SCALE-6: the scale goes along
+    // LOOK-13: "ابدأ الطبخ" is in the action bar, always on screen.
     await tester.tap(find.text('ابدأ الطبخ'));
     await settle(tester);
 
     expect(find.text('الخطوة 1 من 2'), findsWidgets);
     expect(find.text('يحمر اللحم في الزبدة.'), findsOneWidget);
 
-    // The ingredients sheet shows the ×2 amounts, with checkboxes.
-    await tester.tap(find.byTooltip('المكونات'));
+    // The ingredients sheet shows the ×2 amounts, with checkboxes (the
+    // top row's button; the bottom bar has the same one, LOOK-14).
+    await tester.tap(find.byTooltip('المكونات').first);
     await settle(tester);
     expect(shown('2 كيلو لحم ضأن'), findsOneWidget);
     await tester.tap(find.byType(Checkbox).first);
@@ -828,8 +863,10 @@ void main() {
 
     await tester.tap(find.text('التالي'));
     await settle(tester);
-    expect(find.text('يضاف الأرز ويترك 15 دقيقة.'), findsOneWidget);
-    await tester.tap(find.text('15:00')); // COOK-4: found in the text
+    // The whole step, its duration included (in the accent, COOK-4).
+    expect(shown('يضاف الأرز ويترك 15 دقيقة.'), findsOneWidget);
+    // COOK-4: found in the text, and started from its timer card.
+    await tester.tap(find.text('ابدأ مؤقت 15:00'));
     await settle(tester);
     expect(timers.running.single.total, const Duration(minutes: 15));
     expect(alerts.asked, 1); // asked at the first timer (COOK-5)
@@ -1544,7 +1581,10 @@ void main() {
     await pumpApp(tester, withRecipe: true);
     await tester.tap(find.text('كبسة لحم'));
     await settle(tester);
-    await tester.tap(find.byTooltip('حذف'));
+    // LOOK-13: delete is under the page's "more" button.
+    await tester.tap(find.byTooltip('المزيد'));
+    await settle(tester);
+    await tester.tap(find.text('حذف'));
     await settle(tester);
     expect(find.text('حُذفت الوصفة'), findsOneWidget);
     expect(find.text('كبسة لحم'), findsNothing);

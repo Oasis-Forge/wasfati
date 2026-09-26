@@ -39,13 +39,48 @@ class RecipeCover extends StatelessWidget {
     return hash % tintCount;
   }
 
+  /// Any letter, in any script; the tatweel (ـ), a letter to Unicode, is
+  /// only a stretch and never counts.
+  static final _letter = RegExp(r'\p{L}', unicode: true);
+  static const _tatweel = 0x0640;
+
+  /// A combining mark: tashkeel, and any other script's accents.
+  static final _mark = RegExp(r'\p{M}', unicode: true);
+  static const _al = 'ال';
+
+  /// LOOK-10: the letter drawn on the cover — the title's first letter,
+  /// past any leading quote, digit, tashkeel or tatweel, and past a
+  /// leading «ال», so «الكبسة» shows «ك», not a bare «ا». A title with no
+  /// letter after «ال» keeps its «ا»; one with no letter at all shows its
+  /// first character, and a blank one "؟".
+  static String letterFor(String title) {
+    final trimmed = title.trim();
+    if (trimmed.isEmpty) return '؟';
+    bool isLetter(int rune) =>
+        rune != _tatweel && _letter.hasMatch(String.fromCharCode(rune));
+    // The title from its first letter on, without tashkeel or tatweel.
+    final runes = trimmed.runes.toList();
+    final first = runes.indexWhere(isLetter);
+    if (first < 0) return trimmed.characters.first;
+    final rest = [
+      for (final rune in runes.skip(first))
+        if (rune != _tatweel && !_mark.hasMatch(String.fromCharCode(rune)))
+          rune,
+    ];
+    final word = String.fromCharCodes(rest);
+    if (word.startsWith(_al)) {
+      final after = rest.skip(_al.length).where(isLetter);
+      if (after.isNotEmpty) return String.fromCharCode(after.first);
+    }
+    return String.fromCharCode(rest.first);
+  }
+
   @override
   Widget build(BuildContext context) {
     final decor = Decor.of(context);
     final tints = decor.coverTints;
     final (light, dark) = tints[tintIndexFor(recipeId, tints.length)];
-    final trimmed = title.trim();
-    final letter = trimmed.isEmpty ? '؟' : trimmed.characters.first;
+    final letter = letterFor(title);
 
     return ClipRRect(
       borderRadius: borderRadius ?? BorderRadius.zero,

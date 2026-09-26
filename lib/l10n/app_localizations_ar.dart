@@ -182,6 +182,21 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareTooltip => 'مشاركة';
 
   @override
+  String get moreActions => 'المزيد';
+
+  @override
+  String get factPrep => 'التحضير';
+
+  @override
+  String get factCook => 'الطبخ';
+
+  @override
+  String get factServings => 'الحصص';
+
+  @override
+  String get linkOpenFailed => 'تعذّر فتح الرابط.';
+
+  @override
   String get shareAsText => 'كنص';
 
   @override
@@ -1093,6 +1108,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get groceriesNameSeparator => '، ';
+
+  @override
+  String get labelSeparator => '، ';
 
   @override
   String groceriesAddedCount(int count, String shown) {

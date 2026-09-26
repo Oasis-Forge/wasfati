@@ -484,4 +484,94 @@ void main() {
       },
     );
   });
+
+  group('SHARE-3, LOOK-4: amounts in the chosen accent', () {
+    test('an ingredient block\'s amount is its own run in the accent at '
+        '700; the rest of the line and other blocks are one run', () {
+      final lri = String.fromCharCode(0x2066);
+      final pdi = String.fromCharCode(0x2069);
+      final ink = wasfatiColorScheme(AppStyle.ink, Brightness.light);
+      final line = ShareBlock.ingredient('${lri}2 كوب$pdi ارز');
+      final span = shareBlockSpan(
+        line,
+        color: ink.onSurface,
+        accent: ink.primary,
+      );
+      final runs = span.children!.cast<TextSpan>();
+      expect(runs.first.text, '${lri}2 كوب$pdi'); // the unit agrees with it
+      expect(runs.first.style!.color, ink.primary);
+      expect(runs.first.style!.fontWeight, FontWeight.w700);
+      expect(runs.last.text, ' ارز');
+      expect(runs.last.style, isNull); // the line's own colour and weight
+      expect(span.style!.color, ink.onSurface);
+
+      // A line with no amount (QTY-2), and a heading: one run each.
+      final salt = shareBlockSpan(
+        ShareBlock.ingredient('ملح حسب الذوق'),
+        accent: ink.primary,
+      );
+      expect(salt.children, isNull);
+      expect(salt.text, 'ملح حسب الذوق');
+    });
+
+    testWidgets('the page draws more accent where the lines have amounts', (
+      tester,
+    ) async {
+      await tester.runAsync(() async {
+        final (repo, _, _) = await testRepo();
+        final dir = await Directory.systemTemp.createTemp(
+          'wasfati_pages_accent_test',
+        );
+        addTearDown(() {
+          if (dir.existsSync()) dir.deleteSync(recursive: true);
+        });
+        final ink = wasfatiColorScheme(AppStyle.ink, Brightness.light);
+
+        Future<int> accentPixels(List<String> lines) async {
+          final r = kabsa(repo).copyWith(
+            ingredients: [
+              Section(
+                id: repo.newId(),
+                items: [
+                  for (final l in lines) IngredientLine.parse(repo.newId(), l),
+                ],
+              ),
+            ],
+          );
+          final paths = await renderSharePages(
+            r,
+            factor: Rational.one,
+            view: UnitView.asWritten,
+            digits: DigitStyle.western,
+            uiDirection: TextDirection.rtl,
+            style: AppStyle.ink,
+            ingredientsHeading: 'المقادير',
+            stepsHeading: 'الطريقة',
+            notScaledMark: _notScaledMark,
+            unscaledLineText: _unscaledLineText,
+            servingsLabel: (n) => '$n حصص',
+            prepTimeLabel: (m) => 'التحضير $m دقيقة',
+            cookTimeLabel: (m) => 'الطبخ $m دقيقة',
+            brand: 'وصفاتي',
+            storage: FakeShareStorage(dir),
+          );
+          final png = await _decodePixels(paths!.first);
+          final accent = _rgba(ink.primary);
+          var n = 0;
+          // Above the footer, which is the accent all the way across.
+          final bottom = (shareImageHeight - shareFooterHeight).round();
+          for (var y = 0; y < bottom; y += 2) {
+            for (var x = 0; x < png.width; x += 2) {
+              if (!_differs(_pixel(png, x, y), accent)) n++;
+            }
+          }
+          return n;
+        }
+
+        final withAmounts = await accentPixels(['2 كوب ارز', '1 كيلو لحم']);
+        final without = await accentPixels(['ارز', 'لحم']);
+        expect(withAmounts, greaterThan(without));
+      });
+    });
+  });
 }

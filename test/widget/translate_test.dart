@@ -16,7 +16,15 @@ import 'package:wasfati/models/recipe_translation.dart' show TranslationItem;
 import 'package:wasfati/models/settings.dart';
 import 'package:wasfati/services/ai_import.dart';
 
-import 'app_test.dart' show importPhotos, photoStore, pumpApp, settle, shown;
+import 'app_test.dart'
+    show
+        importPhotos,
+        openStepsTab,
+        photoStore,
+        pumpApp,
+        settle,
+        shown,
+        tapOnPage;
 
 const _dict = {
   'Lamb kabsa': 'كبسة لحم',
@@ -149,8 +157,7 @@ void main() {
     await tester.tap(find.text('Lamb kabsa'));
     await settle(tester);
 
-    await tester.tap(find.text('ترجم إلى العربية'));
-    await settle(tester);
+    await tapOnPage(tester, find.text('ترجم إلى العربية'));
     // IMP-16: IMP-3's line before anything is sent.
     expect(
       find.text('سيُستخدم استيراد ذكي واحد الآن · بقي 10 من 10'),
@@ -181,14 +188,16 @@ void main() {
     await _waitFor(tester, shown('مترجمة من: Lamb kabsa'));
     expect(shown('مترجمة من: Lamb kabsa'), findsOneWidget);
     expect(shown('لحم ضأن'), findsWidgets);
-    // Decision 23's larger type scale pushes the steps tab's content lower,
-    // out of the ListView's initial build range.
-    await tester.scrollUntilVisible(
-      shown('Add the rice and cook for 20 minutes.'),
-      300,
-      scrollable: find.byType(Scrollable).first,
+    // LOOK-13: the steps are in their own tab; the step's duration is its
+    // timer pill, once, inside the step, and the sentence ends after it.
+    await openStepsTab(tester);
+    final step = shown('Add the rice and cook for');
+    expect(step, findsOneWidget);
+    expect(
+      find.descendant(of: step, matching: find.text('20 minutes')),
+      findsOneWidget,
     );
-    expect(shown('Add the rice and cook for 20 minutes.'), findsOneWidget);
+    expect(tester.widget<Text>(step).textSpan!.toPlainText(), endsWith('.'));
 
     final copyId = recipes.recipes.firstWhere((e) => e.id != original.id).id;
     final copy = (await tester.runAsync(() => recipes.repository.get(copyId)))!;
@@ -247,8 +256,7 @@ void main() {
     await settle(tester);
     await tester.tap(find.text('Lamb kabsa'));
     await settle(tester);
-    await tester.tap(find.text('ترجم إلى العربية'));
-    await settle(tester);
+    await tapOnPage(tester, find.text('ترجم إلى العربية'));
     await tester.tap(find.text('ترجم'));
     await settle(tester);
     expect(find.text('راجع واحفظ'), findsOneWidget);
@@ -297,8 +305,7 @@ void main() {
     await settle(tester);
     await tester.tap(find.text('Lamb kabsa'));
     await settle(tester);
-    await tester.tap(find.text('ترجم إلى العربية'));
-    await settle(tester);
+    await tapOnPage(tester, find.text('ترجم إلى العربية'));
     await tester.tap(find.text('ترجم'));
     await settle(tester);
 
@@ -348,8 +355,7 @@ void main() {
     await settle(tester);
     await tester.tap(find.text('Lamb kabsa'));
     await settle(tester);
-    await tester.tap(find.text('ترجم إلى العربية'));
-    await settle(tester);
+    await tapOnPage(tester, find.text('ترجم إلى العربية'));
     expect(
       find.text('هذه الوصفة أطول من أن تُترجم دفعة واحدة.'),
       findsOneWidget,
@@ -384,8 +390,7 @@ void main() {
     expect(find.text('Lamb kabsa'), findsOneWidget);
     expect(photoStore.copies, isEmpty);
 
-    await tester.tap(find.text('ترجم إلى العربية'));
-    await settle(tester);
+    await tapOnPage(tester, find.text('ترجم إلى العربية'));
     // Part of this import: no second cost line.
     expect(find.textContaining('سيُستخدم استيراد ذكي'), findsNothing);
     expect(find.text('كبسة لحم'), findsOneWidget);
@@ -430,8 +435,7 @@ void main() {
     await settle(tester);
     expect(find.text('راجع واحفظ'), findsOneWidget);
 
-    await tester.tap(find.text('ترجم إلى العربية'));
-    await settle(tester);
+    await tapOnPage(tester, find.text('ترجم إلى العربية'));
     expect(
       find.text('سيُستخدم استيراد ذكي واحد الآن · بقي 10 من 10'),
       findsOneWidget,
@@ -450,8 +454,7 @@ void main() {
     expect(recipes.recipes, isEmpty);
     expect(settings.aiImportsUsed, 0);
 
-    await tester.tap(find.text('ترجم إلى العربية'));
-    await settle(tester);
+    await tapOnPage(tester, find.text('ترجم إلى العربية'));
     await tester.tap(find.text('ترجم'));
     await settle(tester);
     await tester.tap(find.text('حفظ'));
@@ -509,8 +512,7 @@ void main() {
     await settle(tester);
 
     // The server says the month's imports are gone (SRV-4).
-    await tester.tap(find.text('ترجم إلى العربية'));
-    await settle(tester);
+    await tapOnPage(tester, find.text('ترجم إلى العربية'));
     await tester.tap(find.text('ترجم'));
     await settle(tester);
     expect(
@@ -531,8 +533,7 @@ void main() {
       }
     });
     await settle(tester);
-    await tester.tap(find.text('ترجم إلى العربية'));
-    await settle(tester);
+    await tapOnPage(tester, find.text('ترجم إلى العربية'));
     expect(find.textContaining('نفدت الاستيرادات الذكية هذا الشهر'), findsOne);
     expect(find.textContaining('سيُستخدم استيراد ذكي'), findsNothing);
     expect(ai.translateRequests, hasLength(1));
@@ -552,8 +553,7 @@ void main() {
     await settle(tester);
     await tester.tap(find.textContaining('Slow-cooked'));
     await settle(tester);
-    await tester.tap(find.text('ترجم إلى العربية'));
-    await settle(tester);
+    await tapOnPage(tester, find.text('ترجم إلى العربية'));
     await tester.tap(find.text('ترجم'));
     await settle(tester);
     expect(find.text('راجع واحفظ'), findsOneWidget);
@@ -609,8 +609,7 @@ void main() {
     await settle(tester);
     await tester.tap(find.text('Lamb kabsa'));
     await settle(tester);
-    await tester.tap(find.text('ترجم إلى العربية'));
-    await settle(tester);
+    await tapOnPage(tester, find.text('ترجم إلى العربية'));
     await tester.tap(find.text('ترجم'));
     await settle(tester);
     expect(find.text('جارٍ الترجمة…'), findsOneWidget);

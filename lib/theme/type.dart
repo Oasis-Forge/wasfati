@@ -68,14 +68,14 @@ TextTheme saffronTextTheme() => sufraTextTheme();
 /// per-accent type tweak has somewhere to branch from.
 TextTheme wasfatiTextTheme(AppStyle style) => sufraTextTheme();
 
-/// COOK-2: cook mode's step text, 1.6x `bodyLarge` rather than a literal
-/// size, so the 1.5x floor COOK-2 asks for holds even if `bodyLarge` ever
+/// COOK-2: cook mode's step text, 1.6875x `bodyLarge` (16 -> 27, the
+/// design spec's and Cook.dc.html's own value) rather than a literal size, so the 1.5x floor COOK-2 asks for holds even if `bodyLarge` ever
 /// moves. `test/theme/type_test.dart` asserts the ratio directly instead of
 /// trusting the multiplier.
 TextStyle cookStep(TextTheme textTheme) {
   final bodyLarge = textTheme.bodyLarge!;
   return bodyLarge.copyWith(
-    fontSize: bodyLarge.fontSize! * 1.6,
+    fontSize: bodyLarge.fontSize! * 1.6875,
     fontWeight: FontWeight.w500,
     height: 1.75,
   );

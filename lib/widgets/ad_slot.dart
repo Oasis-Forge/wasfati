@@ -25,13 +25,31 @@ import '../services/ads.dart';
 /// While its route is covered by another page (TickerMode off), it lets
 /// its banner go, so no ad is ever loaded where it can't be seen.
 class AdSlot extends StatefulWidget {
-  const AdSlot({super.key, this.aboveSystemBar = false});
+  const AdSlot({
+    super.key,
+    this.aboveSystemBar = false,
+    this.targetBelow = false,
+  });
 
   /// True where nothing else below the slot keeps it off the system
   /// navigation bar (the recipe page, which has no navigation bar of its
   /// own): the slot then adds the system bar's inset below itself, but only
   /// while it's showing (ADS-3).
   final bool aboveSystemBar;
+
+  /// True under a bar of buttons (the recipe page's action bar): PAY-5's
+  /// small target goes under the ad instead of over it, so the ad sits
+  /// [gap] from the bar's buttons with nothing between them (LOOK-8,
+  /// ADS-9). The reserved height is the same either way.
+  final bool targetBelow;
+
+  /// Whether a slot [width] wide takes any space now: banners are on and
+  /// their size at that width is known (ADS-2, LOOK-8's "an empty slot
+  /// takes no space"). Watches [AdsState], so a caller rebuilds with it.
+  static bool shows(BuildContext context, double width) {
+    final ads = context.watch<AdsState>();
+    return ads.showBanners && ads.sizeFor(width.truncate()) != null;
+  }
 
   /// ADS-9: at least 8 dp between the ad and any button, including the
   /// content's last button above and the navigation bar below
@@ -137,6 +155,36 @@ class _AdSlotState extends State<AdSlot> {
         final dims = ads.sizeFor(width);
         if (dims == null) return const SizedBox.shrink();
         final loaded = _loaded && visible && _banner != null && _dims == dims;
+        final target = SizedBox(
+          height: AdSlot.targetLine,
+          // PAY-5: selling is quiet — one small target on the slot,
+          // shown with the ad and only when the store has
+          // something to sell (PAY-6).
+          child: loaded && purchases.sellsAnything
+              ? Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: TextButton(
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(0, AdSlot.targetLine),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsetsDirectional.symmetric(
+                        horizontal: 12,
+                      ),
+                      textStyle: Theme.of(context).textTheme.labelMedium,
+                    ),
+                    onPressed: () => openPurchaseScreen(context),
+                    child: Text(l10n.adSlotRemoveAds),
+                  ),
+                )
+              : null,
+        );
+        final ad = SizedBox(
+          width: dims.width.toDouble(),
+          height: dims.height.toDouble(),
+          // ADS-2: nothing painted until an ad has arrived.
+          child: loaded ? _banner!.view() : null,
+        );
         return Padding(
           // Only while showing: an ad-free page keeps its full height.
           padding: EdgeInsets.only(bottom: systemBar),
@@ -144,39 +192,13 @@ class _AdSlotState extends State<AdSlot> {
             height: AdSlot.reservedHeight(dims.height),
             child: Column(
               children: [
-                SizedBox(
-                  height: AdSlot.targetLine,
-                  // PAY-5: selling is quiet — one small target on the slot,
-                  // shown with the ad and only when the store has
-                  // something to sell (PAY-6).
-                  child: loaded && purchases.sellsAnything
-                      ? Align(
-                          alignment: AlignmentDirectional.centerEnd,
-                          child: TextButton(
-                            style: TextButton.styleFrom(
-                              minimumSize: const Size(0, AdSlot.targetLine),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              visualDensity: VisualDensity.compact,
-                              padding: const EdgeInsetsDirectional.symmetric(
-                                horizontal: 12,
-                              ),
-                              textStyle: Theme.of(context)
-                                  .textTheme
-                                  .labelMedium,
-                            ),
-                            onPressed: () => openPurchaseScreen(context),
-                            child: Text(l10n.adSlotRemoveAds),
-                          ),
-                        )
-                      : null,
-                ),
+                if (!widget.targetBelow) target,
                 const SizedBox(height: AdSlot.gap),
-                SizedBox(
-                  width: dims.width.toDouble(),
-                  height: dims.height.toDouble(),
-                  // ADS-2: nothing painted until an ad has arrived.
-                  child: loaded ? _banner!.view() : null,
-                ),
+                ad,
+                if (widget.targetBelow) ...[
+                  const SizedBox(height: AdSlot.gap),
+                  target,
+                ],
               ],
             ),
           ),

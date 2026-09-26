@@ -104,14 +104,18 @@ class _SegmentedOption extends StatelessWidget {
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: selected
-                          ? (raised ? cs.onSurface : cs.onPrimaryContainer)
-                          : cs.onSurfaceVariant,
+                  // LOOK-7's rule: a long label (English "As written" at
+                  // 1.3x in a nested pill) shrinks to fit rather than clip.
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: selected
+                            ? (raised ? cs.onSurface : cs.onPrimaryContainer)
+                            : cs.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 ),

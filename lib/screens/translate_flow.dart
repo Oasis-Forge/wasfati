@@ -59,6 +59,7 @@ Future<String?> translateAndPreview(
     final go = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        icon: const _Badge(Icons.translate),
         title: Text(l10n.translateRecipe),
         content: Text(
           l10n.aiImportCostLine(settings.number(left), settings.number(quota)),
@@ -163,6 +164,7 @@ Future<_Attempt> _sendWithProgress(
       builder: (ctx) => PopScope(
         canPop: false,
         child: AlertDialog(
+          icon: const _Badge(Icons.translate),
           content: Row(
             children: [
               const CircularProgressIndicator(),
@@ -221,6 +223,7 @@ Future<bool> _offerRetry(BuildContext context, AiImportErrorKind kind) async {
   final again = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
+      icon: const _Badge(Icons.error_outline),
       content: Text(message),
       actions: [
         TextButton(
@@ -256,3 +259,24 @@ String translateErrorMessage(AppLocalizations l10n, AiImportErrorKind kind) =>
       AiImportErrorKind.unreadablePhoto ||
       AiImportErrorKind.unknown => l10n.aiImportErrorUnknown,
     };
+
+/// LOOK-6: a dialog's icon in a soft-accent circle, the same treatment as
+/// the recipe page's fact tiles.
+class _Badge extends StatelessWidget {
+  const _Badge(this.icon);
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: cs.primaryContainer,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, size: 24, color: cs.onPrimaryContainer),
+    );
+  }
+}

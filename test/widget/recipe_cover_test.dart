@@ -34,11 +34,43 @@ void main() {
     });
   });
 
+  group('RecipeCover.letterFor (LOOK-10)', () {
+    test('skips a leading «ال»', () {
+      expect(RecipeCover.letterFor('الدقوس'), 'د');
+      expect(RecipeCover.letterFor('الكبسة'), 'ك');
+    });
+    test('a hamza is its own letter, not «ال»', () {
+      expect(RecipeCover.letterFor('ألوان'), 'أ');
+    });
+    test('a Latin title keeps its first letter', () {
+      expect(RecipeCover.letterFor('Mint tea'), 'M');
+    });
+    test('skips leading quotes, digits, tashkeel and tatweel', () {
+      expect(RecipeCover.letterFor('«3 كبسة»'), 'ك');
+      expect(RecipeCover.letterFor('"الـمندي"'), 'م');
+      expect(RecipeCover.letterFor('ـــمقلوبة'), 'م');
+      expect(RecipeCover.letterFor('َالرز'), 'ر');
+    });
+    test('falls back to the first letter, or the first character', () {
+      expect(RecipeCover.letterFor('ال'), 'ا');
+      expect(RecipeCover.letterFor('123'), '1');
+      expect(RecipeCover.letterFor('   '), '؟');
+    });
+  });
+
   group('RecipeCover (widget)', () {
     Widget pump(Widget child) => MaterialApp(
       theme: wasfatiTheme(AppStyle.saffron, Brightness.light),
       home: Scaffold(body: SizedBox(width: 120, height: 120, child: child)),
     );
+
+    testWidgets('draws the first letter past a leading «ال»', (tester) async {
+      await tester.pumpWidget(
+        pump(const RecipeCover(recipeId: 'r1', title: 'الكبسة')),
+      );
+      expect(find.text('ك'), findsOneWidget);
+      expect(find.text('ا'), findsNothing);
+    });
 
     testWidgets('shows the title\'s first letter', (tester) async {
       await tester.pumpWidget(
