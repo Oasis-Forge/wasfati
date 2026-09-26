@@ -484,6 +484,48 @@ void main() {
     );
   });
 
+  testWidgets('GRO-5: tapping an item by its name ticks it, and the row '
+      'reads as one checkbox named for the item', (tester) async {
+    await pumpApp(tester, withRecipe: true, disableAnimations: true);
+    await tester.runAsync(() async {
+      await groceries.add([
+        IncomingLine(name: 'بصل', min: Rational(3), unitId: 'piece'),
+        IncomingLine(name: 'طماطم', min: Rational(2), unitId: 'piece'),
+      ]);
+    });
+    await settle(tester);
+    await tester.tap(_navTab(Icons.shopping_basket_outlined));
+    await settle(tester);
+
+    final handle = tester.ensureSemantics();
+    expect(
+      tester.getSemantics(find.text('بصل')),
+      isSemantics(
+        label: 'بصل\n${_lri}3$_pdi',
+        hasCheckedState: true,
+        isChecked: false,
+        hasEnabledState: true,
+        isEnabled: true,
+        isFocusable: true,
+        hasTapAction: true,
+        hasLongPressAction: true,
+        hasFocusAction: true,
+      ),
+    );
+    handle.dispose();
+
+    await tester.tap(find.text('بصل')); // the name, not the circle
+    await _write(tester);
+    expect(groceries.done.single.name, 'بصل');
+    expect(find.text('تم'), findsOneWidget);
+
+    await tester.tap(find.text('تم'));
+    await settle(tester);
+    await tester.tap(find.text('بصل'));
+    await _write(tester);
+    expect(groceries.done, isEmpty);
+  });
+
   testWidgets('GRO-5, reduce motion: a ticked item moves into "تم" at once', (
     tester,
   ) async {

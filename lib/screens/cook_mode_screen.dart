@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 import 'package:provider/provider.dart';
@@ -21,8 +19,11 @@ import '../theme/type.dart' show cookStep;
 import '../widgets/amount_line.dart';
 import '../widgets/content_direction.dart';
 import '../widgets/digit_box.dart';
+import '../widgets/khatam_star.dart';
 import '../widgets/round_icon_button.dart';
+import '../widgets/step_rail.dart';
 import '../widgets/sufra_card.dart';
+import '../widgets/timer_ring.dart';
 import 'ingredients_section.dart' show GroupName;
 import 'recipe_screen.dart' show StepText;
 
@@ -38,7 +39,7 @@ class CookModeScreen extends StatefulWidget {
 
   /// LOOK-14: up to this many steps the rail has one segment each; a
   /// longer recipe gets a progress bar instead.
-  static const maxRailSegments = 14;
+  static const maxRailSegments = StepRail.maxSegments;
 
   /// COOK-4: how tall the running-timer bands grow before they scroll,
   /// about two bands, so the step keeps its room however many run.
@@ -389,7 +390,7 @@ class _CookModeScreenState extends State<CookModeScreen>
               ),
               Padding(
                 padding: EdgeInsetsDirectional.fromSTEB(gutter, 20, gutter, 0),
-                child: _StepRail(current: _page, total: _steps.length),
+                child: StepRail(current: _page, total: _steps.length),
               ),
               // COOK-4: running timers show in the header, outside the pages.
               _TimerBands(recipeId: widget.recipe.id),
@@ -466,67 +467,6 @@ class _FactorPill extends StatelessWidget {
         textDirection: TextDirection.ltr,
         style: theme.textTheme.labelSmall?.copyWith(
           color: cs.onPrimaryContainer,
-        ),
-      ),
-    );
-  }
-}
-
-/// LOOK-14's step rail: one segment per step — done ones in the accent at
-/// 45%, the current one solid and taller, the rest `sunk` — or, past
-/// [CookModeScreen.maxRailSegments] steps, one progress bar. The step
-/// counter under it says the same in words, so the rail itself is silent.
-class _StepRail extends StatelessWidget {
-  const _StepRail({required this.current, required this.total});
-  final int current;
-  final int total;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final sunk = Decor.of(context).sunk;
-    if (total == 0) return const SizedBox.shrink();
-    if (total > CookModeScreen.maxRailSegments) {
-      return ExcludeSemantics(
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(3),
-          child: SizedBox(
-            height: 6,
-            child: LinearProgressIndicator(
-              key: const Key('rail-progress'),
-              value: (current + 1).clamp(0, total) / total,
-              backgroundColor: sunk,
-              color: cs.primary,
-            ),
-          ),
-        ),
-      );
-    }
-    return ExcludeSemantics(
-      child: SizedBox(
-        height: 6,
-        child: Row(
-          children: [
-            for (var i = 0; i < total; i++) ...[
-              if (i > 0) const SizedBox(width: 4),
-              Expanded(
-                child: Center(
-                  child: Container(
-                    key: Key('rail-$i'),
-                    height: i == current ? 6 : 4,
-                    decoration: BoxDecoration(
-                      color: i < current
-                          ? cs.primary.withValues(alpha: 0.45)
-                          : i == current
-                          ? cs.primary
-                          : sunk,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ],
         ),
       ),
     );
@@ -642,7 +582,6 @@ class _TimerCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final s = context.watch<SettingsState>();
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
     final t = timer;
     final remaining = t?.remaining(now) ?? duration;
     final left = remaining.isNegative ? Duration.zero : remaining;
@@ -656,14 +595,11 @@ class _TimerCard extends StatelessWidget {
         children: [
           SizedBox.square(
             dimension: ring,
-            child: CustomPaint(
-              painter: _RingPainter(
-                track: Decor.of(context).sunk,
-                arc: cs.primary,
-                left: t == null || total == 0
-                    ? null
-                    : (left.inMilliseconds / total).clamp(0.0, 1.0),
-              ),
+            child: TimerRing(
+              stroke: stroke,
+              fraction: t == null || total == 0
+                  ? null
+                  : (left.inMilliseconds / total).clamp(0.0, 1.0),
               child: Center(
                 child: SizedBox(
                   key: const Key('timer-card-clock'),
@@ -716,35 +652,6 @@ class _TimerCard extends StatelessWidget {
       ),
     );
   }
-}
-
-/// The timer card's ring: a `sunk` track and, in the accent, the starting
-/// mark — or, while its timer runs, an arc for the time [left] (a fraction
-/// of the whole), from the top.
-class _RingPainter extends CustomPainter {
-  const _RingPainter({required this.track, required this.arc, this.left});
-  final Color track;
-  final Color arc;
-  final double? left;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const stroke = _TimerCard.stroke;
-    final rect = (Offset.zero & size).deflate(stroke / 2);
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = stroke
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(rect, 0, 2 * math.pi, false, paint..color = track);
-    final sweep = left == null ? 0.08 : 2 * math.pi * left!;
-    if (sweep > 0) {
-      canvas.drawArc(rect, -math.pi / 2, sweep, false, paint..color = arc);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_RingPainter old) =>
-      old.track != track || old.arc != arc || old.left != left;
 }
 
 /// Running timers, from any recipe, as bands, and the ones that just ended,
@@ -963,14 +870,10 @@ class _DonePage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Center(
-              child: SizedBox.square(
-                dimension: 112,
-                child: CustomPaint(
-                  painter: StarPainter(
-                    fill: cs.primaryContainer,
-                    stroke: cs.primary,
-                  ),
-                ),
+              child: KhatamStar(
+                size: 112,
+                fill: cs.primaryContainer,
+                stroke: cs.primary,
               ),
             ),
             const SizedBox(height: 20),
@@ -996,47 +899,4 @@ class _DonePage extends StatelessWidget {
       ),
     );
   }
-}
-
-/// LOOK-10's eight-point khatam star, drawn large: a soft fill with an
-/// accent outline. Decoration, so it has no semantics of its own.
-class StarPainter extends CustomPainter {
-  const StarPainter({required this.fill, required this.stroke});
-  final Color fill;
-  final Color stroke;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final outer = size.shortestSide / 2 - 2;
-    final inner = outer * 0.72;
-    final path = Path();
-    for (var k = 0; k < 16; k++) {
-      final r = k.isEven ? outer : inner;
-      final p = center + Offset.fromDirection(k * math.pi / 8 - math.pi / 2, r);
-      k == 0 ? path.moveTo(p.dx, p.dy) : path.lineTo(p.dx, p.dy);
-    }
-    path.close();
-    canvas.drawPath(path, Paint()..color = fill);
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = stroke
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..strokeJoin = StrokeJoin.round,
-    );
-    canvas.drawCircle(
-      center,
-      inner * 0.45,
-      Paint()
-        ..color = stroke
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3,
-    );
-  }
-
-  @override
-  bool shouldRepaint(StarPainter old) =>
-      old.fill != fill || old.stroke != stroke;
 }

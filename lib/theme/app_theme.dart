@@ -202,24 +202,26 @@ ThemeData wasfatiTheme(AppStyle style, Brightness brightness) {
     shape: rounded(16),
   );
 
-  // LOOK-6: dialogs at 28dp.
+  // design-styles.md "Dialog": the card fill at 22dp over the same warm
+  // scrim as a modal sheet; no edge in light (its own fill on the scrim
+  // carries it), a 1dp `line` hairline in dark, where a card takes one
+  // (LOOK-3, LOOK-6).
+  final scrim = const Color(0xFF140E0A).withValues(alpha: isLight ? 0.45 : 0.6);
   final dialogTheme = DialogThemeData(
     backgroundColor: n.card,
     surfaceTintColor: Colors.transparent,
     elevation: 0,
     shadowColor: Colors.transparent,
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(28),
-      side: BorderSide(color: cs.outline),
+      borderRadius: BorderRadius.circular(22),
+      side: isLight ? BorderSide.none : BorderSide(color: n.line),
     ),
     insetPadding: const EdgeInsets.all(24),
-    titleTextStyle: textTheme.titleMedium,
+    titleTextStyle: textTheme.headlineSmall,
     contentTextStyle: textTheme.bodyMedium?.copyWith(
       color: cs.onSurfaceVariant,
     ),
-    barrierColor: isLight
-        ? Colors.black.withValues(alpha: 0.48)
-        : Colors.black.withValues(alpha: 0.64),
+    barrierColor: scrim,
   );
 
   // LOOK-6: a bottom sheet's top corners at 28dp, with a drag handle.
@@ -230,20 +232,26 @@ ThemeData wasfatiTheme(AppStyle style, Brightness brightness) {
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
     ),
+    modalBarrierColor: scrim,
     showDragHandle: true,
     dragHandleColor: cs.outline,
     dragHandleSize: const Size(40, 4),
   );
 
-  // LOOK-6: floating snackbars at 16dp.
+  // design-styles.md "Snackbar": floating at 16dp — `ink` with page-coloured
+  // text in light; in dark, the card fill with a `line` hairline and ink
+  // text, the action in the accent (LOOK-3's pairs in contrast_test.dart).
   final snackBarTheme = SnackBarThemeData(
     behavior: SnackBarBehavior.floating,
-    backgroundColor: cs.inverseSurface,
+    backgroundColor: isLight ? cs.inverseSurface : n.card,
     contentTextStyle: textTheme.bodyMedium?.copyWith(
-      color: cs.onInverseSurface,
+      color: isLight ? cs.onInverseSurface : n.ink,
     ),
-    actionTextColor: cs.inversePrimary,
-    shape: rounded(16),
+    actionTextColor: isLight ? cs.inversePrimary : cs.primary,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+      side: isLight ? BorderSide.none : BorderSide(color: n.line),
+    ),
     elevation: 0,
     insetPadding: const EdgeInsets.all(16),
   );
@@ -462,26 +470,11 @@ ThemeData wasfatiTheme(AppStyle style, Brightness brightness) {
         navActive: isLight ? Colors.white : n.ink,
         coverTints: sufraCoverTints(brightness),
         gutter: 20,
-        // Unused since the Sufra plan (PR 4); kept for Decor's own
-        // copyWith/lerp tests until PR 5's sweep.
-        railWidth: 4,
-        railColor: cs.primary,
-        cardShape: cardShape,
-        // "full-bleed", never rounded — the recipe hero photo.
-        photoShape: const RoundedRectangleBorder(),
-        chipShape: pill,
-        buttonShape: pill,
         thumbnailShape: rounded(24),
         // LOOK-4: the amount in the accent at w700, for both accents.
         amountColor: cs.primary,
         amountWeight: FontWeight.w700,
-        // Decision 23 drops Saffron's one press ledge: PressableSlab
-        // renders every wrapped button flat now.
-        ledgeDepth: 0,
-        ledgeColor: Colors.transparent,
         rowHairline: n.line,
-        groupedRowFill: n.card,
-        ornament: EmptyOrnament.khatam,
         // LOOK-12: the library's photo-forward grid card and a cookbook
         // tile's collage (design spec §1: 24dp).
         photoCardRadius: 24,

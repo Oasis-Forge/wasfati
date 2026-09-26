@@ -168,7 +168,7 @@ The same features in a new design and layout (LOOK-1–LOOK-14). Five PRs, each 
 - [x] **Library and adding** (LOOK-12, ORG-3–ORG-6, IMP-1–IMP-5): the library home and cookbooks; the import screens, preview and editor in the new style.
 - [x] **Recipe page and cook mode** (LOOK-13, LOOK-14, COOK-1–COOK-6, SCALE-6, IMP-14): the hero and sheet, the fact tiles, the Ingredients and Steps tabs, the action bar; cook mode; the translate flow and shared recipe images (SHARE-3) in the new palette.
 - [x] **Plan and groceries** (PLAN-1–PLAN-5, RAM-1–RAM-4, GRO-1–GRO-6): the week strip and a day's timeline; the Ramadan view; the grocery progress card and aisle cards.
-- [ ] **Settings, first run and purchase** (RUN-3, RUN-4, PAY-6, PAY-10, PAY-11, ADS-5): settings as grouped rows opening pickers; setup and the walkthrough; the purchase screen; the Ink and Saffron-only widgets retired.
+- [x] **Settings, first run and purchase** (RUN-3, RUN-4, PAY-6, PAY-10, PAY-11, ADS-5): settings as grouped rows opening pickers; setup and the walkthrough; the purchase screen; the Ink and Saffron-only widgets retired.
 
 ## Phase 5: Google Play
 - [ ] Finish the Android one-time setup in `docs/RELEASING.md`: signing, contact details (oasisforge.support@gmail.com), payments profile, secrets.

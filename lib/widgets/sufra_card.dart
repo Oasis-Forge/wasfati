@@ -31,6 +31,7 @@ class SufraCard extends StatefulWidget {
     this.clip = true,
     this.onTap,
     this.onLongPress,
+    this.side,
   });
 
   final Widget child;
@@ -45,6 +46,10 @@ class SufraCard extends StatefulWidget {
   /// A second action on the same card (the plan's entry menu, PLAN-4); it
   /// only takes effect alongside [onTap], which gives the card its ink.
   final VoidCallback? onLongPress;
+
+  /// An edge of the caller's own (RUN-3's chosen answer) in place of the
+  /// dark theme's `cardHairline`, which it replaces in both themes.
+  final BorderSide? side;
 
   @override
   State<SufraCard> createState() => _SufraCardState();
@@ -77,7 +82,9 @@ class _SufraCardState extends State<SufraCard> {
         color: widget.color ?? cs.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(widget.radius),
         boxShadow: decor.liftShadow,
-        border: decor.cardHairline != null
+        border: widget.side != null
+            ? Border.fromBorderSide(widget.side!)
+            : decor.cardHairline != null
             ? Border.all(color: decor.cardHairline!)
             : null,
       ),

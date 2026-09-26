@@ -31,10 +31,6 @@ import 'services/web_import.dart';
 import 'theme/app_theme.dart';
 import 'widgets/share_router.dart';
 
-// Also the fixed light scheme for the share images (SHARE-3,
-// services/recipe_pages.dart), so a shared picture always matches the app's
-// own colours whatever the device's theme.
-const seedColor = Color(0xFFB5542B); // saffron / terracotta
 const fontFamily = 'IBMPlexSansArabic';
 
 /// The app shell. State and services are built by the caller (the entry

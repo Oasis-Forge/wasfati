@@ -152,6 +152,12 @@ abstract class AppLocalizations {
   /// **'Go to my recipes'**
   String get walkthroughStart;
 
+  /// RUN-4. The last walkthrough page's button when it was replayed from Settings; returns to Settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get walkthroughDone;
+
   /// RUN-4. Screen-reader label of the walkthrough's page dots.
   ///
   /// In en, this message translates to:
@@ -211,6 +217,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Chicken kabsa'**
   String get walkthroughDemoRecipe;
+
+  /// RUN-4: a recipe name on a drawn tile on the walkthrough's first page.
+  ///
+  /// In en, this message translates to:
+  /// **'Lentil soup'**
+  String get walkthroughTileSoup;
+
+  /// RUN-4: a recipe name on a drawn tile on the walkthrough's first page.
+  ///
+  /// In en, this message translates to:
+  /// **'Fattoush'**
+  String get walkthroughTileFattoush;
 
   /// RUN-4. A demo ingredient line; the app parses and doubles it, so keep an amount and a unit.
   ///
@@ -554,6 +572,48 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get settings;
 
+  /// Settings group heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Look and language'**
+  String get settingsGroupLook;
+
+  /// Settings group heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Cooking and the plan'**
+  String get settingsGroupCooking;
+
+  /// Settings group heading: backup, restore and export (BAK).
+  ///
+  /// In en, this message translates to:
+  /// **'Your data'**
+  String get settingsGroupData;
+
+  /// Settings group heading: the walkthrough, privacy policy, contact and version.
+  ///
+  /// In en, this message translates to:
+  /// **'About Wasfati'**
+  String get settingsGroupAbout;
+
+  /// Settings row that opens the published privacy policy in the browser.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy policy'**
+  String get settingsPrivacyPolicy;
+
+  /// Settings row that opens a mail draft to the support address.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact us'**
+  String get settingsContact;
+
+  /// Settings row showing the app's version.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get settingsVersion;
+
   /// LANG-1.
   ///
   /// In en, this message translates to:
@@ -571,6 +631,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Numbers'**
   String get settingsDigits;
+
+  /// QTY-5. What a screen reader says for the 123 digit option, so it differs from the Arabic one. {sample} is the option's own digits, 123.
+  ///
+  /// In en, this message translates to:
+  /// **'Western digits ({sample})'**
+  String digitsWesternName(String sample);
+
+  /// QTY-5. What a screen reader says for the ١٢٣ digit option, so it differs from the Western one. {sample} is the option's own digits, ١٢٣.
+  ///
+  /// In en, this message translates to:
+  /// **'Arabic digits ({sample})'**
+  String digitsArabicName(String sample);
 
   /// SCALE-5. Unit system setting.
   ///
@@ -1640,6 +1712,12 @@ abstract class AppLocalizations {
   /// **'Write a note'**
   String get planAddNote;
 
+  /// PLAN-2. Title of the dialog that changes a planned note's text.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit note'**
+  String get planEditNote;
+
   /// Label of the note field (PLAN-2)
   ///
   /// In en, this message translates to:
@@ -2012,18 +2090,6 @@ abstract class AppLocalizations {
   /// **'Eid al-Fitr · {date}'**
   String ramadanEidOn(String date);
 
-  /// RAM-1. Settings section heading.
-  ///
-  /// In en, this message translates to:
-  /// **'Ramadan'**
-  String get settingsRamadanSection;
-
-  /// No description provided for @settingsBackupSection.
-  ///
-  /// In en, this message translates to:
-  /// **'Backup'**
-  String get settingsBackupSection;
-
   /// No description provided for @backupSaveAction.
   ///
   /// In en, this message translates to:
@@ -2360,6 +2426,24 @@ abstract class AppLocalizations {
   /// **'{price} a year'**
   String purchasePriceYearly(String price);
 
+  /// PAY-10: the second line of Pro's price button, under the store's price. The button is read aloud as purchasePriceOnce.
+  ///
+  /// In en, this message translates to:
+  /// **'once'**
+  String get purchasePeriodOnce;
+
+  /// PAY-10: the second line of Premium's monthly price button, under the store's price. Read aloud as purchasePriceMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'a month'**
+  String get purchasePeriodMonthly;
+
+  /// PAY-10: the second line of Premium's yearly price button, under the store's price. Read aloud as purchasePriceYearly.
+  ///
+  /// In en, this message translates to:
+  /// **'a year'**
+  String get purchasePeriodYearly;
+
   /// PAY-3: a product the store doesn't sell yet: no price, no button.
   ///
   /// In en, this message translates to:
@@ -2437,6 +2521,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Subscription'**
   String get settingsSubscription;
+
+  /// PAY-5, PAY-10: the one line under the Settings Pro card's title while nothing is owned. No price, no badge, no countdown. count is 100, already in the user's digits.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the ads, or raise AI imports to {count} a month.'**
+  String settingsProCardBody(String count);
+
+  /// The Settings Pro card once Pro is owned.
+  ///
+  /// In en, this message translates to:
+  /// **'You have Pro: no ads.'**
+  String get settingsProCardOwnsPro;
+
+  /// The Settings Pro card once Premium is owned (LANG-2 plural, like purchaseAiImports). count is the monthly quota; shown is it in the user's digits.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{You have Premium: no ads, and {shown} AI import a month.} other{You have Premium: no ads, and {shown} AI imports a month.}}'**
+  String settingsProCardOwnsPremium(int count, String shown);
+
+  /// The Settings Pro card once both are owned (LANG-2 plural, like purchaseAiImports). count is the monthly quota; shown is it in the user's digits.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{You have Pro and Premium: no ads, and {shown} AI import a month.} other{You have Pro and Premium: no ads, and {shown} AI imports a month.}}'**
+  String settingsProCardOwnsBoth(int count, String shown);
 
   /// PAY-11: the Settings subscription row's value when nothing is owned.
   ///

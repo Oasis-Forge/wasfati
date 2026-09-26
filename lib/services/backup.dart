@@ -261,6 +261,10 @@ class BackupService {
   final Directory _backupsDir;
   final String _appVersion;
   final Clock _clock;
+
+  /// The app's own version, as written into every backup (BAK-1): also
+  /// what Settings shows on its "Version" row.
+  String get appVersion => _appVersion;
   final IdSource _ids;
 
   static const appId = 'wasfati';

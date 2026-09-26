@@ -888,7 +888,9 @@ class _DoneSection extends StatelessWidget {
 /// second line (GRO-5), and its merged amount in the accent at 700 (LOOK-4)
 /// — the amount phrase exactly as the list has always formatted it (QTY-5,
 /// QTY-6), read in the item's own direction, never forced left to right.
-/// A long press moves it to another aisle (GRO-4).
+/// Tapping anywhere on the row ticks or unticks it, the same as its box,
+/// and a screen reader hears one checkbox named for the item; a long press
+/// moves it to another aisle (GRO-4).
 class _ItemRow extends StatelessWidget {
   const _ItemRow(
     this.item, {
@@ -920,6 +922,10 @@ class _ItemRow extends StatelessWidget {
     return MergeSemantics(
       child: InkWell(
         key: ValueKey('grocery-${item.id}'),
+        // The whole row is the tick target, not only the 24dp circle. Its
+        // tap merges into the checkbox's one node (the same toggle), and
+        // the long press stays a screen-reader action too.
+        onTap: () => onToggle(item, !done),
         onLongPress: () => _moveToAisle(context, item),
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 52),
@@ -953,6 +959,7 @@ class _ItemRow extends StatelessWidget {
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: done ? cs.onSurfaceVariant : null,
                           decoration: strike,
+                          decorationColor: cs.onSurfaceVariant,
                         ),
                       ),
                       if (names.isNotEmpty) _FromLine(names),
@@ -971,6 +978,7 @@ class _ItemRow extends StatelessWidget {
                       fontWeight: decor.amountWeight,
                       color: done ? cs.onSurfaceVariant : decor.amountColor,
                       decoration: strike,
+                      decorationColor: cs.onSurfaceVariant,
                     ),
                   ),
                 ),

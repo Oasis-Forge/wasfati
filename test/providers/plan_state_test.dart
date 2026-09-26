@@ -156,4 +156,28 @@ void main() {
       expect(state.ramadanMonthForShiftRowAt(lastDay)?.hijriYear, 1448);
     });
   });
+
+  group('PLAN-2: a note', () {
+    test('setNote changes its text in place: same entry, day and meal; '
+        'more than 60 characters is refused and leaves it as it was', () async {
+      final (repo, _, _, _) = await testPlanRepo();
+      final state = PlanState(repo);
+      await state.showWeek(saturday);
+      final added = await state.add(
+        date: saturday,
+        slot: MealSlot.dinner,
+        note: 'مطعم',
+      );
+
+      expect(await state.setNote(added!, 'بقايا الأمس'), isTrue);
+      final changed = state.entries.single;
+      expect(
+        (changed.id, changed.note, changed.slot, dateKey(changed.date)),
+        (added.id, 'بقايا الأمس', MealSlot.dinner, dateKey(saturday)),
+      );
+
+      expect(await state.setNote(changed, 'ا' * 61), isFalse);
+      expect(state.entries.single.note, 'بقايا الأمس');
+    });
+  });
 }

@@ -1,3 +1,5 @@
+import 'dart:ui' show Locale;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wasfati/models/plan.dart';
 import 'package:wasfati/models/quantity/rational.dart';
@@ -96,6 +98,18 @@ void main() {
       expect(auto('US', arabic: false), DateTime.sunday);
       expect(auto('GB', arabic: false), DateTime.monday);
       expect(auto('DE', arabic: false), DateTime.monday);
+    });
+
+    test('the region is the device\'s own: the first of its languages '
+        'that names one, whatever language the app shows', () {
+      expect(deviceRegion(const [Locale('en', 'GB')]), 'GB');
+      expect(deviceRegion(const [Locale('ar'), Locale('en', 'GB')]), 'GB');
+      expect(
+        deviceRegion(const [Locale('ar', 'SA'), Locale('en', 'US')]),
+        'SA',
+      );
+      expect(deviceRegion(const [Locale('ar'), Locale('en')]), isNull);
+      expect(deviceRegion(const []), isNull);
     });
 
     test('with no region, Saturday in Arabic and Sunday in English', () {

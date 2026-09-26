@@ -515,6 +515,7 @@ List<Widget> _cookbooksSlivers(BuildContext context) {
       SliverFillRemaining(
         hasScrollBody: false,
         child: EmptyState(
+          icon: Icons.collections_bookmark_outlined,
           title: l10n.cookbooksEmpty,
           actions: [
             OutlinedButton.icon(
@@ -806,6 +807,7 @@ class _Empty extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => EmptyState(
+    icon: Icons.menu_book_outlined,
     title: l10n.recipesEmptyTitle,
     body: l10n.recipesEmptyBody,
     // RUN-1, LOOK-7: one clear first action, the same "أضف وصفة" the

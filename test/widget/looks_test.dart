@@ -26,6 +26,7 @@ import 'package:wasfati/services/ads.dart';
 import 'package:wasfati/services/store.dart';
 import 'package:wasfati/theme/colors.dart' show wasfatiColorScheme;
 import 'package:wasfati/theme/decor.dart';
+import 'package:wasfati/widgets/sufra_card.dart';
 import 'package:wasfati/widgets/ad_slot.dart';
 import 'package:wasfati/widgets/digit_box.dart';
 
@@ -387,7 +388,7 @@ void main() {
           expect(find.text(title), findsOneWidget);
           _fits(tester, 'walkthrough $i');
           await tester.tap(
-            find.text(i < 3 ? l.walkthroughNext : l.walkthroughStart),
+            find.text(i < 3 ? l.walkthroughNext : l.walkthroughDone),
           );
           await settle(tester);
         }
@@ -433,42 +434,44 @@ void main() {
     }
   }
 
-  // should-fix, platform review: the branch's one new control — the "الطراز"
-  // / Look row settings_screen.dart adds — had no test tapping it; every
-  // existing looks test only sets the look programmatically
-  // (`settings.update(...copyWith(style: ...))`) and never touches the row
-  // itself.
+  // LOOK-1: the Look row opens its sheet, which shows both accents as
+  // swatches with their names; choosing one applies at once, no restart.
   testWidgets(
-    'Settings: tapping حبر changes the theme at once, no restart (LOOK-1, '
-    'Decision 23)',
+    'Settings: choosing حبر in the Look sheet changes the theme at once, no '
+    'restart (LOOK-1, Decision 23)',
     (tester) async {
       await pumpApp(tester);
       await tester.tap(find.byIcon(Icons.settings_outlined).first);
       await settle(tester);
-      // The Look row sits below the fold (past language/digits/units/week
-      // start): a plain ListView still virtualises its own children by
-      // viewport, so it isn't mounted until scrolled into view (the same
-      // reason test/widget/ramadan_test.dart's own Settings test scrolls).
-      await tester.scrollUntilVisible(
-        find.text('حبر'),
-        300,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await settle(tester);
 
-      BuildContext context() => tester.element(find.text('حبر'));
+      BuildContext context() => tester.element(find.text('الطراز'));
       final beforeBrightness = Theme.of(context()).brightness;
       expect(
         Theme.of(context()).colorScheme.primary,
         wasfatiColorScheme(AppStyle.saffron, beforeBrightness).primary,
         reason: 'Saffron is the default look for a new install (Decision 23)',
       );
+      // The row says which accent is on, beside a dot in it.
+      expect(find.text('زعفران'), findsOneWidget);
 
-      await tester.tap(find.text('حبر'));
+      await tester.tap(find.text('الطراز'));
+      await settle(tester);
+      // The sheet: both accents, each by name, the current one ticked.
+      final sheet = find.byType(BottomSheet);
+      expect(
+        find.descendant(of: sheet, matching: find.text('زعفران')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: sheet, matching: find.byIcon(Icons.check)),
+        findsOneWidget,
+      );
+      await tester.tap(find.descendant(of: sheet, matching: find.text('حبر')));
       await settle(tester);
 
       // Still the same Settings screen — no navigation, no restart — with
       // its theme now Ink's, and the light/dark setting untouched.
+      expect(find.byType(BottomSheet), findsNothing);
       expect(find.text('حبر'), findsOneWidget);
       final afterBrightness = Theme.of(context()).brightness;
       expect(afterBrightness, beforeBrightness);
@@ -479,13 +482,12 @@ void main() {
     },
   );
 
-  // LOOK-6: Decor's grouped-row fill, card shape and row hairline were
-  // built for both looks and read nowhere (Known bugs). Settings' groups
-  // and the plan's day cards now draw with them; LOOK-2 still holds, so
-  // every row, string and control is where it was.
+  // LOOK-6, design-styles.md "Settings": each group is one card, its rows
+  // split by the look's row hairline; LOOK-2 still holds, so every row,
+  // string and control is where it was in both accents.
   for (final style in AppStyle.values) {
-    testWidgets('${style.name}: Settings groups its rows in the look\'s '
-        'fill, card shape and hairlines (LOOK-6)', (tester) async {
+    testWidgets('${style.name}: Settings groups its rows on one card, split '
+        'by the look\'s hairlines (LOOK-6)', (tester) async {
       final (_, settings) = await pumpApp(tester);
       await tester.runAsync(
         () => settings.update(settings.settings.copyWith(style: style)),
@@ -495,22 +497,19 @@ void main() {
       await settle(tester);
 
       final decor = Decor.of(tester.element(find.text('١٢٣')));
-      // The digit-style group: its two rows in one Material drawn with
-      // the look's own fill and card shape, split by one hairline.
+      // The look-and-language group: its four rows on one card, the
+      // digits inline, split by three hairlines.
       final group = find.ancestor(
         of: find.text('١٢٣'),
-        matching: find.byWidgetPredicate(
-          (w) =>
-              w is Material &&
-              w.shape == decor.cardShape &&
-              w.color == decor.groupedRowFill,
-        ),
+        matching: find.byType(SufraCard),
       );
       expect(group, findsOneWidget);
-      expect(
-        find.descendant(of: group, matching: find.text('123')),
-        findsOneWidget,
-      );
+      for (final label in ['الطراز', 'المظهر', 'اللغة', 'الأرقام', '123']) {
+        expect(
+          find.descendant(of: group, matching: find.text(label)),
+          findsOneWidget,
+        );
+      }
       expect(
         find.descendant(
           of: group,
@@ -518,15 +517,27 @@ void main() {
             (w) => w is Divider && w.color == decor.rowHairline,
           ),
         ),
-        findsOneWidget,
+        findsNWidgets(3),
+      );
+      // Each row at least 60dp tall, its icon on a 36dp tile.
+      expect(
+        tester
+            .getSize(
+              find.ancestor(
+                of: find.text('المظهر'),
+                matching: find.byType(InkWell),
+              ),
+            )
+            .height,
+        greaterThanOrEqualTo(60),
       );
     });
 
     // LOOK-2: the accent changes colour only — the strip marks the chosen
     // day, today and a day with entries the same way in both (PLAN-1).
     testWidgets('${style.name}: the plan\'s week strip fills the chosen day '
-        'with ink and its accent dot, and marks a day with entries with the '
-        'herb dot (LOOK-2, PLAN-1)', (tester) async {
+        'with ink, dotted only when it has entries, and marks a day with '
+        'entries with the herb dot (LOOK-2, PLAN-1)', (tester) async {
       final (_, settings) = await pumpApp(tester, withRecipe: true);
       await tester.runAsync(() async {
         await settings.update(
@@ -572,9 +583,15 @@ void main() {
             .first,
       );
       expect((today.decoration! as ShapeDecoration).color, cs.onSurface);
-      expect(dot('2026-09-19'), cs.primary);
+      expect(dot('2026-09-19'), Colors.transparent); // chosen, no entries
       expect(dot('2026-09-21'), cs.secondary);
       expect(dot('2026-09-20'), Colors.transparent);
+
+      // Chosen with entries: its dot in the pill's own text colour, which
+      // reads on ink in both accents and both brightnesses.
+      await tester.tap(pill('2026-09-21'));
+      await tester.pump();
+      expect(dot('2026-09-21'), cs.surfaceContainerLowest);
     });
 
     // must-fix, look-pass review (carried over from the day cards): a

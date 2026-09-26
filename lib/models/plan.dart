@@ -1,3 +1,5 @@
+import 'dart:ui' show Locale;
+
 import 'quantity/rational.dart';
 import 'ramadan.dart';
 import 'settings.dart';
@@ -365,6 +367,20 @@ int firstWeekday(WeekStart pref, {String? region, required bool arabic}) {
       if (r != null) return DateTime.monday;
       return arabic ? DateTime.saturday : DateTime.sunday;
   }
+}
+
+/// The phone's region for PLAN-1's "by region": the first of the device's
+/// own languages (`PlatformDispatcher.locales`, the system list, never the
+/// language the app itself shows) that names a region. An Arabic-language
+/// app on a UK phone is still in the UK; a list whose first language has no
+/// region (`ar`) still takes the region from the next one (`en-GB`). Null
+/// when none of them names one.
+String? deviceRegion(Iterable<Locale> deviceLocales) {
+  for (final l in deviceLocales) {
+    final c = l.countryCode;
+    if (c != null && c.isNotEmpty) return c;
+  }
+  return null;
 }
 
 /// The start of the week [day] falls in, for a week starting on [first].

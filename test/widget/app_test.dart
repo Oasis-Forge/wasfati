@@ -12,6 +12,7 @@ import 'package:wasfati/models/recipe_import.dart' show ImportedRecipe;
 import 'package:wasfati/models/recipe_translation.dart' show TranslationItem;
 import 'package:wasfati/models/recipe_share.dart' show wasfatiPlayStoreUrl;
 import 'package:wasfati/models/settings.dart';
+import 'package:wasfati/screens/settings_screen.dart';
 import 'package:wasfati/db/grocery_repository.dart';
 import 'package:wasfati/db/plan_repository.dart';
 import 'package:wasfati/db/recipe_repository.dart';
@@ -1598,13 +1599,16 @@ void main() {
     await pumpApp(tester);
     await tester.tap(find.byTooltip('الإعدادات'));
     await settle(tester);
+    // The language row opens its sheet; choosing applies at once.
+    await tester.tap(find.text('اللغة'));
+    await settle(tester);
     await tester.tap(find.text('English'));
     await settle(tester);
     // Settings is now also the pill's own tab label (LOOK-7: the pill
-    // always shows), so "Settings" appears twice on screen; the AppBar's
+    // always shows), so "Settings" appears twice on screen; the screen's
     // own title is the one this asserts on.
     final title = find.descendant(
-      of: find.byType(AppBar),
+      of: find.byType(SettingsScreen),
       matching: find.text('Settings'),
     );
     expect(title, findsOneWidget);

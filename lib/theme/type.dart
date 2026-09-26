@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../models/settings.dart' show AppStyle;
-
 /// LOOK-5, Decision 23: سُفرة / Sufra's one type scale, one family — IBM
 /// Plex Sans Arabic (already bundled, weights 400-700) — for both accents:
 /// the redesign drops the two looks' separate scales along with everything
@@ -55,18 +53,6 @@ TextTheme sufraTextTheme() => TextTheme(
   labelMedium: _style(size: 13, weight: FontWeight.w600, height: 1.50),
   labelSmall: _style(size: 12, weight: FontWeight.w600, height: 1.50),
 );
-
-/// Kept as two names, both returning the same scale, so `test/theme/
-/// type_test.dart`'s per-look loop still exercises the same structural
-/// rules twice — harmless now that the accent no longer changes type
-/// (Decision 23).
-TextTheme inkTextTheme() => sufraTextTheme();
-TextTheme saffronTextTheme() => sufraTextTheme();
-
-/// The structural [TextTheme], the same for both [AppStyle]s (Decision 23):
-/// kept taking [style] so callers don't need to change, and so a future
-/// per-accent type tweak has somewhere to branch from.
-TextTheme wasfatiTextTheme(AppStyle style) => sufraTextTheme();
 
 /// COOK-2: cook mode's step text, 1.6875x `bodyLarge` (16 -> 27, the
 /// design spec's and Cook.dc.html's own value) rather than a literal size, so the 1.5x floor COOK-2 asks for holds even if `bodyLarge` ever

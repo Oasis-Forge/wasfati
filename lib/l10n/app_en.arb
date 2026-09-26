@@ -36,6 +36,10 @@
   "@walkthroughStart": {
     "description": "RUN-4. The last walkthrough page's button; opens the library."
   },
+  "walkthroughDone": "Done",
+  "@walkthroughDone": {
+    "description": "RUN-4. The last walkthrough page's button when it was replayed from Settings; returns to Settings."
+  },
   "walkthroughPageOf": "Page {n} of {total}",
   "@walkthroughPageOf": {
     "description": "RUN-4. Screen-reader label of the walkthrough's page dots.",
@@ -83,6 +87,14 @@
   "walkthroughDemoRecipe": "Chicken kabsa",
   "@walkthroughDemoRecipe": {
     "description": "RUN-4. The made-up recipe the walkthrough's drawings show."
+  },
+  "walkthroughTileSoup": "Lentil soup",
+  "@walkthroughTileSoup": {
+    "description": "RUN-4: a recipe name on a drawn tile on the walkthrough's first page."
+  },
+  "walkthroughTileFattoush": "Fattoush",
+  "@walkthroughTileFattoush": {
+    "description": "RUN-4: a recipe name on a drawn tile on the walkthrough's first page."
   },
   "walkthroughDemoLine1": "1½ cups rice",
   "@walkthroughDemoLine1": {
@@ -382,6 +394,34 @@
   "@settings": {
     "description": "Settings screen title and button."
   },
+  "settingsGroupLook": "Look and language",
+  "@settingsGroupLook": {
+    "description": "Settings group heading."
+  },
+  "settingsGroupCooking": "Cooking and the plan",
+  "@settingsGroupCooking": {
+    "description": "Settings group heading."
+  },
+  "settingsGroupData": "Your data",
+  "@settingsGroupData": {
+    "description": "Settings group heading: backup, restore and export (BAK)."
+  },
+  "settingsGroupAbout": "About Wasfati",
+  "@settingsGroupAbout": {
+    "description": "Settings group heading: the walkthrough, privacy policy, contact and version."
+  },
+  "settingsPrivacyPolicy": "Privacy policy",
+  "@settingsPrivacyPolicy": {
+    "description": "Settings row that opens the published privacy policy in the browser."
+  },
+  "settingsContact": "Contact us",
+  "@settingsContact": {
+    "description": "Settings row that opens a mail draft to the support address."
+  },
+  "settingsVersion": "Version",
+  "@settingsVersion": {
+    "description": "Settings row showing the app's version."
+  },
   "settingsLanguage": "Language",
   "@settingsLanguage": {
     "description": "LANG-1."
@@ -393,6 +433,24 @@
   "settingsDigits": "Numbers",
   "@settingsDigits": {
     "description": "QTY-5, Decision 5. Digit style setting."
+  },
+  "digitsWesternName": "Western digits ({sample})",
+  "@digitsWesternName": {
+    "description": "QTY-5. What a screen reader says for the 123 digit option, so it differs from the Arabic one. {sample} is the option's own digits, 123.",
+    "placeholders": {
+      "sample": {
+        "type": "String"
+      }
+    }
+  },
+  "digitsArabicName": "Arabic digits ({sample})",
+  "@digitsArabicName": {
+    "description": "QTY-5. What a screen reader says for the ١٢٣ digit option, so it differs from the Western one. {sample} is the option's own digits, ١٢٣.",
+    "placeholders": {
+      "sample": {
+        "type": "String"
+      }
+    }
   },
   "settingsUnits": "Units",
   "@settingsUnits": {
@@ -1219,6 +1277,10 @@
   "@planAddNote": {
     "description": "Plans a meal without a recipe (PLAN-2)"
   },
+  "planEditNote": "Edit note",
+  "@planEditNote": {
+    "description": "PLAN-2. Title of the dialog that changes a planned note's text."
+  },
   "planNoteLabel": "Note",
   "@planNoteLabel": {
     "description": "Label of the note field (PLAN-2)"
@@ -1549,11 +1611,6 @@
       }
     }
   },
-  "settingsRamadanSection": "Ramadan",
-  "@settingsRamadanSection": {
-    "description": "RAM-1. Settings section heading."
-  },
-  "settingsBackupSection": "Backup",
   "backupSaveAction": "Save a backup",
   "backupSaveDone": "Backup saved",
   "backupSaveFailed": "Couldn't save the backup.",
@@ -1804,6 +1861,18 @@
       }
     }
   },
+  "purchasePeriodOnce": "once",
+  "@purchasePeriodOnce": {
+    "description": "PAY-10: the second line of Pro's price button, under the store's price. The button is read aloud as purchasePriceOnce."
+  },
+  "purchasePeriodMonthly": "a month",
+  "@purchasePeriodMonthly": {
+    "description": "PAY-10: the second line of Premium's monthly price button, under the store's price. Read aloud as purchasePriceMonthly."
+  },
+  "purchasePeriodYearly": "a year",
+  "@purchasePeriodYearly": {
+    "description": "PAY-10: the second line of Premium's yearly price button, under the store's price. Read aloud as purchasePriceYearly."
+  },
   "purchaseComingSoon": "Coming soon",
   "@purchaseComingSoon": {
     "description": "PAY-3: a product the store doesn't sell yet: no price, no button."
@@ -1843,6 +1912,43 @@
   "settingsSubscription": "Subscription",
   "@settingsSubscription": {
     "description": "PAY-5, PAY-11: the Settings row; its value is the plan. Opens the purchase screen."
+  },
+  "settingsProCardBody": "Remove the ads, or raise AI imports to {count} a month.",
+  "@settingsProCardBody": {
+    "description": "PAY-5, PAY-10: the one line under the Settings Pro card's title while nothing is owned. No price, no badge, no countdown. count is 100, already in the user's digits.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsProCardOwnsPro": "You have Pro: no ads.",
+  "@settingsProCardOwnsPro": {
+    "description": "The Settings Pro card once Pro is owned."
+  },
+  "settingsProCardOwnsPremium": "{count, plural, =1{You have Premium: no ads, and {shown} AI import a month.} other{You have Premium: no ads, and {shown} AI imports a month.}}",
+  "@settingsProCardOwnsPremium": {
+    "description": "The Settings Pro card once Premium is owned (LANG-2 plural, like purchaseAiImports). count is the monthly quota; shown is it in the user's digits.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsProCardOwnsBoth": "{count, plural, =1{You have Pro and Premium: no ads, and {shown} AI import a month.} other{You have Pro and Premium: no ads, and {shown} AI imports a month.}}",
+  "@settingsProCardOwnsBoth": {
+    "description": "The Settings Pro card once both are owned (LANG-2 plural, like purchaseAiImports). count is the monthly quota; shown is it in the user's digits.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
   },
   "tierFree": "Free",
   "@tierFree": {

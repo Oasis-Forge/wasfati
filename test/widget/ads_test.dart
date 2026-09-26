@@ -113,6 +113,9 @@ void main() {
     expect(find.byType(AdSlot), findsNothing, reason: 'settings');
     expect(banner, findsNothing, reason: 'settings');
     await tester.scrollUntilVisible(find.text('الاشتراك'), 300);
+    // Built in the list's cache isn't on screen yet: bring it in first.
+    await tester.ensureVisible(find.text('الاشتراك'));
+    await settle(tester);
     await tester.tap(find.text('الاشتراك'));
     await settle(tester);
     expect(find.text('برو وبريميوم'), findsWidgets);
@@ -250,7 +253,8 @@ void main() {
     );
     await tester.tap(target);
     await settle(tester);
-    expect(find.text('${ownIsolate('AED 14.99')} مرة واحدة'), findsOneWidget);
+    expect(find.text(ownIsolate('AED 14.99')), findsOneWidget);
+    expect(find.text('مرة واحدة'), findsOneWidget);
     expect(banner, findsNothing);
   });
 

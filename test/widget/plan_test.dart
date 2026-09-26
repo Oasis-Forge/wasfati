@@ -8,6 +8,7 @@ import 'package:wasfati/models/plan.dart';
 import 'package:wasfati/models/settings.dart';
 import 'package:wasfati/providers/settings_state.dart';
 import 'package:wasfati/widgets/nav_pill.dart';
+import 'package:wasfati/widgets/sufra_card.dart';
 
 import '../helpers.dart' show kabsa;
 import 'app_test.dart' show plan, pumpApp, settle, shown;
@@ -127,12 +128,13 @@ void main() {
     await _goToPlan(tester);
     final cs = Theme.of(tester.element(_day(_today))).colorScheme;
 
-    // Opens on today, chosen: ink-filled, with the accent dot (PLAN-1).
+    // Opens on today, chosen: ink-filled, and since it has entries, its dot
+    // in the pill's own card-coloured text, which reads on ink (PLAN-1).
     expect(_dayProps(tester, _today).selected, isTrue);
     expect(_dayProps(tester, _today).label, contains('اليوم'));
     expect(_dayProps(tester, _today).label, contains('3 وجبات'));
     expect(_pill(tester, _today).color, cs.onSurface);
-    expect(_dot(tester, _today), cs.primary);
+    expect(_dot(tester, _today), cs.surfaceContainerLowest);
     // A day with entries carries the herb dot; an empty one none.
     expect(_dayProps(tester, _monday).selected, isFalse);
     expect(_dayProps(tester, _monday).label, contains('وجبة واحدة'));
@@ -161,6 +163,8 @@ void main() {
     expect(shown('اليوم · '), findsNothing);
     expect(_dayProps(tester, _monday).selected, isTrue);
     expect(_pill(tester, _monday).color, cs.onSurface);
+    expect(_dot(tester, _monday), cs.surfaceContainerLowest);
+    expect(_dot(tester, _today), cs.secondary); // has entries, not chosen
     expect(_dayProps(tester, _today).selected, isFalse);
     expect(_dayProps(tester, _today).label, contains('اليوم'));
     expect(
@@ -168,9 +172,15 @@ void main() {
       cs.primary,
     );
 
-    // An empty day reads "لا وجبات" and offers an add on every meal.
+    // An empty day reads "لا وجبات" and offers an add on every meal; chosen,
+    // it's ink-filled but carries no dot, since it has no entries.
     await tester.tap(_day(DateTime(2026, 9, 22)));
     await tester.pump();
+    expect(_dayProps(tester, DateTime(2026, 9, 22)).selected, isTrue);
+    expect(_pill(tester, DateTime(2026, 9, 22)).color, cs.onSurface);
+    expect(_dot(tester, DateTime(2026, 9, 22)), Colors.transparent);
+    // Monday, no longer chosen, is back to its herb dot.
+    expect(_dot(tester, _monday), cs.secondary);
     expect(find.text('لا وجبات'), findsOneWidget);
     expect(find.text('إضافة'), findsNWidgets(4));
   });
@@ -205,6 +215,46 @@ void main() {
     expect(dateKey(plan.weekStart), dateKey(thisWeek));
     expect(_dayProps(tester, _today).selected, isTrue);
     expect(find.text('هذا الأسبوع'), findsNothing);
+  });
+
+  testWidgets('PLAN-1: "by region" follows the phone\'s region, not the '
+      'app\'s language: an Arabic app on a UK phone starts on Monday', (
+    tester,
+  ) async {
+    // The phone's first language names no region; its UK English does.
+    tester.platformDispatcher.localesTestValue = const [
+      Locale('ar'),
+      Locale('en', 'GB'),
+    ];
+    addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+    await pumpApp(tester, withRecipe: true);
+    await _goToPlan(tester);
+    expect(plan.weekStart.weekday, DateTime.monday);
+    expect(dateKey(plan.weekStart), '2026-09-14');
+    // Monday leads the strip: its pill sits at the start (the right, in
+    // Arabic) of Sunday's.
+    expect(
+      tester.getCenter(_day(DateTime(2026, 9, 14))).dx,
+      greaterThan(tester.getCenter(_day(DateTime(2026, 9, 20))).dx),
+    );
+  });
+
+  testWidgets('PLAN-1: an English app on a Saudi phone starts on Sunday, '
+      'and follows a region change while it runs', (tester) async {
+    tester.platformDispatcher.localesTestValue = const [Locale('ar', 'SA')];
+    addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+    await pumpApp(tester, withRecipe: true, language: LanguagePref.en);
+    await tester.tap(
+      find.descendant(of: find.byType(NavPill), matching: find.text('Plan')),
+    );
+    await settle(tester);
+    expect(plan.weekStart.weekday, DateTime.sunday);
+    expect(dateKey(plan.weekStart), '2026-09-13');
+
+    // The phone's region changes to the UK while the app runs.
+    tester.platformDispatcher.localesTestValue = const [Locale('en', 'GB')];
+    await settle(tester);
+    expect(plan.weekStart.weekday, DateTime.monday);
   });
 
   testWidgets('PLAN-3: an empty meal\'s "+ إضافة" opens the picker: a note, '
@@ -292,6 +342,91 @@ void main() {
     expect(plan.entries, isEmpty);
   });
 
+  testWidgets('PLAN-4: a note shows its own "المزيد" button, which opens '
+      'move, copy and remove; remove comes with Undo (DEL-2)', (tester) async {
+    await pumpApp(tester, withRecipe: true);
+    await tester.runAsync(
+      () => plan.add(date: plan.today, slot: MealSlot.dinner, note: 'مطعم'),
+    );
+    await _goToPlan(tester);
+
+    // The header's button and the note's: nothing hides behind a long press.
+    final more = find.descendant(
+      of: find.ancestor(
+        of: find.text('مطعم'),
+        matching: find.byType(SufraCard),
+      ),
+      matching: find.byTooltip('المزيد'),
+    );
+    expect(more, findsOneWidget);
+    await tester.tap(more);
+    await settle(tester);
+    for (final action in ['نقل', 'نسخ', 'إزالة']) {
+      expect(find.widgetWithText(ListTile, action), findsOneWidget);
+    }
+    // Not the edit dialog: the button opens the menu, the card's tap edits.
+    expect(find.byType(TextFormField), findsNothing);
+
+    await tester.tap(find.widgetWithText(ListTile, 'إزالة'));
+    await brief(tester);
+    expect(shown('أُزيلت من الخطة'), findsOneWidget);
+    expect(plan.entries, isEmpty);
+    expect(find.text('مطعم'), findsNothing);
+
+    await tester.tap(find.text('تراجع'));
+    await settle(tester);
+    expect(plan.entries.single.note, 'مطعم');
+    expect(find.text('مطعم'), findsOneWidget);
+  });
+
+  testWidgets('PLAN-2: tapping a note opens it filled in, to change its '
+      'text; an empty one is refused; a long press still opens PLAN-4 '
+      'menu', (tester) async {
+    await pumpApp(tester, withRecipe: true);
+    await tester.runAsync(
+      () => plan.add(date: _today, slot: MealSlot.dinner, note: 'مطعم'),
+    );
+    await _goToPlan(tester);
+
+    await tester.tap(find.text('مطعم'));
+    await settle(tester);
+    // Titled as an edit, not as writing a new note.
+    expect(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('عدّل الملاحظة'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('اكتب ملاحظة'), findsNothing);
+    final field = find.byType(TextFormField);
+    expect(
+      tester.widget<EditableText>(find.byType(EditableText)).controller.text,
+      'مطعم',
+    );
+
+    // Emptied, it isn't saved (PLAN-2: 1-60 characters).
+    await tester.enterText(field, '   ');
+    await tester.tap(find.widgetWithText(FilledButton, 'حفظ'));
+    await settle(tester);
+    expect(find.text('من 1 إلى 60 حرفًا'), findsOneWidget);
+    expect(plan.entries.single.note, 'مطعم');
+
+    await tester.enterText(field, 'بقايا الأمس');
+    await tester.tap(find.widgetWithText(FilledButton, 'حفظ'));
+    await brief(tester);
+    await settle(tester);
+    expect(plan.entries.single.note, 'بقايا الأمس');
+    expect(plan.entries.single.slot, MealSlot.dinner);
+    expect(find.text('بقايا الأمس'), findsOneWidget);
+    expect(find.text('مطعم'), findsNothing);
+
+    await tester.longPress(find.text('بقايا الأمس'));
+    await settle(tester);
+    expect(find.widgetWithText(ListTile, 'نقل'), findsOneWidget);
+    expect(find.widgetWithText(ListTile, 'إزالة'), findsOneWidget);
+  });
+
   testWidgets('PLAN-4: the long-press menu copies and moves a recipe entry', (
     tester,
   ) async {
@@ -364,8 +499,8 @@ void main() {
     );
     handle.dispose();
 
-    // The header's "المزيد", not the planned recipe's own.
-    expect(find.byTooltip('المزيد'), findsNWidgets(2));
+    // The header's "المزيد", not the planned recipe's or the note's own.
+    expect(find.byTooltip('المزيد'), findsNWidgets(3));
     await tester.tap(find.byTooltip('المزيد').first);
     await settle(tester);
     await tester.tap(find.widgetWithText(ListTile, 'مسح الأسبوع'));
