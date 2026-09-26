@@ -30,6 +30,8 @@ Decor _sample({
   Color? rowHairline = const Color(0xFF888888),
   Color groupedRowFill = const Color(0xFFFFFFFF),
   EmptyOrnament ornament = EmptyOrnament.khatam,
+  double photoCardRadius = 24,
+  Color photoScrim = const Color(0xC7140E0A),
 }) => Decor(
   sunk: sunk,
   cardHairline: cardHairline,
@@ -55,6 +57,8 @@ Decor _sample({
   rowHairline: rowHairline,
   groupedRowFill: groupedRowFill,
   ornament: ornament,
+  photoCardRadius: photoCardRadius,
+  photoScrim: photoScrim,
 );
 
 void main() {

@@ -8,9 +8,12 @@
 // extra confidence. Setup and a fresh install's walkthrough have their own
 // 1.3x runs in first_run_test.dart; here the walkthrough is replayed from
 // Settings in the chosen digits.
+import 'dart:io' show File;
+
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show RenderFlex;
+import 'package:flutter/rendering.dart' show RenderFlex, RenderParagraph;
 import 'package:flutter/semantics.dart' show SemanticsNode;
+import 'package:flutter/services.dart' show ByteData, FontLoader;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wasfati/widgets/nav_pill.dart';
 import 'package:wasfati/l10n/app_localizations.dart';
@@ -27,6 +30,7 @@ import 'package:wasfati/theme/decor.dart';
 import 'package:wasfati/widgets/ad_slot.dart';
 import 'package:wasfati/widgets/digit_box.dart';
 
+import '../helpers.dart' show kabsa;
 import 'app_test.dart' show groceries, plan, pumpApp, settle;
 
 const _offers = [
@@ -278,6 +282,16 @@ void main() {
         _fits(tester, 'back to library');
 
         // The English recipe's page too: content in the other direction.
+        // The library home's own rhythm (`sectionGap`, LOOK-12) can sit a
+        // card lower on screen than the fixed nav pill leaves room for at
+        // this text scale, so it's scrolled into view rather than assumed
+        // to already be on screen.
+        await tester.scrollUntilVisible(
+          find.text(_englishTitle),
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await settle(tester);
         await tester.tap(find.text(_englishTitle));
         await settle(tester);
         _fits(tester, 'English recipe');
@@ -644,10 +658,125 @@ void main() {
       );
     });
     await settle(tester);
+    // The library home's own rhythm (`sectionGap`, LOOK-12) can now sit the
+    // newest recipe's tile lower on a short phone than the fixed nav pill's
+    // own space leaves room for — scrolled into view rather than assumed
+    // to already be on screen.
+    await tester.scrollUntilVisible(
+      find.text('شوربة'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await settle(tester);
     await tester.tap(find.text('شوربة'));
     await settle(tester);
     await tester.tap(find.text('×½'));
     await settle(tester);
     expect(boxed('×½'), findsOneWidget);
+  });
+
+  // LOOK-8: the library home's own worst case for its leading slivers —
+  // the header, the backup reminder (10+ recipes, never backed up) and the
+  // "تابع الطبخ" resume card, all on screen together, with a filled ad
+  // banner too — on both a tall and a short 360dp phone.
+  for (final language in [LanguagePref.ar, LanguagePref.en]) {
+    for (final (label, height) in [('360x800', 800.0), ('360x640', 640.0)]) {
+      testWidgets(
+        '${language.name}/$label at 1.3x: the resume card, the backup '
+        'reminder and a filled banner together fit with no overflow '
+        '(LOOK-8)',
+        (tester) async {
+          tester.view.physicalSize = Size(1080, height * 3);
+          tester.view.devicePixelRatio = 3;
+          addTearDown(tester.view.reset);
+
+          final (recipes, _) = await pumpApp(
+            tester,
+            language: language,
+            textScale: 1.3,
+            withRecipe: true,
+            adServiceOverride: NoopAdService(
+              consent: const AdConsent(
+                canRequestAds: true,
+                privacyOptionsRequired: false,
+              ),
+              fills: true,
+            ),
+          );
+          late String id;
+          await tester.runAsync(() async {
+            final repo = recipes.repository;
+            id = recipes.recipes.single.id;
+            for (var i = 0; i < 9; i++) {
+              await recipes.save(kabsa(repo, title: 'وصفة $i'));
+            }
+            await recipes.setCookPage(id, 1, 2);
+          });
+          await settle(tester);
+
+          expect(tester.takeException(), isNull);
+          await tester.scrollUntilVisible(
+            find.text('كبسة لحم'),
+            300,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await settle(tester);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  }
+
+  // LANG-6: the editor's three-in-a-row number fields, whose own label was
+  // fixed to wrap (`Text(label, maxLines: 2)`) rather than silently
+  // ellipsize a floating label — measured with the app's own bundled font,
+  // not the test font (whose every glyph is 1em square), since only the
+  // real glyph widths reproduce the wrap the fix depends on.
+  group('LANG-6: the editor\'s servings/prep/cook labels never clip at '
+      '1.3x on 360dp', () {
+    setUpAll(() async {
+      final loader = FontLoader('IBMPlexSansArabic');
+      for (final weight in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
+        final bytes = File('assets/fonts/IBMPlexSansArabic-$weight.ttf')
+            .readAsBytesSync();
+        loader.addFont(Future.value(ByteData.sublistView(bytes)));
+      }
+      await loader.load();
+    });
+
+    for (final language in [LanguagePref.ar, LanguagePref.en]) {
+      testWidgets(language.name, (tester) async {
+        final l = lookupAppLocalizations(Locale(language.name));
+        await pumpApp(
+          tester,
+          language: language,
+          textScale: 1.3,
+          withRecipe: true,
+        );
+        await tester.scrollUntilVisible(
+          find.text('كبسة لحم'),
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await settle(tester);
+        await tester.tap(find.text('كبسة لحم'));
+        await settle(tester);
+        await tester.tap(find.byIcon(Icons.edit_outlined).first);
+        await settle(tester);
+        await tester.scrollUntilVisible(
+          find.text(l.fieldServings),
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await settle(tester);
+
+        for (final label in [l.fieldServings, l.fieldPrep, l.fieldCook]) {
+          final paragraph = tester.renderObject<RenderParagraph>(
+            find.text(label),
+          );
+          expect(paragraph.didExceedMaxLines, isFalse, reason: label);
+        }
+      });
+    }
   });
 }

@@ -18,6 +18,7 @@ import '../services/photo_store.dart';
 import '../theme/decor.dart';
 import '../widgets/content_direction.dart';
 import '../widgets/digit_counter.dart';
+import '../widgets/sufra_card.dart';
 import 'translate_flow.dart';
 
 /// Adds or edits a recipe (REC-3–REC-8). Ingredients and steps are one line
@@ -284,6 +285,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final settings = context.watch<SettingsState>();
+    final gutter = Decor.of(context).gutter;
     return PopScope(
       canPop: !_dirty,
       onPopInvokedWithResult: (didPop, _) async {
@@ -308,9 +310,19 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
           ),
           actions: [
             Padding(
-              padding: const EdgeInsetsDirectional.only(end: 8),
+              // should-fix, LOOK-6: the theme's FilledButton is sized for
+              // a screen's one main action at the bottom (56dp) — inside
+              // a 64dp toolbar that reads as an oversized blob at the
+              // screen edge rather than an app-bar action.
+              padding: const EdgeInsetsDirectional.only(end: 16),
               child: FilledButton(
                 onPressed: _saving ? null : _save,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(64, 44),
+                  padding: const EdgeInsetsDirectional.symmetric(
+                    horizontal: 20,
+                  ),
+                ),
                 child: Text(l10n.save),
               ),
             ),
@@ -318,146 +330,195 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
         ),
         body: Form(
           key: _form,
+          // LOOK-6/Decision 23: the same fields, in the same order, grouped
+          // into SufraCard sections instead of one flat field-by-field
+          // list — restyled, never re-laid-out (no field moves, gains a
+          // validator or drops one).
           child: ListView(
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 32),
+            padding: EdgeInsetsDirectional.fromSTEB(gutter, 8, gutter, 32),
             children: [
-              TextFormField(
-                controller: _title,
-                maxLength: Recipe.maxTitle,
-                buildCounter: digitCounter,
-                textInputAction: TextInputAction.next,
-                decoration: InputDecoration(labelText: l10n.fieldTitle),
-                validator: (v) =>
-                    (v ?? '').trim().isEmpty ? l10n.fieldTitleRequired : null,
-              ),
-              _PhotoRow(
-                path: _photo,
-                onPick: _pickPhoto,
-                onRemove: () => setState(() {
-                  _photo = null;
-                  _dirty = true;
-                }),
-              ),
-              // IMP-14: an import written mostly in another language.
-              if (widget.imported &&
-                  !widget.translation &&
-                  widget.recipe != null &&
-                  offersTranslation(
-                    widget.recipe!,
-                    arabicApp:
-                        Localizations.localeOf(context).languageCode == 'ar',
-                  ))
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: TextButton.icon(
-                    onPressed: _saving ? null : _translate,
-                    icon: const Icon(Icons.translate),
-                    label: Text(l10n.translateRecipe),
-                  ),
+              SufraCard(
+                padding: const EdgeInsetsDirectional.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextFormField(
+                      controller: _title,
+                      maxLength: Recipe.maxTitle,
+                      buildCounter: digitCounter,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(labelText: l10n.fieldTitle),
+                      validator: (v) => (v ?? '').trim().isEmpty
+                          ? l10n.fieldTitleRequired
+                          : null,
+                    ),
+                    _PhotoRow(
+                      path: _photo,
+                      onPick: _pickPhoto,
+                      onRemove: () => setState(() {
+                        _photo = null;
+                        _dirty = true;
+                      }),
+                    ),
+                    // IMP-14: an import written mostly in another language.
+                    if (widget.imported &&
+                        !widget.translation &&
+                        widget.recipe != null &&
+                        offersTranslation(
+                          widget.recipe!,
+                          arabicApp:
+                              Localizations.localeOf(context).languageCode ==
+                              'ar',
+                        ))
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: TextButton.icon(
+                          onPressed: _saving ? null : _translate,
+                          icon: const Icon(Icons.translate),
+                          label: Text(l10n.translateRecipe),
+                        ),
+                      ),
+                  ],
                 ),
-              const SizedBox(height: 12),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: _NumberField(
-                      controller: _servings,
-                      label: l10n.fieldServings,
-                      validator: (n) =>
-                          n != null && (n < 1 || n > Recipe.maxServings)
-                          ? l10n.fieldServingsInvalid(
-                              settings.number(1),
-                              settings.number(Recipe.maxServings),
+              ),
+              const SizedBox(height: 16),
+              SufraCard(
+                // should-fix, LANG-6: the card's usual 16dp horizontal
+                // padding, on both sides of every gap between three equal
+                // fields, left too little width for their own floating
+                // labels at a large text scale (some clipped even at
+                // 1.0x) — a narrower horizontal inset for this one row
+                // gives each field back the width the card's padding was
+                // taking from it.
+                padding: const EdgeInsetsDirectional.symmetric(
+                  horizontal: 8,
+                  vertical: 16,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _NumberField(
+                        controller: _servings,
+                        label: l10n.fieldServings,
+                        validator: (n) =>
+                            n != null && (n < 1 || n > Recipe.maxServings)
+                            ? l10n.fieldServingsInvalid(
+                                settings.number(1),
+                                settings.number(Recipe.maxServings),
+                              )
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _NumberField(
+                        controller: _prep,
+                        label: l10n.fieldPrep,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _NumberField(
+                        controller: _cook,
+                        label: l10n.fieldCook,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              SufraCard(
+                padding: const EdgeInsetsDirectional.all(16),
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _ingredients,
+                      minLines: 5,
+                      maxLines: null,
+                      keyboardType: TextInputType.multiline,
+                      decoration: InputDecoration(
+                        labelText: l10n.ingredients,
+                        // The example is an ingredient line: an English one
+                        // keeps 123 whatever the setting, an Arabic one
+                        // follows it (QTY-5).
+                        hintText: l10n.fieldIngredientsHint(
+                          l10n.localeName == 'ar' ? settings.number(2) : '2',
+                        ),
+                        hintMaxLines: 3,
+                        alignLabelWithHint: true,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _steps,
+                      minLines: 5,
+                      maxLines: null,
+                      keyboardType: TextInputType.multiline,
+                      decoration: InputDecoration(
+                        labelText: l10n.steps,
+                        hintText: l10n.fieldStepsHint,
+                        alignLabelWithHint: true,
+                      ),
+                      validator: (v) =>
+                          (v ?? '')
+                              .split('\n')
+                              .any(
+                                (l) => l.trim().length > RecipeStep.maxLength,
+                              )
+                          ? l10n.stepTooLong(
+                              settings.number(RecipeStep.maxLength),
                             )
                           : null,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _NumberField(
-                      controller: _prep,
-                      label: l10n.fieldPrep,
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              SufraCard(
+                padding: const EdgeInsetsDirectional.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextFormField(
+                      controller: _tags,
+                      decoration: InputDecoration(
+                        labelText: l10n.fieldTags,
+                        hintText: l10n.fieldTagsHint,
+                      ),
+                      validator: (v) {
+                        final tags = parseTags(v ?? '');
+                        return tags.length > Tag.maxPerRecipe ||
+                                tags.any((t) => t.length > Tag.maxName)
+                            ? l10n.tagsInvalid(
+                                settings.number(Tag.maxPerRecipe),
+                                settings.number(Tag.maxName),
+                              )
+                            : null;
+                      },
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _NumberField(
-                      controller: _cook,
-                      label: l10n.fieldCook,
+                    _TagSuggestions(controller: _tags),
+                    _CookbookPicker(
+                      selected: _cookbooks,
+                      onChanged: (id, on) => setState(() {
+                        on ? _cookbooks.add(id) : _cookbooks.remove(id);
+                        _dirty = true;
+                      }),
                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              SufraCard(
+                padding: const EdgeInsetsDirectional.all(16),
+                child: TextFormField(
+                  controller: _notes,
+                  minLines: 2,
+                  maxLines: null,
+                  decoration: InputDecoration(
+                    labelText: l10n.notes,
+                    alignLabelWithHint: true,
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _ingredients,
-                minLines: 5,
-                maxLines: null,
-                keyboardType: TextInputType.multiline,
-                decoration: InputDecoration(
-                  labelText: l10n.ingredients,
-                  // The example is an ingredient line: an English one keeps
-                  // 123 whatever the setting, an Arabic one follows it
-                  // (QTY-5).
-                  hintText: l10n.fieldIngredientsHint(
-                    l10n.localeName == 'ar' ? settings.number(2) : '2',
-                  ),
-                  hintMaxLines: 3,
-                  alignLabelWithHint: true,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _steps,
-                minLines: 5,
-                maxLines: null,
-                keyboardType: TextInputType.multiline,
-                decoration: InputDecoration(
-                  labelText: l10n.steps,
-                  hintText: l10n.fieldStepsHint,
-                  alignLabelWithHint: true,
-                ),
-                validator: (v) =>
-                    (v ?? '')
-                        .split('\n')
-                        .any((l) => l.trim().length > RecipeStep.maxLength)
-                    ? l10n.stepTooLong(settings.number(RecipeStep.maxLength))
-                    : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _tags,
-                decoration: InputDecoration(
-                  labelText: l10n.fieldTags,
-                  hintText: l10n.fieldTagsHint,
-                ),
-                validator: (v) {
-                  final tags = parseTags(v ?? '');
-                  return tags.length > Tag.maxPerRecipe ||
-                          tags.any((t) => t.length > Tag.maxName)
-                      ? l10n.tagsInvalid(
-                          settings.number(Tag.maxPerRecipe),
-                          settings.number(Tag.maxName),
-                        )
-                      : null;
-                },
-              ),
-              _TagSuggestions(controller: _tags),
-              _CookbookPicker(
-                selected: _cookbooks,
-                onChanged: (id, on) => setState(() {
-                  on ? _cookbooks.add(id) : _cookbooks.remove(id);
-                  _dirty = true;
-                }),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _notes,
-                minLines: 2,
-                maxLines: null,
-                decoration: InputDecoration(
-                  labelText: l10n.notes,
-                  alignLabelWithHint: true,
                 ),
               ),
               // IMP-5, IMP-8: a quiet action, last in the preview.
@@ -560,7 +621,12 @@ class _NumberField extends StatelessWidget {
       controller: controller,
       keyboardType: TextInputType.number,
       textInputAction: TextInputAction.next,
-      decoration: InputDecoration(labelText: label),
+      // should-fix, LANG-6: three equal fields in a row leave each label
+      // little width, and an Arabic label ("التحضير (دقيقة)") or "Prep
+      // (min)"/"Cook (min)" at a large text scale can need more of it than
+      // there is — a `Text` label (rather than `labelText`) can wrap to a
+      // second line instead of the floating label silently ellipsizing.
+      decoration: InputDecoration(label: Text(label, maxLines: 2)),
       validator: (v) {
         final t = westernDigits((v ?? '').trim());
         if (t.isEmpty) return null;

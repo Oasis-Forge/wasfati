@@ -15,7 +15,9 @@ class LibraryEntry {
     required this.title,
     this.photoPath,
     required this.sourceType,
+    this.sourceUrl,
     this.totalMinutes,
+    this.servings,
     this.cookedCount = 0,
     this.lastCookedAt,
     required this.createdAt,
@@ -32,7 +34,15 @@ class LibraryEntry {
   final String title;
   final String? photoPath;
   final SourceType sourceType;
+
+  /// A website or social import's source link (REC-3): the library card's
+  /// source badge reads a website's host from it, unset otherwise.
+  final String? sourceUrl;
   final int? totalMinutes;
+
+  /// REC-7: the library card's meta line shows it beside the total time
+  /// when it's set (REC-3).
+  final int? servings;
   final int cookedCount;
   final DateTime? lastCookedAt;
   final DateTime createdAt;
@@ -72,7 +82,11 @@ class LibraryQuery {
   final bool photoOnly;
 
   bool get hasFilters =>
-      tag != null || source != null || time != null || photoOnly;
+      cookbookId != null ||
+      tag != null ||
+      source != null ||
+      time != null ||
+      photoOnly;
 
   LibraryQuery copyWith({
     String? text,
@@ -92,11 +106,29 @@ class LibraryQuery {
     photoOnly: photoOnly ?? this.photoOnly,
   );
 
-  LibraryQuery clearFilters() =>
-      LibraryQuery(text: text, sort: sort, cookbookId: cookbookId);
+  LibraryQuery clearFilters() => LibraryQuery(text: text, sort: sort);
 }
 
 const Object _keep = Object();
+
+/// LOOK-12, COOK-6: the library's "تابع الطبخ" card — a resumable cook-mode
+/// session's recipe, its step (0-based, matching `stepOf`'s 1-based "الخطوة
+/// N من Y") and the recipe's total step count.
+class CookResume {
+  const CookResume({
+    required this.recipeId,
+    required this.title,
+    this.photoPath,
+    required this.step,
+    required this.totalSteps,
+  });
+
+  final String recipeId;
+  final String title;
+  final String? photoPath;
+  final int step;
+  final int totalSteps;
+}
 
 /// A search hit: [matchedIngredient] is set when only an ingredient matched,
 /// so the list can say "contains: coriander" (ORG-3).

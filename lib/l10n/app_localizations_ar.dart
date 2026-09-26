@@ -340,6 +340,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get tabAllRecipes => 'كل الوصفات';
 
   @override
+  String get libraryFilteredHeading => 'نتائج التصفية';
+
+  @override
+  String get greetingMorning => 'صباح الخير';
+
+  @override
+  String get greetingEvening => 'مساء الخير';
+
+  @override
+  String get libraryQuestion => 'ماذا نطبخ اليوم؟';
+
+  @override
   String get tabCookbooks => 'كتب الطبخ';
 
   @override
@@ -390,6 +402,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get filterPhoto => 'بصورة';
 
   @override
+  String get filterPhotoHeading => 'الصورة';
+
+  @override
+  String get filterAction => 'تصفية';
+
+  @override
+  String get filterActiveHint => 'تصفية نشطة';
+
+  @override
   String get sourceWritten => 'كتبتها بنفسي';
 
   @override
@@ -397,6 +418,15 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get sourceSocial => 'مواقع التواصل';
+
+  @override
+  String get sourceTiktok => 'تيك توك';
+
+  @override
+  String get sourceInstagram => 'إنستغرام';
+
+  @override
+  String get sourceYoutube => 'يوتيوب';
 
   @override
   String get sourcePhoto => 'صورة';
@@ -523,6 +553,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get startCooking => 'ابدأ الطبخ';
+
+  @override
+  String get continueCooking => 'تابع الطبخ';
+
+  @override
+  String get continueCookingAction => 'تابع';
 
   @override
   String stepOf(String n, String total) {

@@ -4,6 +4,17 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-09-26
+
+### Added
+- The library's new home: a "صباح الخير" / "مساء الخير" greeting and "ماذا نطبخ اليوم؟", a row of quick filter chips for the filters you use most, and a filter sheet for the rest.
+- A "تابع الطبخ" card on the library home while a cook-mode session can still be resumed, showing the step you're on and how far you've got.
+- Cookbooks get their own cover art on the library home, built from the recipes inside them.
+
+### Changed
+- Recipes on the library home show as big photo cards or compact rows — whichever you picked last — in the new سُفرة look, with a drawn cover standing in for recipes that have no photo.
+- Import (from a link, a photo or pasted text) and the recipe editor now follow the new سُفرة look.
+
 ## [0.18.0] - 2026-09-26
 
 ### Added

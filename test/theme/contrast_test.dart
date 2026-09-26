@@ -174,7 +174,7 @@ void main() {
         // its worst case, composited over a light (white) photo.
         test('white on the photo-card title scrim (worst case) '
             '>= $bodyMin:1', () {
-          const nearBlack = Color(0xFF14140A);
+          const nearBlack = Color(0xFF140E0A);
           final scrimOverWhite = Color.alphaBlend(
             nearBlack.withValues(alpha: 0.78),
             Colors.white,
@@ -291,6 +291,14 @@ void main() {
       test('tint $i: the dark tone on its light tone >= $largeMin:1', () {
         expect(contrastRatio(tint.$2, tint.$1), greaterThanOrEqualTo(largeMin));
       });
+      // LOOK-3: the same pair, at the stricter $bodyMin bar — the tone is
+      // also a no-photo grid card's body text now (the meta line) and its
+      // frosted source badge's ink, not just the cover's own large-text
+      // star pattern and centred letter.
+      test('tint $i: the dark tone on its light tone >= $bodyMin:1 '
+          '(body text/badge)', () {
+        expect(contrastRatio(tint.$2, tint.$1), greaterThanOrEqualTo(bodyMin));
+      });
     }
 
     test('spread across distinct tints (never all the same colour)', () {
@@ -314,6 +322,35 @@ void main() {
     for (final (i, tint) in darkTints.indexed) {
       test('tint $i: its tone on the dark card fill >= $largeMin:1', () {
         expect(contrastRatio(tint.$2, tint.$1), greaterThanOrEqualTo(largeMin));
+      });
+      // LOOK-3: the same pair at $bodyMin — a no-photo card's frosted badge
+      // in dark frosts the dark card fill instead of the fixed white-85%
+      // one, with this same tone as its ink (a 12sp label, not just the
+      // cover's own large-text star pattern).
+      test('tint $i: its tone on the dark card fill >= $bodyMin:1 '
+          '(no-photo badge)', () {
+        expect(contrastRatio(tint.$2, tint.$1), greaterThanOrEqualTo(bodyMin));
+      });
+    }
+  });
+
+  // LOOK-3: the grid card's frosted source badge, on a photo card — a
+  // fixed dark ink (`library_view.dart`'s own `Color(0xFF1F1A15)`, never
+  // following the theme, since the badge frost is fixed light in both
+  // themes for a photo card) against its own white-85% fill, at its worst
+  // case: over a black photo and over a white one.
+  group('LOOK-3: photo-card badge (fixed ink on white-85% fill)', () {
+    const badgeInk = Color(0xFF1F1A15);
+    for (final MapEntry(key: name, value: backdrop) in {
+      'a black photo': Colors.black,
+      'a white photo': Colors.white,
+    }.entries) {
+      test('badge ink on white-85% over $name >= $bodyMin:1', () {
+        final fill = Color.alphaBlend(
+          Colors.white.withValues(alpha: 0.85),
+          backdrop,
+        );
+        expect(contrastRatio(badgeInk, fill), greaterThanOrEqualTo(bodyMin));
       });
     }
   });

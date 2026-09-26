@@ -44,4 +44,32 @@ void main() {
     expect(state.lastError, isA<StateError>());
     expect(state.recipes.length, 1);
   });
+
+  test('the "تابع الطبخ" resume session only surfaces a still-live recipe '
+      '(LOOK-12, COOK-6, ORG-7)', () async {
+    final (repo, clock, _) = await testRepo();
+    final state = RecipesState(repo);
+    final r = (await state.save(kabsa(repo)))!;
+    await state.load();
+
+    expect(await state.resumableSession(), isNull); // never cooked
+
+    await repo.setCookPage(r.id, 2, 8);
+    final resume = await state.resumableSession();
+    expect(resume?.recipeId, r.id);
+    expect(resume?.title, r.title);
+    expect(resume?.step, 2);
+    expect(resume?.totalSteps, 8);
+
+    // ORG-7: a deleted recipe's own progress row never resurfaces it,
+    // even inside the 12-hour window.
+    await state.delete(r.id);
+    expect(await state.resumableSession(), isNull);
+
+    await state.restore(r.id);
+    expect((await state.resumableSession())?.recipeId, r.id);
+
+    clock.advance(const Duration(hours: 13));
+    expect(await state.resumableSession(), isNull); // expired
+  });
 }

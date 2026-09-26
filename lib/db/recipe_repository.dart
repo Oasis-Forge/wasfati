@@ -246,8 +246,10 @@ class RecipeRepository {
         'title',
         'photo_path',
         'source_type',
+        'source_url',
         'prep_minutes',
         'cook_minutes',
+        'servings',
         'cooked_count',
         'last_cooked_at',
         'created_at',
@@ -290,10 +292,12 @@ class RecipeRepository {
           title: r['title']! as String,
           photoPath: r['photo_path'] as String?,
           sourceType: SourceType.values.byName(r['source_type']! as String),
+          sourceUrl: r['source_url'] as String?,
           totalMinutes: r['prep_minutes'] == null && r['cook_minutes'] == null
               ? null
               : ((r['prep_minutes'] as int?) ?? 0) +
                     ((r['cook_minutes'] as int?) ?? 0),
+          servings: r['servings'] as int?,
           cookedCount: r['cooked_count']! as int,
           lastCookedAt: date(r['last_cooked_at']),
           createdAt: date(r['created_at'])!,
@@ -474,8 +478,10 @@ class RecipeRepository {
     return p['page']! as int;
   }
 
-  /// Remembers the cook-mode page; entries older than 12 hours are dropped.
-  Future<void> setCookPage(String recipeId, int page) async {
+  /// Remembers the cook-mode page and the recipe's total step count (so the
+  /// library's "تابع الطبخ" card can show "الخطوة 3 من 8" without loading
+  /// the whole recipe, LOOK-12); entries older than 12 hours are dropped.
+  Future<void> setCookPage(String recipeId, int page, int totalSteps) async {
     final all = await _cookProgress();
     final now = _clock();
     all.removeWhere(
@@ -485,11 +491,43 @@ class RecipeRepository {
           ) >
           resumeWindow,
     );
-    all[recipeId] = {'page': page, 'at': now.millisecondsSinceEpoch};
+    all[recipeId] = {
+      'page': page,
+      'total': totalSteps,
+      'at': now.millisecondsSinceEpoch,
+    };
     await _db.insert('meta', {
       'key': _cookKey,
       'value': jsonEncode(all),
     }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  /// The most recently left cook-mode session still inside the 12-hour
+  /// resume window, for the library's "تابع الطبخ" card (LOOK-12, COOK-6);
+  /// null once every session has expired, or the page saved was already the
+  /// "done" page beyond the last step. The caller still checks the recipe
+  /// itself is live (ORG-7): a deleted recipe's progress just goes unused
+  /// until it ages out.
+  Future<({String recipeId, int page, int total})?> latestCookProgress() async {
+    final all = await _cookProgress();
+    final now = _clock();
+    ({String recipeId, int page, int total, DateTime at})? best;
+    for (final e in all.entries) {
+      final at = DateTime.fromMillisecondsSinceEpoch(
+        e.value['at']! as int,
+        isUtc: true,
+      );
+      if (now.difference(at) > resumeWindow) continue;
+      final page = e.value['page']! as int;
+      final total = (e.value['total'] as int?) ?? (page + 1);
+      if (page >= total) continue; // already past the last step
+      if (best == null || at.isAfter(best.at)) {
+        best = (recipeId: e.key, page: page, total: total, at: at);
+      }
+    }
+    return best == null
+        ? null
+        : (recipeId: best.recipeId, page: best.page, total: best.total);
   }
 
   Future<Map<String, Map<String, Object?>>> _cookProgress() async {

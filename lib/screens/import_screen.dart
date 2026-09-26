@@ -491,6 +491,7 @@ class _ImportScreenState extends State<ImportScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final settings = context.watch<SettingsState>();
+    final gutter = Decor.of(context).gutter;
     final busy = _stage != _Stage.idle;
     final isPasteMode = widget.mode == ImportEntryMode.pasteText;
     final isPhotoMode = widget.mode == ImportEntryMode.photo;
@@ -549,7 +550,7 @@ class _ImportScreenState extends State<ImportScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(screenTitle)),
       body: ListView(
-        padding: const EdgeInsetsDirectional.all(16),
+        padding: EdgeInsetsDirectional.all(gutter),
         children: [
           // IMP-1, IMP-10: opened from "من صورة", the camera/gallery choice
           // comes first — not the link field, which this tile never means.
@@ -804,9 +805,22 @@ class _ImportScreenState extends State<ImportScreen> {
           ],
           if (message != null) ...[
             const SizedBox(height: 16),
-            Text(
-              message,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            // LOOK-6, Decision 23: an error reads as a filled band, not a
+            // bare line of coloured text (restyled only — IMP-4's same
+            // failure states, in the same place, still name the same thing).
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsetsDirectional.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.errorContainer,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+              ),
             ),
             if (showAddByHand)
               Padding(

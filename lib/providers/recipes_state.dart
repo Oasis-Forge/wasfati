@@ -21,6 +21,7 @@ class RecipesState extends ChangeNotifier {
   bool _loaded = false;
   Object? _lastError;
   int _revision = 0;
+  CookResume? _resume;
 
   /// Goes up after every successful write, so screens showing one recipe
   /// know to reload it.
@@ -53,6 +54,44 @@ class RecipesState extends ChangeNotifier {
     String id,
   ) => _repo.translationLinks(id);
 
+  /// LOOK-12, COOK-6: the library's "تابع الطبخ" card — the most recently
+  /// left cook-mode session still inside its 12-hour resume window, for a
+  /// recipe still live (ORG-7 drops a deleted or purged one, even if its
+  /// progress row hasn't aged out yet). Null when there's nothing to resume.
+  Future<CookResume?> resumableSession() async {
+    final p = await _repo.latestCookProgress();
+    if (p == null) return null;
+    final entry = _recipes.where((r) => r.id == p.recipeId).firstOrNull;
+    if (entry == null) return null;
+    return CookResume(
+      recipeId: entry.id,
+      title: entry.title,
+      photoPath: entry.photoPath,
+      step: p.page,
+      totalSteps: p.total,
+    );
+  }
+
+  /// [resumableSession] cached so the library card doesn't run a fresh
+  /// database read on every rebuild/keystroke (should-fix); refreshed
+  /// whenever the recipes reload and whenever cook mode reports its page.
+  CookResume? get resume => _resume;
+
+  /// Cook mode's own write of its current page (COOK-6, LOOK-12): goes
+  /// through the state layer, unlike a direct `repository.setCookPage`
+  /// call, so [resume] and every listener (the library's "تابع الطبخ"
+  /// card) update immediately on the next page change, not just on some
+  /// unrelated rebuild.
+  Future<void> setCookPage(String recipeId, int page, int totalSteps) async {
+    await _repo.setCookPage(recipeId, page, totalSteps);
+    await _refreshResume();
+    notifyListeners();
+  }
+
+  Future<void> _refreshResume() async {
+    _resume = await resumableSession();
+  }
+
   Future<void> load() async {
     await _reload();
     _loaded = true;
@@ -65,6 +104,7 @@ class RecipesState extends ChangeNotifier {
     _recipes = entries;
     _cookbooks = await _repo.cookbooks();
     _tags = await _repo.tagsInUse();
+    await _refreshResume();
   }
 
   /// Saves [recipe]; returns it as saved, or null if the write failed.

@@ -43,6 +43,7 @@ import 'package:wasfati/services/sharer.dart';
 import 'package:wasfati/services/store.dart';
 import 'package:wasfati/services/store_review.dart';
 import 'package:wasfati/services/web_import.dart';
+import 'package:wasfati/widgets/content_direction.dart';
 
 import '../services/importer_test.dart' show FakeFetcher, kabsaPage;
 
@@ -234,6 +235,8 @@ Future<(RecipesState, SettingsState)> pumpApp(
   Database? existingDb,
   // RUN-4: the device's reduce-motion setting.
   bool disableAnimations = false,
+  // LOOK-12: fixes the library greeting's time of day.
+  DateTime Function()? libraryClock,
 }) async {
   late RecipesState recipes;
   late SettingsState settings;
@@ -356,6 +359,7 @@ Future<(RecipesState, SettingsState)> pumpApp(
         purchases: purchases,
         ads: ads,
         reviewPrompt: reviewPrompt,
+        libraryClock: libraryClock,
       ),
     ),
   );
@@ -488,6 +492,12 @@ void main() {
     await tester.enterText(find.byType(SearchBar), 'بيتزا');
     await settle(tester);
     expect(find.text('لا توجد وصفات مطابقة'), findsOneWidget);
+    // The library home's own rhythm (`sectionGap`, LOOK-12) leaves less
+    // room below the header/search/chips than before for the no-results
+    // empty state, so its own clear-filters button needs scrolling into
+    // view rather than assumed to already be on screen.
+    await tester.ensureVisible(find.text('مسح عوامل التصفية'));
+    await settle(tester);
     await tester.tap(find.text('مسح عوامل التصفية'));
     await settle(tester);
     expect(find.text('كبسة لحم'), findsOneWidget);
@@ -592,17 +602,31 @@ void main() {
   });
 
   testWidgets('sort and grid view are remembered (ORG-5)', (tester) async {
-    final (_, settings) = await pumpApp(tester, withRecipe: true);
-    await tester.tap(find.text('الأحدث إضافة'));
+    final (recipes, settings) = await pumpApp(tester, withRecipe: true);
+    await tester.runAsync(() async {
+      await recipes.save(kabsa(recipes.repository, title: 'أرز بالحليب'));
+    });
+    await settle(tester);
+    // LOOK-12: a RoundIconButton opens the sort sheet now, tooltipped with
+    // the existing "الترتيب" string rather than showing the current sort
+    // as a chip's own label.
+    await tester.tap(find.byTooltip('الترتيب'));
     await settle(tester);
     await tester.tap(find.text('أ–ي'));
     await settle(tester);
     expect(settings.settings.sort, LibrarySort.az);
+    // should-fix, ORG-5: the visible order itself, not only the setting —
+    // "أرز بالحليب" sorts before "كبسة لحم".
+    final titles = tester
+        .widgetList<ContentText>(find.byType(ContentText))
+        .map((w) => w.text)
+        .toList();
+    expect(titles.indexOf('أرز بالحليب'), lessThan(titles.indexOf('كبسة لحم')));
 
     await tester.tap(find.byTooltip('عرض شبكي'));
     await settle(tester);
     expect(settings.settings.grid, isTrue);
-    expect(find.byType(GridView), findsOneWidget);
+    expect(find.byType(SliverGrid), findsOneWidget);
   });
 
   testWidgets('scale ×2 and by servings; to-taste marked (SCALE-2–4)', (

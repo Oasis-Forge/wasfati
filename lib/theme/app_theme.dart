@@ -482,6 +482,11 @@ ThemeData wasfatiTheme(AppStyle style, Brightness brightness) {
         rowHairline: n.line,
         groupedRowFill: n.card,
         ornament: EmptyOrnament.khatam,
+        // LOOK-12: the library's photo-forward grid card and a cookbook
+        // tile's collage (design spec §1: 24dp).
+        photoCardRadius: 24,
+        // LOOK-3: the photo card's title scrim, at least 78% near-black.
+        photoScrim: const Color(0xC7140E0A),
       ),
     ],
   );
