@@ -2,291 +2,259 @@ import 'package:flutter/material.dart';
 
 import '../models/settings.dart' show AppStyle;
 
-/// LOOK-1/LOOK-3: the four hand-written [ColorScheme]s (one per look, per
-/// brightness) and the shared shape constants both looks are built from.
-/// Every value here is copied verbatim from `docs/research/design-styles.md`
-/// (Ink: lines 30-70, Saffron: lines 231-270) — never `ColorScheme.fromSeed`,
-/// so the contrast pairs `test/theme/contrast_test.dart` checks are exactly
-/// the ones that were measured in the doc.
-
-/// Named divider insets, so `DividerThemeData`'s indents can't drift
-/// per-screen (design-styles.md "Shape and spacing" for each look).
+/// LOOK-1/LOOK-3/Decision 23: سُفرة / Sufra's one hand-written [ColorScheme]
+/// per accent (زعفران/Saffron, حبر/Ink) and brightness — never
+/// `ColorScheme.fromSeed`, so the contrast pairs `test/theme/contrast_test.dart`
+/// checks are exactly the ones measured against the design spec (the
+/// scratchpad's `sufra-spec.md` §1). Every neutral token (page, card, sunk,
+/// ink, ink2, line, border, herb, herbSoft, navInactive) is identical for
+/// both accents — the spec's "the two options differ only in accent
+/// colour" — so only the accent tokens below branch on [AppStyle].
 @immutable
-class WasfatiInsets {
-  const WasfatiInsets({
-    required this.group,
-    required this.step,
-    required this.list,
-    required this.full,
-  });
-
-  /// Settings and sheet rows.
-  final double group;
-
-  /// Past the step-number badge.
-  final double step;
-
-  /// Past a thumbnail + gap + gutter.
-  final double list;
-
-  /// Between top-level sections (no inset).
-  final double full;
-}
-
-/// Named corner radii, one set per look (design-styles.md "Shape and
-/// spacing" for each look). Field names describe the component the radius
-/// is for, not the number, so `app_theme.dart` never repeats a magic value.
-@immutable
-class WasfatiRadii {
-  const WasfatiRadii({
-    required this.progress,
-    required this.chip,
-    required this.button,
-    required this.field,
-    required this.searchBar,
+class SufraNeutrals {
+  const SufraNeutrals({
+    required this.page,
     required this.card,
-    required this.listTile,
-    required this.dialog,
-    required this.sheet,
-    required this.photo,
-    required this.snackBar,
+    required this.sunk,
+    required this.ink,
+    required this.ink2,
+    required this.line,
+    required this.border,
+    required this.herb,
+    required this.onHerb,
+    required this.herbSoft,
+    required this.onHerbSoft,
+    required this.navInactive,
+    this.navBorder,
+    required this.error,
+    required this.onError,
+    required this.errorContainer,
+    required this.onErrorContainer,
   });
 
-  /// Linear/circular progress track.
-  final double progress;
+  final Color page;
+  final Color card;
+  final Color sunk;
+  final Color ink;
+  final Color ink2;
+  final Color line;
+  final Color border;
+  final Color herb;
+  final Color onHerb;
+  final Color herbSoft;
+  final Color onHerbSoft;
+  final Color navInactive;
 
-  /// Chips, thumbnails, step-number boxes, small pills.
-  final double chip;
-
-  /// Filled/outlined/icon buttons and the FAB.
-  final double button;
-
-  /// Text fields.
-  final double field;
-
-  /// The M3 `SearchBar`.
-  final double searchBar;
-
-  /// Cards and grouped containers.
-  final double card;
-
-  /// `ListTileThemeData.shape`.
-  final double listTile;
-
-  /// Dialogs.
-  final double dialog;
-
-  /// The bottom sheet's top corners.
-  final double sheet;
-
-  /// The recipe hero photo's bottom corners (0 = square-cut, Saffron).
-  final double photo;
-
-  /// SnackBars.
-  final double snackBar;
+  /// LOOK-7: stands in for the navigation pill's lost shadow in dark, where
+  /// [Decor.floatShadow] is empty — null in light, where the shadow still
+  /// carries the job.
+  final Color? navBorder;
+  final Color error;
+  final Color onError;
+  final Color errorContainer;
+  final Color onErrorContainer;
 }
 
-const inkInsets = WasfatiInsets(group: 16, step: 52, list: 92, full: 0);
-const saffronInsets = WasfatiInsets(group: 16, step: 56, list: 92, full: 0);
-
-const inkRadii = WasfatiRadii(
-  progress: 4,
-  chip: 10,
-  button: 12,
-  field: 12,
-  searchBar: 12,
-  card: 14,
-  listTile: 10,
-  dialog: 20,
-  sheet: 24,
-  photo: 18,
-  snackBar: 12,
-);
-
-const saffronRadii = WasfatiRadii(
-  progress: 4,
-  chip: 12,
-  button: 16,
-  field: 12,
-  searchBar: 14,
-  card: 20,
-  listTile: 12,
-  dialog: 24,
-  sheet: 24,
-  photo: 0, // "square-cut", not rounded
-  snackBar: 16,
-);
-
-/// حبر / Ink, light. design-styles.md lines 34-70 (light column).
-const _inkLight = ColorScheme(
-  brightness: Brightness.light,
-  primary: Color(0xFF0B5F57),
-  onPrimary: Color(0xFFFFFFFF),
-  primaryContainer: Color(0xFFB4E3DB),
-  onPrimaryContainer: Color(0xFF00201C),
-  secondary: Color(0xFF4C6A3C),
-  onSecondary: Color(0xFFFFFFFF),
-  secondaryContainer: Color(0xFFD3E6C7),
-  onSecondaryContainer: Color(0xFF12240A),
-  tertiary: Color(0xFF8A4D06),
-  onTertiary: Color(0xFFFFFFFF),
-  tertiaryContainer: Color(0xFFFCDFB4),
-  onTertiaryContainer: Color(0xFF2C1700),
-  error: Color(0xFFA32018),
+const _neutralsLight = SufraNeutrals(
+  page: Color(0xFFF6F1EA),
+  card: Color(0xFFFFFFFF),
+  sunk: Color(0xFFEFE8DF),
+  ink: Color(0xFF1F1A15),
+  ink2: Color(0xFF62574C),
+  line: Color(0xFFE8E0D5),
+  border: Color(0xFF8F8475),
+  herb: Color(0xFF2E6B4F),
+  onHerb: Color(0xFFFFFFFF),
+  herbSoft: Color(0xFFE3F0E8),
+  onHerbSoft: Color(0xFF1E4A36),
+  navInactive: Color(0xFFA89C8F),
+  error: Color(0xFFB3261E),
   onError: Color(0xFFFFFFFF),
-  errorContainer: Color(0xFFFFDAD4),
-  onErrorContainer: Color(0xFF3F0500),
-  surface: Color(0xFFFBF7F0),
-  onSurface: Color(0xFF1C1813),
-  onSurfaceVariant: Color(0xFF574E43),
-  surfaceDim: Color(0xFFE3D8C4),
-  surfaceBright: Color(0xFFFFFDF9),
-  surfaceContainerLowest: Color(0xFFFFFFFF),
-  surfaceContainerLow: Color(0xFFF1E8D8),
-  surfaceContainer: Color(0xFFE9DECB),
-  surfaceContainerHigh: Color(0xFFE1D4BD),
-  surfaceContainerHighest: Color(0xFFD8C9AD),
-  outline: Color(0xFF786D5D),
-  outlineVariant: Color(0xFFC2B49B),
-  shadow: Color(0xFF000000),
-  scrim: Color(0xFF000000),
-  inverseSurface: Color(0xFF32291F),
-  onInverseSurface: Color(0xFFF7EFE2),
-  inversePrimary: Color(0xFF7FD5C9),
-  surfaceTint: Color(0x00000000),
+  errorContainer: Color(0xFFF9DEDC),
+  onErrorContainer: Color(0xFF410E0B),
 );
 
-/// حبر / Ink, dark. design-styles.md lines 34-70 (dark column).
-const _inkDark = ColorScheme(
-  brightness: Brightness.dark,
-  primary: Color(0xFF6FD5C8),
-  onPrimary: Color(0xFF00352F),
-  primaryContainer: Color(0xFF0A4B45),
-  onPrimaryContainer: Color(0xFF9BEFE2),
-  secondary: Color(0xFFA9CF95),
-  onSecondary: Color(0xFF16300B),
-  secondaryContainer: Color(0xFF2C4620),
-  onSecondaryContainer: Color(0xFFC4EBB0),
-  tertiary: Color(0xFFF0B45F),
-  onTertiary: Color(0xFF452600),
-  tertiaryContainer: Color(0xFF603D00),
-  onTertiaryContainer: Color(0xFFFFDCA8),
-  error: Color(0xFFFFB4A6),
-  onError: Color(0xFF5F1005),
-  errorContainer: Color(0xFF84271C),
-  onErrorContainer: Color(0xFFFFDAD4),
-  surface: Color(0xFF13120E),
-  onSurface: Color(0xFFEFE7D8),
-  onSurfaceVariant: Color(0xFFC2B6A2),
-  surfaceDim: Color(0xFF13120E),
-  surfaceBright: Color(0xFF3E392E),
-  surfaceContainerLowest: Color(0xFF0D0C09),
-  surfaceContainerLow: Color(0xFF1E1B16),
-  surfaceContainer: Color(0xFF26231C),
-  surfaceContainerHigh: Color(0xFF322E25),
-  surfaceContainerHighest: Color(0xFF3E392E),
-  outline: Color(0xFF978A78),
-  outlineVariant: Color(0xFF5E5445),
-  shadow: Color(0xFF000000),
-  scrim: Color(0xFF000000),
-  inverseSurface: Color(0xFFEFE7D8),
-  onInverseSurface: Color(0xFF26231C),
-  inversePrimary: Color(0xFF0B5F57),
-  surfaceTint: Color(0x00000000),
+const _neutralsDark = SufraNeutrals(
+  navBorder: Color(0xFF3A332C),
+  page: Color(0xFF14110E),
+  card: Color(0xFF201C18),
+  sunk: Color(0xFF2B2621),
+  ink: Color(0xFFF5EFE8),
+  ink2: Color(0xFFBDB2A6),
+  line: Color(0xFF332D27),
+  border: Color(0xFF8C8072),
+  herb: Color(0xFF7FC7A0),
+  onHerb: Color(0xFF1F1A15),
+  herbSoft: Color(0xFF1D3328),
+  onHerbSoft: Color(0xFFBFE8CF),
+  // design-styles.md §Palette: dark navInactive is ink2, not the light
+  // navInactive value reused.
+  navInactive: Color(0xFFBDB2A6),
+  error: Color(0xFFF2B8B5),
+  onError: Color(0xFF601410),
+  errorContainer: Color(0xFF8C1D18),
+  onErrorContainer: Color(0xFFF9DEDC),
 );
 
-/// زعفران / Saffron, light. design-styles.md lines 237-270 (light column).
-const _saffronLight = ColorScheme(
-  brightness: Brightness.light,
-  primary: Color(0xFF8A5200),
-  onPrimary: Color(0xFFFFFFFF),
-  primaryContainer: Color(0xFFFFDEAF),
-  onPrimaryContainer: Color(0xFF2C1700),
-  secondary: Color(0xFF2F6B45),
-  onSecondary: Color(0xFFFFFFFF),
-  secondaryContainer: Color(0xFFC5E8CF),
-  onSecondaryContainer: Color(0xFF052014),
-  tertiary: Color(0xFF0F6058),
-  onTertiary: Color(0xFFFFFFFF),
-  tertiaryContainer: Color(0xFFB8E5DE),
-  onTertiaryContainer: Color(0xFF00201C),
-  error: Color(0xFFA3231B),
-  onError: Color(0xFFFFFFFF),
-  errorContainer: Color(0xFFFFDAD4),
-  onErrorContainer: Color(0xFF410200),
-  surface: Color(0xFFFDFAF4),
-  onSurface: Color(0xFF191410),
-  onSurfaceVariant: Color(0xFF5A5145),
-  surfaceDim: Color(0xFFE6DCC6),
-  surfaceBright: Color(0xFFFFFEFA),
-  surfaceContainerLowest: Color(0xFFFFFFFF),
-  surfaceContainerLow: Color(0xFFF5EDDD),
-  surfaceContainer: Color(0xFFEEE4CF),
-  surfaceContainerHigh: Color(0xFFE6DAC2),
-  surfaceContainerHighest: Color(0xFFDDD0B3),
-  outline: Color(0xFF7C6E5C),
-  outlineVariant: Color(0xFFC7B79E),
-  shadow: Color(0xFF000000),
-  scrim: Color(0xFF000000),
-  inverseSurface: Color(0xFF33291E),
-  onInverseSurface: Color(0xFFF8F0E3),
-  inversePrimary: Color(0xFFF5B84A),
-  surfaceTint: Color(0x00000000),
+SufraNeutrals sufraNeutrals(Brightness brightness) =>
+    brightness == Brightness.light ? _neutralsLight : _neutralsDark;
+
+/// One accent's four tokens (design spec §1, "Colour"): the accent itself,
+/// the text/icon colour that sits directly on it, the soft fill and the
+/// text/icon colour on that fill.
+@immutable
+class SufraAccent {
+  const SufraAccent({
+    required this.accent,
+    required this.onAccent,
+    required this.accentSoft,
+    required this.onAccentSoft,
+  });
+
+  final Color accent;
+  final Color onAccent;
+  final Color accentSoft;
+  final Color onAccentSoft;
+}
+
+// زعفران / Saffron (paprika) — the default for a new install.
+const _saffronLight = SufraAccent(
+  accent: Color(0xFFC2410C),
+  onAccent: Color(0xFFFFFFFF),
+  accentSoft: Color(0xFFFCE9DD),
+  onAccentSoft: Color(0xFF7A2A08),
+);
+const _saffronDark = SufraAccent(
+  accent: Color(0xFFF28A4B),
+  onAccent: Color(0xFF1F1A15), // ink-dark text, not white (spec §1)
+  accentSoft: Color(0xFF3A2418),
+  onAccentSoft: Color(0xFFFFD2B5),
 );
 
-/// زعفران / Saffron, dark. design-styles.md lines 237-270 (dark column).
-const _saffronDark = ColorScheme(
-  brightness: Brightness.dark,
-  primary: Color(0xFFF5B84A),
-  onPrimary: Color(0xFF2A1A00),
-  primaryContainer: Color(0xFF5E3D00),
-  onPrimaryContainer: Color(0xFFFFDEAF),
-  secondary: Color(0xFF8DD3A2),
-  onSecondary: Color(0xFF06371D),
-  secondaryContainer: Color(0xFF1E4F31),
-  onSecondaryContainer: Color(0xFFA9EFBC),
-  tertiary: Color(0xFF62D3C7),
-  onTertiary: Color(0xFF00352F),
-  tertiaryContainer: Color(0xFF004B44),
-  onTertiaryContainer: Color(0xFF9BEFE2),
-  error: Color(0xFFFFB4A6),
-  onError: Color(0xFF5F1005),
-  errorContainer: Color(0xFF8C2A1E),
-  onErrorContainer: Color(0xFFFFDAD4),
-  surface: Color(0xFF14100C),
-  onSurface: Color(0xFFF2E9DB),
-  onSurfaceVariant: Color(0xFFC6B9A4),
-  surfaceDim: Color(0xFF14100C),
-  surfaceBright: Color(0xFF41382C),
-  surfaceContainerLowest: Color(0xFF0E0B08),
-  surfaceContainerLow: Color(0xFF201B14),
-  surfaceContainer: Color(0xFF29231B),
-  surfaceContainerHigh: Color(0xFF352D22),
-  surfaceContainerHighest: Color(0xFF41382C),
-  outline: Color(0xFF9A8A75),
-  outlineVariant: Color(0xFF5C5243),
-  shadow: Color(0xFF000000),
-  scrim: Color(0xFF000000),
-  inverseSurface: Color(0xFFF2E9DB),
-  onInverseSurface: Color(0xFF29231B),
-  inversePrimary: Color(0xFF8A5200),
-  surfaceTint: Color(0x00000000),
+// حبر / Ink (teal).
+const _inkLight = SufraAccent(
+  accent: Color(0xFF0F766E),
+  onAccent: Color(0xFFFFFFFF),
+  accentSoft: Color(0xFFDDF1EE),
+  onAccentSoft: Color(0xFF0B4F49),
+);
+const _inkDark = SufraAccent(
+  accent: Color(0xFF5EC9BD),
+  onAccent: Color(0xFF1F1A15),
+  accentSoft: Color(0xFF16332F),
+  onAccentSoft: Color(0xFFBFEDE6),
 );
 
-/// The [ColorScheme] for [style]/[brightness] — never `ColorScheme.fromSeed`.
-ColorScheme wasfatiColorScheme(AppStyle style, Brightness brightness) {
+SufraAccent sufraAccent(AppStyle style, Brightness brightness) {
   return switch ((style, brightness)) {
-    (AppStyle.ink, Brightness.light) => _inkLight,
-    (AppStyle.ink, Brightness.dark) => _inkDark,
     (AppStyle.saffron, Brightness.light) => _saffronLight,
     (AppStyle.saffron, Brightness.dark) => _saffronDark,
+    (AppStyle.ink, Brightness.light) => _inkLight,
+    (AppStyle.ink, Brightness.dark) => _inkDark,
   };
 }
 
-/// The named insets for [style] (identical shape, different step inset).
-WasfatiInsets wasfatiInsets(AppStyle style) =>
-    style == AppStyle.ink ? inkInsets : saffronInsets;
+/// LOOK-10: the six drawn-cover tints (a light fill and its dark tone for
+/// the star pattern and the centred letter), style-independent — the same
+/// six tints in both accents, so a recipe's cover never changes when the
+/// user changes "الطراز". Order fixed, so a stable hash into this list
+/// (`RecipeCover`) always lands on the same tint for the same recipe. Exact
+/// hex values from `docs/research/design-styles.md` §Palette (the mockups
+/// show only sage; the other five extend the same warm, muted family).
+const List<(Color light, Color dark)> _sufraCoverTintsLight = [
+  (Color(0xFFDDE8D5), Color(0xFF3F5A36)), // sage
+  (Color(0xFFF3DCCB), Color(0xFF7A4B2E)), // clay
+  (Color(0xFFF5E6B8), Color(0xFF7A5C12)), // honey
+  (Color(0xFFF0D9D9), Color(0xFF7A3F3F)), // dusty rose
+  (Color(0xFFD8E3EC), Color(0xFF35526E)), // denim
+  (Color(0xFFE6D9EC), Color(0xFF5B3E70)), // plum
+];
 
-/// The named radii for [style].
-WasfatiRadii wasfatiRadii(AppStyle style) =>
-    style == AppStyle.ink ? inkRadii : saffronRadii;
+/// The same six tints' "Dark tone (on card)" column (design-styles.md
+/// §"The six drawn-cover tints"): in dark, a cover with no photo is the
+/// card colour with this lighter tone on it, never the light pastel fill.
+/// Same order as [_sufraCoverTintsLight], so a stable hash into either list
+/// (`RecipeCover.tintIndexFor`) lands on the same tint for the same recipe.
+const List<Color> _sufraCoverTonesDark = [
+  Color(0xFF8FBE86), // sage
+  Color(0xFFD69A6B), // clay
+  Color(0xFFD9B84A), // honey
+  Color(0xFFD99B9B), // dusty rose
+  Color(0xFF7FA8C9), // denim
+  Color(0xFFB08FC4), // plum
+];
+
+/// LOOK-10: [brightness]'s six drawn-cover tints — a light fill with its
+/// dark tone in light, or the dark `card` fill with a lighter tone in dark
+/// — style-independent (the same six tints in both accents).
+List<(Color light, Color dark)> sufraCoverTints(Brightness brightness) {
+  if (brightness == Brightness.light) return _sufraCoverTintsLight;
+  final card = _neutralsDark.card;
+  return [for (final tone in _sufraCoverTonesDark) (card, tone)];
+}
+
+/// LOOK-1/LOOK-3: the hand-written [ColorScheme] for [style]/[brightness].
+/// Every field is named explicitly against a Sufra token — never
+/// `ColorScheme.fromSeed` — per the mapping the redesign spec fixes:
+/// primary/onPrimary/primaryContainer/onPrimaryContainer from the accent,
+/// secondary from herb, surface/surfaceContainerLowest from page/card, the
+/// container ladder from sunk, onSurface/onSurfaceVariant from ink/ink2,
+/// outline/outlineVariant from border/line, surfaceTint transparent (a
+/// hand-tuned palette never lets Material tint a surface on top of it).
+ColorScheme wasfatiColorScheme(AppStyle style, Brightness brightness) {
+  final n = sufraNeutrals(brightness);
+  final a = sufraAccent(style, brightness);
+  // `inverseSurface` is this brightness's own `ink` token, which already
+  // reads as the *opposite* brightness's surface (light's ink is dark,
+  // dark's ink is light). `inversePrimary` has to read on that inverse
+  // surface, so it uses the *opposite* brightness's accent, not this one's:
+  // light needs the dark accent (light on ink's dark), dark needs the light
+  // accent (dark-ish on ink's light) — both measured in
+  // contrast_test.dart's `onFillPairs` group, as the SnackBar-action pair
+  // (`inversePrimary/inverseSurface`).
+  final inverseAccent = sufraAccent(
+    style,
+    brightness == Brightness.light ? Brightness.dark : Brightness.light,
+  ).accent;
+
+  return ColorScheme(
+    brightness: brightness,
+    primary: a.accent,
+    onPrimary: a.onAccent,
+    primaryContainer: a.accentSoft,
+    onPrimaryContainer: a.onAccentSoft,
+    secondary: n.herb,
+    onSecondary: n.onHerb,
+    secondaryContainer: n.herbSoft,
+    onSecondaryContainer: n.onHerbSoft,
+    // No third accent in the spec: tertiary mirrors secondary (herb) rather
+    // than inventing an unspecified hue.
+    tertiary: n.herb,
+    onTertiary: n.onHerb,
+    tertiaryContainer: n.herbSoft,
+    onTertiaryContainer: n.onHerbSoft,
+    error: n.error,
+    onError: n.onError,
+    errorContainer: n.errorContainer,
+    onErrorContainer: n.onErrorContainer,
+    surface: n.page,
+    onSurface: n.ink,
+    onSurfaceVariant: n.ink2,
+    surfaceDim: brightness == Brightness.light ? n.sunk : n.page,
+    surfaceBright: brightness == Brightness.light ? n.card : n.sunk,
+    surfaceContainerLowest: n.card,
+    surfaceContainerLow: n.card,
+    surfaceContainer: n.sunk,
+    surfaceContainerHigh: n.sunk,
+    surfaceContainerHighest: n.sunk,
+    outline: n.border,
+    outlineVariant: n.line,
+    shadow: const Color(0xFF000000),
+    scrim: const Color(0xFF000000),
+    inverseSurface: n.ink,
+    onInverseSurface: n.page,
+    inversePrimary: inverseAccent,
+    // A hand-tuned palette: Material never lays its own tint on a surface.
+    surfaceTint: const Color(0x00000000),
+  );
+}

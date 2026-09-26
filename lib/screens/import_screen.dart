@@ -20,6 +20,18 @@ import 'home_screen.dart';
 import 'purchase_screen.dart';
 import 'recipe_editor_screen.dart';
 
+/// LOOK-11: which of the add sheet's tiles opened [ImportScreen] — each one
+/// its own entry point onto the one screen, not just three names for the
+/// same link form:
+/// - [link]: the URL field, unchanged (IMP-2).
+/// - [photo]: opens straight to the camera/gallery choice (IMP-1, IMP-10),
+///   ahead of the link field, rather than landing on it.
+/// - [pasteText]: the multi-line paste box (IMP-12's own `_caption` field)
+///   in place of the link field, with its own استيراد going through
+///   [_ImportScreenState._confirmAiSend] like a share (IMP-3): the cost line
+///   and a real استيراد/إلغاء choice before anything is sent.
+enum ImportEntryMode { link, photo, pasteText }
+
 /// Import from a link (IMP-2), shared/pasted text (IMP-3) or photos
 /// (IMP-1, IMP-10): a link is read on the device first, free and unlimited;
 /// when that fails for any reason but an invalid link, or for plain text or
@@ -28,15 +40,26 @@ import 'recipe_editor_screen.dart';
 /// nothing is saved — and no AI quota spent — until the user taps Save
 /// (IMP-5, IMP-7).
 class ImportScreen extends StatefulWidget {
-  const ImportScreen({super.key, this.initialUrl, this.initialText});
+  const ImportScreen({
+    super.key,
+    this.initialUrl,
+    this.initialText,
+    this.mode = ImportEntryMode.link,
+  });
 
   /// A shared or pasted link: the import starts at once.
   final String? initialUrl;
 
-  /// Shared or pasted text with no link (IMP-1): goes to AI import at once
-  /// (IMP-3). `Importer.fromText`'s offline heuristic is only the fallback,
-  /// offered as "أضفها بنفسك" if that fails.
+  /// Shared text with no link (IMP-1): goes to AI import at once (IMP-3).
+  /// `Importer.fromText`'s offline heuristic is only the fallback, offered
+  /// as "أضفها بنفسك" if that fails. Unlike [ImportEntryMode.pasteText]
+  /// (a user picking the add sheet's "الصق نصًا" tile, then typing or
+  /// pasting), this is text the OS handed the app with no action of the
+  /// user's own yet — a share.
   final String? initialText;
+
+  /// LOOK-11: which tile of the add sheet opened this screen.
+  final ImportEntryMode mode;
 
   @override
   State<ImportScreen> createState() => _ImportScreenState();
@@ -456,11 +479,26 @@ class _ImportScreenState extends State<ImportScreen> {
     _caption.clear();
   });
 
+  /// [ImportEntryMode.pasteText]'s own استيراد: like a share's
+  /// [_confirmAiSend], not a direct send — the cost line and a real
+  /// استيراد/إلغاء choice come first (IMP-3).
+  void _confirmPastedText() {
+    final text = _caption.text.trim();
+    if (text.isNotEmpty) _confirmAiSend(text);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final settings = context.watch<SettingsState>();
     final busy = _stage != _Stage.idle;
+    final isPasteMode = widget.mode == ImportEntryMode.pasteText;
+    final isPhotoMode = widget.mode == ImportEntryMode.photo;
+    final screenTitle = switch (widget.mode) {
+      ImportEntryMode.link => l10n.importTitle,
+      ImportEntryMode.photo => l10n.addSheetPhoto,
+      ImportEntryMode.pasteText => l10n.addSheetPasteText,
+    };
     // IMP-12: stays true — the paste box, its own reason line and the kept
     // link — through a caption retry that fails for a different reason
     // (should-fix, review): that failure is a fresh [_aiError], not this.
@@ -509,31 +547,78 @@ class _ImportScreenState extends State<ImportScreen> {
         : l10n.aiImportsOutLine;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.importTitle)),
+      appBar: AppBar(title: Text(screenTitle)),
       body: ListView(
         padding: const EdgeInsetsDirectional.all(16),
         children: [
-          TextField(
-            controller: _link,
-            enabled: !busy,
-            keyboardType: TextInputType.url,
-            textDirection: TextDirection.ltr, // links read left to right
-            decoration: InputDecoration(
-              labelText: l10n.importHint,
-              suffixIcon: IconButton(
-                tooltip: l10n.paste,
-                icon: const Icon(Icons.content_paste),
-                onPressed: busy ? null : _paste,
-              ),
+          // IMP-1, IMP-10: opened from "من صورة", the camera/gallery choice
+          // comes first — not the link field, which this tile never means.
+          if (isPhotoMode) ...[
+            Text(
+              l10n.importPhotoExplain(settings.number(maxImportImages)),
+              style: Theme.of(context).textTheme.bodySmall,
             ),
-            onSubmitted: (_) => busy ? null : _import(),
-          ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: busy ? null : () => _pickPhotos(camera: true),
+                  icon: const Icon(Icons.photo_camera_outlined),
+                  label: Text(l10n.importPhotoCamera),
+                ),
+                OutlinedButton.icon(
+                  onPressed: busy ? null : () => _pickPhotos(camera: false),
+                  icon: const Icon(Icons.photo_library_outlined),
+                  label: Text(l10n.importPhotoGallery),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ] else if (isPasteMode)
+            // IMP-3, IMP-12: the same multi-line box the paste-caption
+            // fallback uses, so "الصق نصًا" reaches an entry that can
+            // actually import pasted text.
+            TextField(
+              controller: _caption,
+              enabled: !busy,
+              minLines: 3,
+              maxLines: 8,
+              decoration: InputDecoration(
+                labelText: l10n.addSheetPasteText,
+                hintText: l10n.aiImportPasteHint,
+                suffixIcon: IconButton(
+                  tooltip: l10n.paste,
+                  icon: const Icon(Icons.content_paste),
+                  onPressed: busy ? null : _pasteCaption,
+                ),
+              ),
+            )
+          else
+            TextField(
+              controller: _link,
+              enabled: !busy,
+              keyboardType: TextInputType.url,
+              textDirection: TextDirection.ltr, // links read left to right
+              decoration: InputDecoration(
+                labelText: l10n.importHint,
+                suffixIcon: IconButton(
+                  tooltip: l10n.paste,
+                  icon: const Icon(Icons.content_paste),
+                  onPressed: busy ? null : _paste,
+                ),
+              ),
+              onSubmitted: (_) => busy ? null : _import(),
+            ),
           const SizedBox(height: 8),
-          Text(
-            l10n.importExplain,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: 8),
+          if (!isPhotoMode) ...[
+            Text(
+              l10n.importExplain,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 8),
+          ],
           // IMP-7, roadmap "counter visible in the header": always shown,
           // reset date included, and it becomes the out-of-quota line once
           // the month's AI imports are used up.
@@ -554,9 +639,9 @@ class _ImportScreenState extends State<ImportScreen> {
               ),
             ),
           const SizedBox(height: 16),
-          if (!busy && !showingCaptionFallback)
+          if (!busy && !showingCaptionFallback && !isPhotoMode)
             FilledButton.icon(
-              onPressed: _import,
+              onPressed: isPasteMode ? _confirmPastedText : _import,
               icon: const Icon(Icons.download),
               label: Text(l10n.importAction),
             )
@@ -734,8 +819,9 @@ class _ImportScreenState extends State<ImportScreen> {
           ],
           // IMP-1, IMP-10: a cookbook page or a handwritten recipe, through
           // the system camera or photo picker. Last, so a failed attempt's
-          // message stays next to the button that caused it.
-          if (!busy && !showingCaptionFallback) ...[
+          // message stays next to the button that caused it. Skipped in
+          // photo mode, which already opened straight to this choice.
+          if (!busy && !showingCaptionFallback && !isPhotoMode) ...[
             const SizedBox(height: 24),
             Text(
               l10n.importPhotoExplain(settings.number(maxImportImages)),

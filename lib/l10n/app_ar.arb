@@ -25,6 +25,7 @@
   "walkthroughDemoStep": "يُغطّى ويُترك على نار هادئة لمدة 25 دقيقة.",
   "settingsReplayWalkthrough": "اعرض الجولة التعريفية مجددًا",
   "recipesAdd": "أضف وصفة",
+  "addSheetSubtitle": "من أي مكان وجدتها، وبعربية سليمة.",
   "recipesCount": "{count, plural, =0{لا توجد وصفات} =1{وصفة واحدة} =2{وصفتان} few{{shown} وصفات} many{{shown} وصفة} other{{shown} وصفة}}",
   "errorSaveFailed": "تعذّر الحفظ. لم تضِع تعديلاتك، حاول مرة أخرى.",
   "deletedSnack": "حُذفت الوصفة",
@@ -155,6 +156,11 @@
   "alertsOff": "تنبيهات المؤقت في الخلفية متوقفة. يرن المؤقت ما دام التطبيق مفتوحًا.",
   "dismiss": "حسنًا",
   "importTitle": "استيراد من رابط",
+  "addSheetPhoto": "من صورة",
+  "addSheetLinkDesc": "فتافيت، كوكباد، تيك توك…",
+  "addSheetPhotoDesc": "كتاب طبخ أو ورقة بخط اليد",
+  "addSheetPasteText": "الصق نصًا",
+  "addSheetPasteDesc": "وصف منشور أو رسالة",
   "importHint": "الصق رابط الوصفة",
   "importExplain": "تُقرأ وصفات مواقع مثل فتافيت وكوكباد على هاتفك، مجانًا وبلا حدود.",
   "paste": "لصق",
@@ -165,6 +171,7 @@
   "importUnreachable": "تعذّر فتح الصفحة. تأكد من الرابط والاتصال.",
   "importNoRecipe": "لم يجد التطبيق بيانات وصفة في هذه الصفحة بعد. يمكنك إضافتها بنفسك.",
   "addByHand": "أضفها بنفسك",
+  "addSheetByHandDesc": "اكتب وصفتك بطريقتك",
   "duplicateTitle": "محفوظة مسبقًا",
   "duplicateBody": "حفظت وصفة من هذه الصفحة من قبل.",
   "openSaved": "افتح المحفوظة",
@@ -360,5 +367,8 @@
   "settingsPayingSection": "الإعلانات والاشتراك",
   "settingsSubscription": "الاشتراك",
   "tierFree": "مجاني",
-  "settingsAdPrivacy": "خيارات الخصوصية في الإعلانات"
+  "settingsAdPrivacy": "خيارات الخصوصية في الإعلانات",
+  "addSheetQuotaLabel": "الاستيراد الذكي",
+  "addSheetQuotaCount": "{shown} من {quota} متبقية",
+  "addSheetQuotaCaption": "تتجدد في الأول من كل شهر · استيراد صفحات المواقع يبقى مجانيًا وبلا حدود."
 }

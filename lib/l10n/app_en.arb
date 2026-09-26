@@ -108,6 +108,10 @@
   "@recipesAdd": {
     "description": "RUN-1. The one clear first action on the empty list."
   },
+  "addSheetSubtitle": "From wherever you found it, in clean Arabic.",
+  "@addSheetSubtitle": {
+    "description": "LOOK-11: the add sheet's subtitle, under its title."
+  },
   "recipesCount": "{count, plural, =0{No recipes} =1{{shown} recipe} other{{shown} recipes}}",
   "@recipesCount": {
     "description": "Number of saved recipes. {shown} is {count} in the chosen digit style (QTY-5).",
@@ -768,6 +772,26 @@
   "@importTitle": {
     "description": "IMP-2. Screen title and button."
   },
+  "addSheetPhoto": "From a photo",
+  "@addSheetPhoto": {
+    "description": "LOOK-11: the add sheet's second tile, opening the photo import entry (camera or gallery)."
+  },
+  "addSheetLinkDesc": "Fatafeat, Cookpad, TikTok…",
+  "@addSheetLinkDesc": {
+    "description": "The link tile's description in the add sheet."
+  },
+  "addSheetPhotoDesc": "A cookbook or a handwritten page",
+  "@addSheetPhotoDesc": {
+    "description": "The photo tile's description in the add sheet."
+  },
+  "addSheetPasteText": "Paste text",
+  "@addSheetPasteText": {
+    "description": "LOOK-11: the add sheet's third tile, opening the pasted-text AI import entry."
+  },
+  "addSheetPasteDesc": "A post's caption, or a message",
+  "@addSheetPasteDesc": {
+    "description": "The paste-text tile's description in the add sheet."
+  },
   "importHint": "Paste a recipe link",
   "@importHint": {
     "description": "IMP-2. Link field hint."
@@ -807,6 +831,10 @@
   "addByHand": "Add by hand",
   "@addByHand": {
     "description": "Opens the editor with the link as the source."
+  },
+  "addSheetByHandDesc": "Write your recipe your own way",
+  "@addSheetByHandDesc": {
+    "description": "The by-hand tile's description in the add sheet."
   },
   "duplicateTitle": "Already saved",
   "@duplicateTitle": {
@@ -1723,5 +1751,22 @@
   "settingsAdPrivacy": "Ad privacy choices",
   "@settingsAdPrivacy": {
     "description": "ADS-5: opens the ad network's own consent form, where the law asks for one."
-  }
+  },
+  "addSheetQuotaLabel": "Smart import",
+  "@addSheetQuotaLabel": {
+    "description": "IMP-7: the add sheet quota card's header label."
+  },
+  "addSheetQuotaCount": "{shown} of {quota} left",
+  "@addSheetQuotaCount": {
+    "description": "IMP-7: the add sheet quota card's accent count, e.g. 7 من 10 متبقية.",
+    "placeholders": {
+      "shown": {
+        "type": "String"
+      },
+      "quota": {
+        "type": "String"
+      }
+    }
+  },
+  "addSheetQuotaCaption": "Resets at the start of each month · website imports stay free and unlimited."
 }

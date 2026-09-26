@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderFlex;
 import 'package:flutter/semantics.dart' show SemanticsNode;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wasfati/widgets/nav_pill.dart';
 import 'package:wasfati/l10n/app_localizations.dart';
 import 'package:wasfati/models/grocery.dart';
 import 'package:wasfati/models/plan.dart';
@@ -284,12 +285,12 @@ void main() {
         await settle(tester);
 
         // The meal plan and groceries (the shell's own tabs) — scoped to
-        // the NavigationBar itself: the recipe and plan pages carry their
+        // the NavPill itself: the recipe and plan pages carry their
         // own AppBar actions with these same icons ("planAddToPlan",
         // "addToGroceries"), so an unscoped find.byIcon can tap the wrong
         // one once the plan/groceries tabs are mounted underneath.
         Finder navTab(IconData icon) => find.descendant(
-          of: find.byType(NavigationBar),
+          of: find.byType(NavPill),
           matching: find.byIcon(icon),
         );
         await tester.tap(navTab(Icons.calendar_month_outlined));
@@ -310,8 +311,11 @@ void main() {
         await settle(tester);
         _fits(tester, 'back to library');
 
-        // Import.
-        await tester.tap(find.byIcon(Icons.link).first);
+        // The add sheet (LOOK-11), then import through its first tile.
+        await tester.tap(find.byTooltip(l.recipesAdd));
+        await settle(tester);
+        _fits(tester, 'add sheet');
+        await tester.tap(find.text(l.importTitle));
         await settle(tester);
         _fits(tester, 'import');
 
@@ -412,7 +416,8 @@ void main() {
   // (`settings.update(...copyWith(style: ...))`) and never touches the row
   // itself.
   testWidgets(
-    'Settings: tapping زعفران changes the theme at once, no restart (LOOK-1)',
+    'Settings: tapping حبر changes the theme at once, no restart (LOOK-1, '
+    'Decision 23)',
     (tester) async {
       await pumpApp(tester);
       await tester.tap(find.byIcon(Icons.settings_outlined).first);
@@ -422,31 +427,31 @@ void main() {
       // viewport, so it isn't mounted until scrolled into view (the same
       // reason test/widget/ramadan_test.dart's own Settings test scrolls).
       await tester.scrollUntilVisible(
-        find.text('زعفران'),
+        find.text('حبر'),
         300,
         scrollable: find.byType(Scrollable).first,
       );
       await settle(tester);
 
-      BuildContext context() => tester.element(find.text('زعفران'));
+      BuildContext context() => tester.element(find.text('حبر'));
       final beforeBrightness = Theme.of(context()).brightness;
       expect(
         Theme.of(context()).colorScheme.primary,
-        wasfatiColorScheme(AppStyle.ink, beforeBrightness).primary,
-        reason: 'Ink is the default look',
+        wasfatiColorScheme(AppStyle.saffron, beforeBrightness).primary,
+        reason: 'Saffron is the default look for a new install (Decision 23)',
       );
 
-      await tester.tap(find.text('زعفران'));
+      await tester.tap(find.text('حبر'));
       await settle(tester);
 
       // Still the same Settings screen — no navigation, no restart — with
-      // its theme now Saffron's, and the light/dark setting untouched.
-      expect(find.text('زعفران'), findsOneWidget);
+      // its theme now Ink's, and the light/dark setting untouched.
+      expect(find.text('حبر'), findsOneWidget);
       final afterBrightness = Theme.of(context()).brightness;
       expect(afterBrightness, beforeBrightness);
       expect(
         Theme.of(context()).colorScheme.primary,
-        wasfatiColorScheme(AppStyle.saffron, afterBrightness).primary,
+        wasfatiColorScheme(AppStyle.ink, afterBrightness).primary,
       );
     },
   );
@@ -505,7 +510,7 @@ void main() {
       await settle(tester);
       await tester.tap(
         find.descendant(
-          of: find.byType(NavigationBar),
+          of: find.byType(NavPill),
           matching: find.byIcon(Icons.calendar_month_outlined),
         ),
       );
@@ -547,7 +552,7 @@ void main() {
       await settle(tester);
       await tester.tap(
         find.descendant(
-          of: find.byType(NavigationBar),
+          of: find.byType(NavPill),
           matching: find.byIcon(Icons.calendar_month_outlined),
         ),
       );
@@ -589,7 +594,13 @@ void main() {
 
     await tester.tap(find.text('كبسة لحم'));
     await settle(tester);
-    await tester.ensureVisible(find.text('ابدأ الطبخ'));
+    // Decision 23's larger type scale can push the button out of the
+    // ListView's initial build range.
+    await tester.scrollUntilVisible(
+      find.text('ابدأ الطبخ'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     await settle(tester);
     await tester.tap(find.text('ابدأ الطبخ'));
     await settle(tester);

@@ -78,7 +78,8 @@ class AppSettings {
     this.units = UnitSystem.metric,
     this.weekStart = WeekStart.auto,
     this.theme = ThemePref.system,
-    this.style = AppStyle.ink, // LOOK-1: Ink is the default
+    this.style =
+        AppStyle.saffron, // LOOK-1, Decision 23: Saffron is the default
     this.sort = LibrarySort.recent,
     this.grid = false,
     this.groceryView = GroceryView.byAisle,
@@ -265,7 +266,7 @@ class AppSettings {
       units: pick(UnitSystem.values, m['units'], UnitSystem.metric),
       weekStart: pick(WeekStart.values, m['weekStart'], WeekStart.auto),
       theme: pick(ThemePref.values, m['theme'], ThemePref.system),
-      style: pick(AppStyle.values, m['style'], AppStyle.ink),
+      style: pick(AppStyle.values, m['style'], AppStyle.saffron),
       sort: pick(LibrarySort.values, m['sort'], LibrarySort.recent),
       grid: m['grid'] == true,
       groceryView: pick(

@@ -10,19 +10,20 @@ import '../widgets/ad_slot.dart';
 import '../widgets/content_direction.dart';
 import '../widgets/digit_counter.dart';
 import '../widgets/empty_state.dart';
-import '../widgets/pressable_slab.dart';
+import '../widgets/nav_pill.dart';
+import 'add_sheet.dart';
 import 'groceries_screen.dart';
-import 'import_screen.dart';
 import 'library_view.dart';
 import 'plan_screen.dart';
 import 'recipe_editor_screen.dart';
 import 'recipe_screen.dart';
 import 'settings_screen.dart';
 
-/// The app's three places: the library, the meal plan (PLAN-1) and
-/// groceries (GRO-5). An empty library keeps the first run to one screen
-/// and one action (RUN-1), so the navigation bar appears only once there's
-/// a recipe.
+/// LOOK-7: the app's four places on the navigation pill — الوصفات، الخطة،
+/// المشتريات، الإعدادات — with a raised centre "+" that opens the add sheet
+/// (LOOK-11). The pill always shows, even with an empty library (Settings
+/// lives in it now): an empty library keeps its one clear first action
+/// (RUN-1), which opens the add sheet.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -30,49 +31,90 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+const _settingsTabIndex = 3;
+
 class _HomeScreenState extends State<HomeScreen> {
   int _index = 0;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final state = context.watch<RecipesState>();
-    if (!state.loaded || state.recipes.isEmpty) return const LibraryHome();
-    return Scaffold(
-      body: IndexedStack(
-        index: _index,
-        children: const [LibraryHome(), PlanScreen(), GroceriesScreen()],
-      ),
-      // ADS-3, ADS-9: the library, the plan and groceries share one slot,
-      // in the bottom bar above the navigation bar, outside every tab's
-      // scrolling content. An empty library has neither (RUN-1): its whole
-      // screen is the one first action.
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const AdSlot(),
-          NavigationBar(
-            selectedIndex: _index,
-            onDestinationSelected: (i) => setState(() => _index = i),
-            destinations: [
-              NavigationDestination(
-                icon: const Icon(Icons.menu_book_outlined),
-                selectedIcon: const Icon(Icons.menu_book),
-                label: l10n.tabRecipes,
+    final cs = Theme.of(context).colorScheme;
+    return PopScope(
+      // Back used to return to the library from a pushed Settings route;
+      // now Settings is just another tab, so without this Back would close
+      // the app instead (standard bottom-navigation behaviour is Back to
+      // the start destination).
+      canPop: _index == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) setState(() => _index = 0);
+      },
+      child: Scaffold(
+        body: Stack(
+          children: [
+            IndexedStack(
+              index: _index,
+              children: const [
+                LibraryHome(),
+                PlanScreen(),
+                GroceriesScreen(),
+                SettingsScreen(),
+              ],
+            ),
+            // LOOK-7/LOOK-8: the last item on every tab (Settings included)
+            // fades into the page colour under a 40dp gradient rather than
+            // cutting off hard under the pill. Purely decorative — it must
+            // never intercept the scroll or a tap meant for the content
+            // beneath it.
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 40,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [cs.surface.withValues(alpha: 0), cs.surface],
+                    ),
+                  ),
+                ),
               ),
-              NavigationDestination(
-                icon: const Icon(Icons.calendar_month_outlined),
-                selectedIcon: const Icon(Icons.calendar_month),
-                label: l10n.planTitle,
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.shopping_basket_outlined),
-                selectedIcon: const Icon(Icons.shopping_basket),
-                label: l10n.groceriesTitle,
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
+        // ADS-3, ADS-9: the library, the plan and groceries share one slot,
+        // in the bottom bar above the pill, outside every tab's scrolling
+        // content; Settings never carries one.
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_index != _settingsTabIndex) const AdSlot(),
+            NavPill(
+              tabs: [
+                NavPillTab(
+                  icon: Icons.menu_book_outlined,
+                  label: l10n.tabRecipes,
+                ),
+                NavPillTab(
+                  icon: Icons.calendar_month_outlined,
+                  label: l10n.planTitle,
+                ),
+                NavPillTab(
+                  icon: Icons.shopping_basket_outlined,
+                  label: l10n.groceriesTitle,
+                ),
+                NavPillTab(icon: Icons.settings_outlined, label: l10n.settings),
+              ],
+              currentIndex: _index,
+              onTabSelected: (i) => setState(() => _index = i),
+              onAddPressed: () => showAddSheet(context),
+              addTooltip: l10n.recipesAdd,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -91,24 +133,11 @@ class LibraryHome extends StatelessWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
+        // LOOK-7: the library's own import/settings actions and its
+        // extended FAB are gone — their jobs move to the navigation pill's
+        // centre "+" (the add sheet, LOOK-11) and its Settings tab.
         appBar: AppBar(
           title: Text(l10n.appTitle),
-          actions: [
-            IconButton(
-              tooltip: l10n.importTitle,
-              icon: const Icon(Icons.link),
-              onPressed: () => Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const ImportScreen())),
-            ),
-            IconButton(
-              tooltip: l10n.settings,
-              icon: const Icon(Icons.settings_outlined),
-              onPressed: () => Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
-            ),
-          ],
           bottom: empty
               ? null
               : TabBar(
@@ -118,17 +147,6 @@ class LibraryHome extends StatelessWidget {
                   ],
                 ),
         ),
-        floatingActionButton: empty
-            ? null
-            // LOOK-7: "أضف وصفة" is one of Saffron's three ledge actions; a
-            // no-op in Ink (Decor.ledgeDepth 0).
-            : PressableSlab(
-                child: FloatingActionButton.extended(
-                  onPressed: () => openEditor(context),
-                  icon: const Icon(Icons.add),
-                  label: Text(l10n.recipesAdd),
-                ),
-              ),
         body: !state.loaded
             ? const Center(child: CircularProgressIndicator())
             : empty
@@ -479,22 +497,13 @@ class _Empty extends StatelessWidget {
   Widget build(BuildContext context) => EmptyState(
     title: l10n.recipesEmptyTitle,
     body: l10n.recipesEmptyBody,
+    // RUN-1, LOOK-7: one clear first action, the same "أضف وصفة" the
+    // pill's centre "+" carries — it opens the same add sheet (LOOK-11).
     actions: [
-      // LOOK-7: "أضف وصفة" is one of Saffron's three ledge actions; a
-      // no-op in Ink (Decor.ledgeDepth 0).
-      PressableSlab(
-        child: FilledButton.icon(
-          onPressed: () => openEditor(context),
-          icon: const Icon(Icons.add),
-          label: Text(l10n.recipesAdd),
-        ),
-      ),
-      OutlinedButton.icon(
-        onPressed: () =>
-            Navigator.of(context)
-                .push(MaterialPageRoute(builder: (_) => const ImportScreen())),
-        icon: const Icon(Icons.link),
-        label: Text(l10n.importTitle),
+      FilledButton.icon(
+        onPressed: () => showAddSheet(context),
+        icon: const Icon(Icons.add),
+        label: Text(l10n.recipesAdd),
       ),
     ],
   );

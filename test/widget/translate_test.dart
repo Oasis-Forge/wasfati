@@ -181,6 +181,13 @@ void main() {
     await _waitFor(tester, shown('مترجمة من: Lamb kabsa'));
     expect(shown('مترجمة من: Lamb kabsa'), findsOneWidget);
     expect(shown('لحم ضأن'), findsWidgets);
+    // Decision 23's larger type scale pushes the steps tab's content lower,
+    // out of the ListView's initial build range.
+    await tester.scrollUntilVisible(
+      shown('Add the rice and cook for 20 minutes.'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(shown('Add the rice and cook for 20 minutes.'), findsOneWidget);
 
     final copyId = recipes.recipes.firstWhere((e) => e.id != original.id).id;
@@ -365,6 +372,8 @@ void main() {
       savePhoto: (id, _) async => '/photos/$id.jpg',
     );
     importPhotos.next = [img.encodePng(img.Image(width: 800, height: 600))];
+    await tester.tap(find.byTooltip('أضف وصفة'));
+    await settle(tester);
     await tester.tap(find.text('استيراد من رابط'));
     await settle(tester);
     await tester.tap(find.text('اختر من الصور'));
@@ -412,6 +421,8 @@ void main() {
       aiClient: ai,
       pages: {'https://site.com/lamb': page},
     );
+    await tester.tap(find.byTooltip('أضف وصفة'));
+    await settle(tester);
     await tester.tap(find.text('استيراد من رابط'));
     await settle(tester);
     await tester.enterText(find.byType(TextField), 'https://site.com/lamb');

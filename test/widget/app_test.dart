@@ -410,6 +410,8 @@ void main() {
     await pumpApp(tester);
     await tester.tap(find.text('أضف وصفة'));
     await settle(tester);
+    await tester.tap(find.text('أضفها بنفسك'));
+    await settle(tester);
 
     final fields = find.byType(TextFormField);
     await tester.enterText(fields.at(0), 'كبسة دجاج');
@@ -571,6 +573,11 @@ void main() {
       find.widgetWithText(FilterChip, 'رمضان'),
       200,
     );
+    // Decision 23's taller type scale can still leave the chip's edge just
+    // past the viewport after scrollUntilVisible's coarse steps —
+    // ensureVisible finishes the job precisely, now that it's in the tree.
+    await tester.ensureVisible(find.widgetWithText(FilterChip, 'رمضان'));
+    await settle(tester);
     await tester.tap(find.widgetWithText(FilterChip, 'رمضان'));
     await tester.pump();
     await tester.tap(find.text('حفظ'));
@@ -769,12 +776,16 @@ void main() {
     await settle(tester);
     await tester.tap(find.text('×2')); // SCALE-6: the scale goes along
     await settle(tester);
-    // LOOK-6: RailHeading's own rail adds a little height to "المقادير"/
-    // "الطريقة", so a fixed-delta scroll no longer reliably lands the
-    // button's centre on screen — ensureVisible scrolls it fully into
-    // view instead of just into the tree (a plain ListView, so it's
-    // already built either way).
-    await tester.ensureVisible(find.text('ابدأ الطبخ'));
+    // Decision 23's larger type scale pushes "ابدأ الطبخ" out of the
+    // ListView's initial build range, so it isn't in the tree to begin
+    // with — scrollUntilVisible drags a little at a time, letting the
+    // list build further down each time, instead of assuming it's already
+    // there (ensureVisible needs that).
+    await tester.scrollUntilVisible(
+      find.text('ابدأ الطبخ'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     await settle(tester);
     await tester.tap(find.text('ابدأ الطبخ'));
     await settle(tester);
@@ -846,6 +857,8 @@ void main() {
     tester,
   ) async {
     final (recipes, settings) = await pumpApp(tester);
+    await tester.tap(find.byTooltip('أضف وصفة'));
+    await settle(tester);
     await tester.tap(find.text('استيراد من رابط'));
     await settle(tester);
     // IMP-3: a website import parsed on the device never shows a cost
@@ -870,7 +883,9 @@ void main() {
     // The same page again offers the saved one (IMP-9).
     await tester.binding.handlePopRoute();
     await settle(tester);
-    await tester.tap(find.byTooltip('استيراد من رابط'));
+    await tester.tap(find.byTooltip('أضف وصفة'));
+    await settle(tester);
+    await tester.tap(find.text('استيراد من رابط'));
     await settle(tester);
     await tester.enterText(find.byType(TextField), 'https://site.com/kabsa/');
     await tester.tap(find.text('استيراد'));
@@ -889,6 +904,8 @@ void main() {
       final ai = NoopAiImportClient()
         ..nextResult = const AiImportError(AiImportErrorKind.notARecipe);
       await pumpApp(tester, aiClient: ai);
+      await tester.tap(find.byTooltip('أضف وصفة'));
+      await settle(tester);
       await tester.tap(find.text('استيراد من رابط'));
       await settle(tester);
       await tester.enterText(find.byType(TextField), 'https://down.com/x');
@@ -911,6 +928,8 @@ void main() {
     final ai = NoopAiImportClient()
       ..nextResult = const AiImportError(AiImportErrorKind.network);
     await pumpApp(tester, aiClient: ai);
+    await tester.tap(find.byTooltip('أضف وصفة'));
+    await settle(tester);
     await tester.tap(find.text('استيراد من رابط'));
     await settle(tester);
     await tester.enterText(find.byType(TextField), 'https://down.com/x');
@@ -992,6 +1011,8 @@ void main() {
     (tester) async {
       final ai = _ControlledAiImportClient();
       final (recipes, _) = await pumpApp(tester, aiClient: ai);
+      await tester.tap(find.byTooltip('أضف وصفة'));
+      await settle(tester);
       await tester.tap(find.text('استيراد من رابط'));
       await settle(tester);
       await tester.enterText(
@@ -1042,6 +1063,8 @@ void main() {
           cached: false,
         );
       final (recipes, settings) = await pumpApp(tester, aiClient: ai);
+      await tester.tap(find.byTooltip('أضف وصفة'));
+      await settle(tester);
       await tester.tap(find.text('استيراد من رابط'));
       await settle(tester);
       await tester.enterText(
@@ -1077,6 +1100,8 @@ void main() {
         cached: false,
       );
     final (recipes, settings) = await pumpApp(tester, aiClient: ai);
+    await tester.tap(find.byTooltip('أضف وصفة'));
+    await settle(tester);
     await tester.tap(find.text('استيراد من رابط'));
     await settle(tester);
     await tester.enterText(
@@ -1097,7 +1122,9 @@ void main() {
     await settle(tester);
     // The library has a recipe now, so it's the app bar's icon (not the
     // empty state's labelled FAB) that opens Import.
-    await tester.tap(find.byTooltip('استيراد من رابط'));
+    await tester.tap(find.byTooltip('أضف وصفة'));
+    await settle(tester);
+    await tester.tap(find.text('استيراد من رابط'));
     await settle(tester);
     expect(find.textContaining('بقي 9 من 10'), findsOneWidget);
   });
@@ -1111,6 +1138,8 @@ void main() {
         await settings.recordAiImportSaved();
       }
     });
+    await tester.tap(find.byTooltip('أضف وصفة'));
+    await settle(tester);
     await tester.tap(find.text('استيراد من رابط'));
     await settle(tester);
     expect(
@@ -1165,6 +1194,8 @@ void main() {
         ),
       );
 
+      await tester.tap(find.byTooltip('أضف وصفة'));
+      await settle(tester);
       await tester.tap(find.text('استيراد من رابط'));
       await settle(tester);
       await tester.enterText(
@@ -1223,6 +1254,8 @@ void main() {
         ..nextResult = const AiImportError(AiImportErrorKind.privatePost);
       final (recipes, _) = await pumpApp(tester, aiClient: ai);
 
+      await tester.tap(find.byTooltip('أضف وصفة'));
+      await settle(tester);
       await tester.tap(find.text('استيراد من رابط'));
       await settle(tester);
       await tester.enterText(
@@ -1268,6 +1301,8 @@ void main() {
         ..nextResult = const AiImportError(AiImportErrorKind.unreachable);
       final (recipes, _) = await pumpApp(tester, aiClient: ai);
 
+      await tester.tap(find.byTooltip('أضف وصفة'));
+      await settle(tester);
       await tester.tap(find.text('استيراد من رابط'));
       await settle(tester);
       await tester.enterText(
@@ -1327,6 +1362,8 @@ void main() {
           await settings.recordAiImportSaved();
         }
       });
+      await tester.tap(find.byTooltip('أضف وصفة'));
+      await settle(tester);
       await tester.tap(find.text('استيراد من رابط'));
       await settle(tester);
       await tester.enterText(
@@ -1371,6 +1408,8 @@ void main() {
           cached: false,
         );
       final (recipes, settings) = await pumpApp(tester, aiClient: ai);
+      await tester.tap(find.byTooltip('أضف وصفة'));
+      await settle(tester);
       await tester.tap(find.text('استيراد من رابط'));
       await settle(tester);
       await tester.enterText(
@@ -1397,6 +1436,8 @@ void main() {
     (tester) async {
       final ai = _ControlledAiImportClient();
       await pumpApp(tester, aiClient: ai);
+      await tester.tap(find.byTooltip('أضف وصفة'));
+      await settle(tester);
       await tester.tap(find.text('استيراد من رابط'));
       await settle(tester);
       await tester.enterText(
@@ -1440,6 +1481,8 @@ void main() {
     await pumpApp(tester);
     await tester.tap(find.text('أضف وصفة'));
     await settle(tester);
+    await tester.tap(find.text('أضفها بنفسك'));
+    await settle(tester);
     await tester.tap(find.text('حفظ'));
     await settle(tester);
     expect(find.text('اكتب اسم الوصفة'), findsOneWidget);
@@ -1448,6 +1491,8 @@ void main() {
   testWidgets('leaving with changes asks first', (tester) async {
     await pumpApp(tester);
     await tester.tap(find.text('أضف وصفة'));
+    await settle(tester);
+    await tester.tap(find.text('أضفها بنفسك'));
     await settle(tester);
     await tester.enterText(find.byType(TextFormField).first, 'شوربة');
     await tester.pump(); // the frame that arms the unsaved-changes guard
@@ -1491,8 +1536,15 @@ void main() {
     await settle(tester);
     await tester.tap(find.text('English'));
     await settle(tester);
-    expect(find.text('Settings'), findsOneWidget);
-    expect(dirOf(tester, find.text('Settings')), TextDirection.ltr);
+    // Settings is now also the pill's own tab label (LOOK-7: the pill
+    // always shows), so "Settings" appears twice on screen; the AppBar's
+    // own title is the one this asserts on.
+    final title = find.descendant(
+      of: find.byType(AppBar),
+      matching: find.text('Settings'),
+    );
+    expect(title, findsOneWidget);
+    expect(dirOf(tester, title), TextDirection.ltr);
   });
 
   testWidgets(

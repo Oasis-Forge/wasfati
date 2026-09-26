@@ -248,6 +248,12 @@ abstract class AppLocalizations {
   /// **'Add a recipe'**
   String get recipesAdd;
 
+  /// LOOK-11: the add sheet's subtitle, under its title.
+  ///
+  /// In en, this message translates to:
+  /// **'From wherever you found it, in clean Arabic.'**
+  String get addSheetSubtitle;
+
   /// Number of saved recipes. {shown} is {count} in the chosen digit style (QTY-5).
   ///
   /// In en, this message translates to:
@@ -1028,6 +1034,36 @@ abstract class AppLocalizations {
   /// **'Import from a link'**
   String get importTitle;
 
+  /// LOOK-11: the add sheet's second tile, opening the photo import entry (camera or gallery).
+  ///
+  /// In en, this message translates to:
+  /// **'From a photo'**
+  String get addSheetPhoto;
+
+  /// The link tile's description in the add sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Fatafeat, Cookpad, TikTok…'**
+  String get addSheetLinkDesc;
+
+  /// The photo tile's description in the add sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'A cookbook or a handwritten page'**
+  String get addSheetPhotoDesc;
+
+  /// LOOK-11: the add sheet's third tile, opening the pasted-text AI import entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste text'**
+  String get addSheetPasteText;
+
+  /// The paste-text tile's description in the add sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'A post\'s caption, or a message'**
+  String get addSheetPasteDesc;
+
   /// IMP-2. Link field hint.
   ///
   /// In en, this message translates to:
@@ -1087,6 +1123,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add by hand'**
   String get addByHand;
+
+  /// The by-hand tile's description in the add sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Write your recipe your own way'**
+  String get addSheetByHandDesc;
 
   /// IMP-9. Dialog title.
   ///
@@ -2263,6 +2305,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ad privacy choices'**
   String get settingsAdPrivacy;
+
+  /// IMP-7: the add sheet quota card's header label.
+  ///
+  /// In en, this message translates to:
+  /// **'Smart import'**
+  String get addSheetQuotaLabel;
+
+  /// IMP-7: the add sheet quota card's accent count, e.g. 7 من 10 متبقية.
+  ///
+  /// In en, this message translates to:
+  /// **'{shown} of {quota} left'**
+  String addSheetQuotaCount(String shown, String quota);
+
+  /// No description provided for @addSheetQuotaCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Resets at the start of each month · website imports stay free and unlimited.'**
+  String get addSheetQuotaCaption;
 }
 
 class _AppLocalizationsDelegate

@@ -13,9 +13,9 @@ void main() {
       expect(s.ramadanCardDismissedYear, isNull);
     });
 
-    test('default look is Ink (LOOK-1)', () {
+    test('default look is Saffron for a new install (LOOK-1, Decision 23)', () {
       const s = AppSettings();
-      expect(s.style, AppStyle.ink);
+      expect(s.style, AppStyle.saffron);
     });
 
     test('every field, including the Ramadan ones, comes back as it went '
@@ -63,13 +63,22 @@ void main() {
       expect(back.ramadanShift, 0);
       expect(back.ramadanShiftYear, isNull);
       expect(back.language, LanguagePref.ar);
-      expect(back.style, AppStyle.ink); // a backup with no LOOK-1 field yet
+      // A backup with no LOOK-1 field yet: this install never stored a
+      // choice, so it reads as the current default (Decision 23: Saffron).
+      expect(back.style, AppStyle.saffron);
     });
 
-    test('an unknown style name falls back to Ink (a backup from an older '
-        'version, LOOK-1, BAK-6)', () {
+    test('an unknown style name falls back to the default (a backup from an '
+        'older version, LOOK-1, BAK-6)', () {
       final back = AppSettings.fromJson('{"style": "sunset"}');
-      expect(back.style, AppStyle.ink);
+      expect(back.style, AppStyle.saffron);
+    });
+
+    test('a stored Ink choice is kept as it is, not upgraded to the new '
+        'default (LOOK-1, Decision 23, BAK-6)', () {
+      const s = AppSettings(style: AppStyle.ink);
+      expect(AppSettings.fromJson(s.toJson()).style, AppStyle.ink);
+      expect(AppSettings.fromJson('{"style": "ink"}').style, AppStyle.ink);
     });
 
     test('a corrupt shift is clamped to -1..1', () {

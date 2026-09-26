@@ -3,6 +3,7 @@
 // taking every banner away. Over the no-op ad network and store.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wasfati/widgets/nav_pill.dart';
 import 'package:wasfati/models/quantity/arabic_text.dart' show ownIsolate;
 import 'package:wasfati/services/ads.dart';
 import 'package:wasfati/services/store.dart';
@@ -15,12 +16,10 @@ const allowed = AdConsent(canRequestAds: true, privacyOptionsRequired: false);
 /// The banner, once it has arrived.
 final banner = find.byKey(noopBannerKey);
 
-/// The shell's own tabs, scoped to the NavigationBar (the recipe and plan
+/// The shell's own tabs, scoped to the NavPill (the recipe and plan
 /// pages carry the same icons in their app bars).
-Finder navTab(IconData icon) => find.descendant(
-  of: find.byType(NavigationBar),
-  matching: find.byIcon(icon),
-);
+Finder navTab(IconData icon) =>
+    find.descendant(of: find.byType(NavPill), matching: find.byIcon(icon));
 
 /// A slot's height on screen: 0 when it isn't showing at all.
 double slotHeight(WidgetTester tester) =>
@@ -43,9 +42,11 @@ void main() {
       find.ancestor(of: banner, matching: find.byType(Scrollable)),
       findsNothing,
     );
+    // ADS-9/LOOK-8: at least 8dp clear of the raised "+" — not just the
+    // pill's own fill, which the "+" rises above.
     expect(
       tester.getRect(banner).bottom + AdSlot.gap,
-      tester.getRect(find.byType(NavigationBar)).top,
+      lessThanOrEqualTo(tester.getRect(find.byTooltip('أضف وصفة')).top),
     );
 
     await tester.tap(navTab(Icons.calendar_month_outlined));
@@ -97,7 +98,9 @@ void main() {
     expect(banner, findsOneWidget, reason: 'back on the library');
 
     // Import.
-    await tester.tap(find.byTooltip('استيراد من رابط'));
+    await tester.tap(find.byTooltip('أضف وصفة'));
+    await settle(tester);
+    await tester.tap(find.text('استيراد من رابط'));
     await settle(tester);
     expect(find.byType(AdSlot), findsNothing, reason: 'import');
     expect(banner, findsNothing, reason: 'import');
@@ -153,7 +156,7 @@ void main() {
         adServiceOverride: NoopAdService(consent: allowed, fills: fills),
       );
       expect(banner, fills ? findsOneWidget : findsNothing);
-      return tester.getRect(find.byType(NavigationBar));
+      return tester.getRect(find.byType(NavPill));
     }
 
     final waiting = await navBarWith(false);
@@ -298,4 +301,23 @@ void main() {
     expect(banner, findsOneWidget);
     expect(find.text('إزالة الإعلانات'), findsOneWidget);
   });
+
+  testWidgets(
+    'ADS-9/LOOK-8: the raised "+" is fully hit-testable, not just its '
+    'lower half',
+    (tester) async {
+      await pumpApp(
+        tester,
+        withRecipe: true,
+        adServiceOverride: NoopAdService(consent: allowed, fills: true),
+      );
+      final addRect = tester.getRect(find.byTooltip('أضف وصفة'));
+      // A tap right at the "+"'s own top edge still opens the add sheet —
+      // the raised ring is inside NavPill's hit-testable box, not overflow
+      // painted outside it.
+      await tester.tapAt(Offset(addRect.center.dx, addRect.top + 1));
+      await settle(tester);
+      expect(find.text('أضف وصفة'), findsWidgets);
+    },
+  );
 }

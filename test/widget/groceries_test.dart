@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wasfati/widgets/nav_pill.dart';
 import 'package:wasfati/models/grocery.dart';
 import 'package:wasfati/models/plan.dart';
 import 'package:wasfati/models/quantity/rational.dart';
@@ -9,10 +10,8 @@ import '../helpers.dart' show kabsa;
 import 'app_test.dart' show groceries, plan, pumpApp, settle, sharer, shown;
 
 /// A tab in the bottom navigation, by its icon (language-agnostic).
-Finder _navTab(IconData icon) => find.descendant(
-  of: find.byType(NavigationBar),
-  matching: find.byIcon(icon),
-);
+Finder _navTab(IconData icon) =>
+    find.descendant(of: find.byType(NavPill), matching: find.byIcon(icon));
 
 // Left-to-right and pop directional isolates (QTY-5), built from their code
 // points so they don't change how this file's own source reads.

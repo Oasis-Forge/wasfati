@@ -46,6 +46,13 @@ Future<void> openPurchaseScreen(WidgetTester tester) async {
   await settle(tester);
 }
 
+/// LOOK-7: Settings is a navigation-pill tab now, not a pushed screen, so
+/// leaving it taps the recipes tab instead of a system Back.
+Future<void> closeSettings(WidgetTester tester) async {
+  await tester.tap(find.byTooltip('الوصفات'));
+  await settle(tester);
+}
+
 /// Every Text on screen whose style strikes it through.
 Finder struckThrough() => find.byWidgetPredicate(
   (w) =>
@@ -206,8 +213,7 @@ void main() {
     await openSettings(tester);
     expect(find.text('مجاني'), findsOneWidget);
     expect(find.text('إدارة أو إلغاء'), findsNothing);
-    await tester.tap(find.byType(BackButton).first);
-    await settle(tester);
+    await closeSettings(tester);
 
     await tester.pumpWidget(const SizedBox()); // a fresh app
     await pumpApp(
@@ -280,7 +286,9 @@ void main() {
           await settings.recordAiImportSaved();
         }
       });
-      await tester.tap(find.byTooltip('استيراد من رابط'));
+      await tester.tap(find.byTooltip('أضف وصفة'));
+      await settle(tester);
+      await tester.tap(find.text('استيراد من رابط'));
       await settle(tester);
       // PAY-11: 12 used stays 12 used, of 100 or of 10.
       expect(
@@ -304,7 +312,9 @@ void main() {
           await settings.recordAiImportSaved();
         }
       });
-      await tester.tap(find.byTooltip('استيراد من رابط'));
+      await tester.tap(find.byTooltip('أضف وصفة'));
+      await settle(tester);
+      await tester.tap(find.text('استيراد من رابط'));
       await settle(tester);
       expect(shown('نفدت الاستيرادات الذكية هذا الشهر'), findsOneWidget);
       await tester.tap(find.text('استيرادات ذكية أكثر مع بريميوم'));
@@ -321,7 +331,9 @@ void main() {
           await settings.recordAiImportSaved();
         }
       });
-      await tester.tap(find.byTooltip('استيراد من رابط'));
+      await tester.tap(find.byTooltip('أضف وصفة'));
+      await settle(tester);
+      await tester.tap(find.text('استيراد من رابط'));
       await settle(tester);
       expect(shown('نفدت الاستيرادات الذكية هذا الشهر'), findsOneWidget);
       expect(find.text('استيرادات ذكية أكثر مع بريميوم'), findsNothing);

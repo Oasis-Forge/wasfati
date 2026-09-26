@@ -1,464 +1,221 @@
-# Design styles: Ink and Saffron
+# Design styles: سُفرة · Sufra
 
-_Designed 20 September 2026. Four independent directions were judged on Arabic craft, kitchen usability and Flutter/accessibility; these two are what came out of it (Decision 14). Both ship: the user picks one in Settings._
+_Designed 26 September 2026 (Decision 23). One design, warm and photo-forward, replaces the two styles of Decision 14 — حبر (Ink) and زعفران (Saffron) — whose names now label the two accent colours a Sufra install can pick in Settings, not two different layouts. Reference mockups: `docs/design/sufra/*.dc.html` and their rendered PNGs, one phone screen each at 390 × 844 CSS px; a CSS px is one Flutter dp throughout this document._
 
 ## At a glance
 
-| Style | Feel | Identity carrier | Effort |
+Every screen sits on a warm linen page with white cards floating on soft shadows, food photography shown large, and pill-shaped controls everywhere a Material app would draw a rectangle. The signature moves:
+
+- **Photo-forward cards.** The library grid is dominated by the dish photo; text sits on a dark gradient over the lower half rather than beside it.
+- **The sheet over the hero photo.** The recipe page's content panel starts 30 dp above the bottom of a full-bleed photo and overlaps it, rounded top corners first.
+- **The dark floating navigation pill.** A near-black pill floats clear of the bottom edge on the four main screens, with a raised accent "+" at its centre that opens every way to add a recipe.
+- **Pill controls throughout.** Buttons, chips, the search field, segmented controls and steppers are all radius-999 pills; only cards, photos and sheets keep large-but-finite radii.
+- **The drawn cover.** A recipe with no photo gets a tinted, patterned illustration instead of a placeholder, keyed off its own ID so it's stable everywhere it appears.
+- **Amounts in the accent.** Every quantity in an ingredient or grocery line is set in the accent colour at weight 700 — carried over unchanged from Decision 14, now on a warmer page.
+
+The two accents from Decision 14 stay exactly as user-facing choices — **زعفران / Saffron** (paprika-orange, default for new installs) and **حبر / Ink** (teal) — but now differ from each other in colour only (LOOK-2): one shared layout, one shared shape language, one shared shadow system.
+
+## Palette
+
+Hex values are exact, taken from the spec's tokens; CSS px in the mockups equal Flutter dp.
+
+### Shared surfaces (identical in both accents)
+
+| Token | Light | Dark | Use |
 |---|---|---|---|
-| **حبر · Ink on paper** (full name: *Hibr — Ink on Paper*) | Calm, printed-cookbook: cream page, near-black ink, no shadows, hairlines instead of boxes | A 3×20dp deep-teal rail at every heading's reading edge, and every amount set in teal inside the line | ~1,300–1,500 net new lines across 14 files: 3 theme files (~450 lines), 6 new widgets (~320), edits to all 9 screens (~550), 2 test files (~200) |
-| **زعفران · Saffron slab** (full name: *Mawqid — The Counter*) | Loud, tactile: quiet cream page, solid saffron action blocks with near-black ink on them, one 45° corner cut | The saffron slab (ink-on-saffron, 8.71:1 in both themes) plus the chamfered corner, used on exactly five things | ~1,700–2,000 net new lines across 15 files: 3 theme files (~520 lines), 8 new widgets/painters (~520), edits to all 9 screens (~700), 2 test files (~230) |
+| `page` | `#F6F1EA` | `#14110E` | screen background |
+| `card` | `#FFFFFF` | `#201C18` | cards, modal sheets, the search field |
+| `sunk` | `#EFE8DF` | `#2B2621` | segmented-control track, stepper track, chip rest state, banner placeholder |
+| `ink` | `#1F1A15` | `#F5EFE8` | main text, icons, the light-mode nav pill's own fill |
+| `ink2` | `#62574C` | `#BDB2A6` | secondary text, captions, inactive icons on a light surface |
+| `line` | `#E8E0D5` | `#332D27` | hairline separators inside a card, and (dark only) a card's own edge |
+| `border` | `#8F8475` | `#8C8072` | the 1 px edge of a field, unselected chip or outlined button |
+| `herb` | `#2E6B4F` | `#7FC7A0` | done/checked state, the "in the plan" band's icon |
+| `herbSoft` | `#E3F0E8` | `#1D3328` | the "in the plan" band fill, a checked checkbox's fill |
+| `onHerbSoft` | `#1E4A36` | `#BFE8CF` | text/icon on `herbSoft` |
+| `onHerb` *(added here, see §Contrast)* | `#FFFFFF` | `#1F1A15` | the check glyph on a `herb`-filled checkbox |
 
-Both directions: one font family only (IBM Plex Sans Arabic, no second font bundled), zero elevation/shadows anywhere, no new packages, no new fonts, no new bitmaps, `letterSpacing: 0` on every type token, and depth carried entirely by 1–2dp borders against a warm surface ladder.
+### زعفران Saffron (default for new installs)
 
----
-
-## حبر · Ink on paper
-
-### What the user sees
-
-> "The app becomes a warm cream page with near-black ink on it, the way a well-printed cookbook looks, instead of the grey boxes and soft shadows it has today. Every quantity — 2 cups, 500 g, ×2 — is set in a deep teal and slightly heavier than the words beside it, so after the photo the numbers are the first thing your eye lands on, which is exactly what this app is for. A short teal bar stands at the start of every heading, on the right in Arabic and on the left in English, and thin hairlines do the job the boxes used to do."
-
-### Based on
-
-Spice Shelf (the warm surface ladder, zero elevation, the reading-edge rail, squared-not-stadium shapes) and Bulaq (amounts as the product, the section mark, the empty-state ornament), with three grafts that fix what the critics broke:
-
-- From Quiet Geometry: the deep firuzi accent, because it is the only accent in any of the four original directions that passes AA as **text** on light paper (7.05:1) as well as dark (10.73:1) — killing the class of bug where a brand colour is legible in one theme and not the other.
-- From Quiet Geometry again: the eight-point khatam as a `CustomPainter`, so photoless recipes and empty states have something drawn rather than a stock icon.
-- Dropped from both source directions: Amiri and Reem Kufi (no second font is bundled), the two-column amount table (it severs the Arabic number from the unit word that agrees with it, QTY-6), and `FontFeature.tabularFigures` (the bundled font has no `tnum`).
-
-### Palette
-
-**ColorScheme roles** (M3 `*Fixed` roles such as `primaryFixed`/`onPrimaryFixedVariant` are unused anywhere in the app; they're omitted and ColorScheme's fallbacks stand):
-
-| Role | Light | Dark |
+| Token | Light | Dark |
 |---|---|---|
-| primary | `#0B5F57` | `#6FD5C8` |
-| onPrimary | `#FFFFFF` | `#00352F` |
-| primaryContainer | `#B4E3DB` | `#0A4B45` |
-| onPrimaryContainer | `#00201C` | `#9BEFE2` |
-| secondary | `#4C6A3C` | `#A9CF95` |
-| onSecondary | `#FFFFFF` | `#16300B` |
-| secondaryContainer | `#D3E6C7` | `#2C4620` |
-| onSecondaryContainer | `#12240A` | `#C4EBB0` |
-| tertiary | `#8A4D06` | `#F0B45F` |
-| onTertiary | `#FFFFFF` | `#452600` |
-| tertiaryContainer | `#FCDFB4` | `#603D00` |
-| onTertiaryContainer | `#2C1700` | `#FFDCA8` |
-| error | `#A32018` | `#FFB4A6` |
-| onError | `#FFFFFF` | `#5F1005` |
-| errorContainer | `#FFDAD4` | `#84271C` |
-| onErrorContainer | `#3F0500` | `#FFDAD4` |
-| surface | `#FBF7F0` | `#13120E` |
-| onSurface | `#1C1813` | `#EFE7D8` |
-| onSurfaceVariant | `#574E43` | `#C2B6A2` |
-| surfaceDim | `#E3D8C4` | `#13120E` |
-| surfaceBright | `#FFFDF9` | `#3E392E` |
-| surfaceContainerLowest | `#FFFFFF` | `#0D0C09` |
-| surfaceContainerLow | `#F1E8D8` | `#1E1B16` |
-| surfaceContainer | `#E9DECB` | `#26231C` |
-| surfaceContainerHigh | `#E1D4BD` | `#322E25` |
-| surfaceContainerHighest | `#D8C9AD` | `#3E392E` |
-| outline | `#786D5D` | `#978A78` |
-| outlineVariant | `#C2B49B` | `#5E5445` |
-| shadow | `#000000` | `#000000` |
-| scrim | `#000000` | `#000000` |
-| inverseSurface | `#32291F` | `#EFE7D8` |
-| onInverseSurface | `#F7EFE2` | `#26231C` |
-| inversePrimary | `#7FD5C9` | `#0B5F57` |
-| surfaceTint | `#00000000` | `#00000000` |
+| `accent` | `#C2410C` | `#F28A4B` |
+| `onAccent` | `#FFFFFF` | `#1F1A15` |
+| `accentSoft` | `#FCE9DD` | `#3A2418` |
+| `onAccentSoft` | `#7A2A08` | `#FFD2B5` |
 
-### Contrast
+### حبر Ink
 
-_Recomputed with the WCAG 2.1 sRGB formula; every value below is measured, not estimated._
-
-**LIGHT body text:** onSurface/surface 16.53:1; onSurface on surfaceContainerLow 14.52, Container 13.26, High 12.07, Highest 11.49; onSurfaceVariant/surface 7.63, on Low 6.71, on Container 6.12, on High 5.57, on Highest 5.00.
-
-**Accent as TEXT (the teal numbers):** primary/surface 7.05, on Low 6.19, on Container 5.66, on High 5.15, on Highest 4.62 — AA everywhere on the ladder, which is the whole reason this accent was chosen. onPrimary/primary 7.53; onPrimaryContainer/primaryContainer 12.22; onSurface on primaryContainer 12.57 (the selected settings row). tertiary `#8A4D06` (the "not scaled" mark and "today"): /surface 6.25, on Low 5.49. secondary `#4C6A3C` (a ticked ingredient): /surface 5.73, on Low 5.03. error/surface 7.08, onError/error 7.56, onErrorContainer/errorContainer 13.16. SnackBar: onInverseSurface/inverseSurface 12.49, action inversePrimary/inverseSurface 8.33.
-
-**LIGHT non-text (WCAG 1.4.11, 3:1):** outline `#786D5D` is the structural boundary and clears the whole ladder — 4.75 / 4.17 / 3.81 / 3.46 / 3.11 against surface → surfaceContainerHighest. The teal rail as a shape: 7.05 on surface, 6.19 on Low. outlineVariant `#C2B49B` is 1.91:1 on surface and 1.68 on Low — it is **decorative only** (row separators inside an already-bounded group) and may never be the edge of a control or of a container. Fill steps are tonal nuance, not structure: Low 1.14, Container 1.25, High 1.37, Highest 1.53 against surface — which is why the border, not the fill, is what makes a card a card.
-
-**DARK body:** onSurface/surface 15.25, on Low 13.97, Container 12.76, High 11.00, Highest 9.34; onSurfaceVariant/surface 9.38 → 5.74 across the ladder; primary/surface 10.73 → 6.57 across the ladder; onPrimary/primary 7.76; onPrimaryContainer/primaryContainer 7.52; secondary/surface 10.75; tertiary/surface 10.17; error/surface 11.00; onErrorContainer/errorContainer 7.09; onInverseSurface/inverseSurface 13.22, inversePrimary/inverseSurface 6.13.
-
-**DARK non-text:** outline `#978A78` → 5.55 / 5.09 / 4.65 / 4.01 / 3.40 across the ladder, all ≥3:1; outlineVariant `#5E5445` is 2.53 / 2.31 / 2.11 → decorative only.
-
-**DISABLED content** is onSurface at 55% in light (composites to `#807C76`, 3.88:1 on surface, 3.70:1 on surfaceContainerLow) and at 45% in dark (`#767269`, 3.91:1) — **not** M3's 38%, which composites to 2.38:1 in light and fails.
-
-**HINT text** renders at full onSurfaceVariant (6.71:1 on the field fill), never at 60% alpha, which would be 2.79:1.
-
-**COOK MODE** runs on surfaceContainerLowest: 17.66:1 light (`#1C1813` on `#FFFFFF`) and 15.92:1 dark (`#EFE7D8` on `#0D0C09`).
-
-**APP-BAR ICONS OVER A USER PHOTO** never rely on a scrim (white on 55% black over a pure-white dish is only 4.74:1, worse over a bright one): each icon sits on a 40dp opaque circle of `surface` with a 1dp `outline` ring, so the icon is 16.53:1 against its own background whatever the photo is — including the delete action, which a scrim would have made an invisible destructive target.
-
-### Typography
-
-One family, **IBM Plex Sans Arabic**, weights 400/500/600/700 — no second font bundled. `letterSpacing` is 0 on every token (M3 ships 0.1 on labelLarge/titleSmall and 0.5 on labelSmall; positive tracking pulls a joined script apart). Every token sets `leadingDistribution: TextLeadingDistribution.even`, and `MaterialApp` gets `textHeightBehavior: TextHeightBehavior(leadingDistribution: TextLeadingDistribution.even)` — Flutter's default is `proportional`, which hands ~72% of the extra leading to the ascent and starves the descent band where Arabic bowls live.
-
-**Two leading values**, both derived from the font binary rather than taste: the font is upem 1000, hhea/typo ascent 1085, descent −415, lineGap 0, `USE_TYPO_METRICS` set → its own line box is exactly 1.500em; its maximum ink is winAscent 1.128em above the baseline and winDescent 0.601em below. Two stacked lines cannot collide when the baseline-to-baseline distance ≥ 1.128 + 0.601 = 1.729em. So: height 1.75 on every token that can wrap to a second line (guaranteed clear of any glyph pair, including tashkeel arriving in a TikTok caption), and height 1.50 — the font's own box — on single-line chrome, where nothing can stack and even leading prevents clipping.
-
-| Token | Size | Weight | Height | Letter-spacing | Usage |
-|---|---|---|---|---|---|
-| displaySmall | 30sp | 700 | 1.75 | 0 | cook mode's finish title only |
-| headlineMedium | 26sp | 600 | 1.75 | 0 | the recipe title (ContentText, wraps) |
-| headlineSmall | 22sp | 600 | 1.75 | 0 | empty-state titles |
-| titleLarge | 20sp | 600 | 1.50 | 0 | AppBar titles and the railed section headings (single line, ellipsis) |
-| titleMedium | 17sp | 600 | 1.50 | 0 | dialog and sheet titles, the plan's day label, the servings readout, the cook-mode step counter |
-| titleSmall | 15sp | 600 | 1.75 | 0 | ingredient and step group names (ContentText, wraps) |
-| bodyLarge | 17sp | 400 | 1.75 | 0 | the reading size: ingredient lines, step text, notes, list titles, plan entry titles, settings option labels |
-| bodyMedium | 15sp | 400 | 1.75 | 0 | empty-state bodies, importExplain, dialog bodies |
-| bodySmall | 13sp | 400 | 1.75 | 0 | source host, list subtitles, helper text |
-| labelLarge | 15sp | 600 | 1.50 | 0 | every button label, tab label, chip label |
-| labelMedium | 13sp | 600 | 1.50 | 0 | navigation bar labels, plan entry amounts, the today badge |
-| labelSmall | 12sp | 600 | 1.50 | 0 | the "لم يُعدَّل" mark, counters |
-| `cookStep` (derived, not a literal) | 27.2sp (= bodyLarge.fontSize × 1.6) | 500 | 1.75 | 0 | cook mode step text |
-
-`cookStep` is defined in `wasfati_type.dart` as `textTheme.bodyLarge!.copyWith(fontSize: textTheme.bodyLarge!.fontSize! * 1.6, fontWeight: FontWeight.w500, height: 1.75)`, so COOK-2's 1.5× floor holds by construction if `bodyLarge` ever moves; a unit test asserts `cookStep.fontSize >= bodyLarge.fontSize * 1.5`.
-
-**Numerals:** do **not** use `FontFeature.tabularFigures` — the four bundled TTFs expose `lnum, numr, dnom, frac, zero, ss01–ss06` but no `tnum`, so it is a no-op, and the Arabic-Indic digits are genuinely proportional (advances 282, 263, 485, 630, 486, 526, 503, 531, 531, 508 per 1000em — a 2.4× spread) while the Latin digits are already uniform at 600/1000. Any number that ticks or steps in place (the running timer clock, the step number, the servings readout, the plan's week range) is laid out with the `DigitBox` widget, which puts each digit in a `SizedBox` of `fontSize × 0.63` (the widest Arabic-Indic advance) inside an LTR `Directionality`, so switching 123 ↔ ١٢٣ never resizes a layout. Amounts inside recipe text are **not** DigitBoxed — they keep `formatLine`'s U+2066/U+2069 isolates exactly as they are today.
-
-### Shape and spacing
-
-**Radii** — a deliberately squared system, the M3 stadium pill appears nowhere (no button, chip, FAB or navigation indicator): 4 (progress tracks), 10 (chips, thumbnails, step-number boxes, the amount pill in the plan), 12 (buttons, text fields, the search bar, snackbars), 14 (cards and grouped containers), 18 (the recipe hero photo's two bottom corners only), 20 (dialogs), 24 (bottom-sheet top corners).
-
-**Elevation is zero everywhere and cannot creep back:** `ThemeData(shadowColor: Colors.transparent)`, and `elevation: 0` + `surfaceTintColor: Colors.transparent` on `AppBarThemeData` (plus `scrolledUnderElevation: 0`), `CardThemeData`, `DialogThemeData`, `NavigationBarThemeData`, `BottomSheetThemeData`, `SnackBarThemeData`, `SearchBarThemeData`, `MenuThemeData`, `PopupMenuThemeData`, and every button style. No `BoxShadow` is written anywhere in `lib/`.
-
-**Borders carry every boundary:** 1dp `outline` for a container edge, a card edge, a text field at rest and an unselected chip (3.11–4.75:1 light, 3.40–5.55:1 dark, so a card is a card in a bright kitchen); 2dp `primary` for focus and for a selected control; 1dp `outlineVariant` **only** for row separators inside an already-bounded group, where it is decoration.
-
-**Dividers:** keep Flutter's `Divider` — it is already directional (`divider.dart:201` uses `EdgeInsetsDirectional.only(start: indent, end: endIndent)`), so `DividerThemeData(color: outlineVariant, thickness: 1, space: 1)` plus indent is correct and no hand-rolled hairline is needed.
-
-**Four named insets** in `wasfati_shapes.dart` so they cannot drift: `kInsetGroup` 16 (settings and sheet rows), `kInsetStep` 52 (past the step-number box), `kInsetList` 92 (past a 64dp thumb + 12dp gap + 16dp gutter), `kInsetFull` 0 (between top-level sections).
-
-**The rail:** `Container(width: 3, height: 20, decoration: BoxDecoration(color: primary, borderRadius: BorderRadius.circular(2)))` followed by `SizedBox(width: 10)`, inside a `Row` with `CrossAxisAlignment.center`, placed at the start edge via `EdgeInsetsDirectional` — it mirrors with the language with no code branch.
-
-**Spacing, 4dp based:** 4, 8, 12, 16, 20, 24, 28, 32, 40, 56. Screen gutter 16; recipe page and cook mode 20 and 24; card inner padding 16; heading to its content 12; section to section 28. Body content is capped at 560 logical px and centred so a tablet or an unfolded phone does not stretch a line past reading width.
-
-**Touch targets:** 48dp minimum with no exceptions (this includes the plan's per-slot "+", today 40dp with `VisualDensity.compact`, and the servings stepper, today an unsized `IconButton.outlined`), 56dp for the primary action of a screen and for every control in cook mode.
-
-Every fixed height in the redesign is expressed as `ConstrainedBox(minHeight:)` or `minimumSize`, never `SizedBox(height:)` — the two existing `SizedBox` height/width traps (`library_view.dart:142` `SizedBox(height: 56)` and `plan_screen.dart:273` `SizedBox(width: 84)`) are deleted outright, and the plan's AppBar bottom uses `PreferredSize(Size.fromHeight(MediaQuery.textScalerOf(context).scale(56).clamp(56.0, 76.0)))` — scaling the dimension, not `scale(1)`, which returns the wrong thing under Android 14's non-linear font scaling.
-
-### Components
-
-- **AppBarThemeData** — `backgroundColor: surface`, `foregroundColor: onSurface`, `elevation: 0`, `scrolledUnderElevation: 0`, `surfaceTintColor: transparent`, `centerTitle: false`, `toolbarHeight: 60`, `titleTextStyle: titleLarge`, `shape: Border(bottom: BorderSide(color: outlineVariant, width: 1))` — a static hairline, always on; do **not** wire a scroll-notification fade, it costs a listener on nine screens for one pixel.
-- **NavigationBarThemeData** — `height: 72`, `backgroundColor: surfaceContainerLow`, `elevation: 0`, `surfaceTintColor: transparent`, `labelBehavior: alwaysShow`, `indicatorColor: primaryContainer`, `indicatorShape: RoundedRectangleBorder(BorderRadius.circular(10), side: BorderSide(color: primary, width: 2))`, icon theme selected `onPrimaryContainer` / unselected `onSurfaceVariant` at 24dp, label style selected `labelMedium.copyWith(color: onSurface, w600)` / unselected `labelMedium.copyWith(color: onSurfaceVariant)`. Note: the indicator is hard-coded 64×32 in `navigation_bar.dart` — only its shape and colour are themeable, so no size is specified; the 2dp primary border is what makes selection perceivable, because primaryContainer on surfaceContainerLow is only 1.20:1 while primary on surfaceContainerLow is 6.19:1.
-- **CardThemeData** — `elevation: 0`, `color: surfaceContainerLow`, `surfaceTintColor: transparent`, `shadowColor: transparent`, `margin: EdgeInsets.zero`, `clipBehavior: antiAlias`, `shape: RoundedRectangleBorder(BorderRadius.circular(14), side: BorderSide(color: outline, width: 1))`.
-- **ChipThemeData** — `shape: RoundedRectangleBorder(BorderRadius.circular(10))`, side resolves to `BorderSide(color: primary, width: 2)` when selected else `BorderSide(color: outline, width: 1)`, `backgroundColor: transparent`, `selectedColor: primaryContainer`, `labelStyle: labelLarge.copyWith(color: onSurfaceVariant)`, `secondaryLabelStyle: labelLarge.copyWith(color: onPrimaryContainer, fontWeight: w600)`, `showCheckmark: false`, `padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10)`, `materialTapTargetSize: MaterialTapTargetSize.padded` (48dp tap target kept by `padded`, never `VisualDensity.compact`), `elevation: 0`, `pressElevation: 0`.
-- **FilledButtonThemeData** — `backgroundColor: primary`, `foregroundColor: onPrimary`, `minimumSize: Size(0, 52)` (`Size(double.infinity, 56)` for a screen's single main action), `shape: RoundedRectangleBorder(12)`, `textStyle: labelLarge`, `iconSize: 22`, `elevation: 0`, `overlayColor: onPrimary` at 10%, disabled `backgroundColor: surfaceContainerHigh` + `foregroundColor: onSurface` at 55% (3.88:1).
-- **OutlinedButtonThemeData** — `side: BorderSide(outline, 1.5)`, `foregroundColor: primary`, `minimumSize: Size(0, 52)`, `shape: 12`, `textStyle: labelLarge`, overlay `primary` at 8%.
-- **TextButtonThemeData** — `foregroundColor: primary`, `minimumSize: Size(0, 48)`, `shape: 12`.
-- **IconButtonThemeData** — `minimumSize: Size(48, 48)`, `iconSize: 24`, `foregroundColor: onSurfaceVariant`, `shape: RoundedRectangleBorder(12)` so the ripple is a rounded square.
-- **InputDecorationTheme** — `filled: true`, `fillColor: surfaceContainerLow`, border/enabledBorder `OutlineInputBorder(12, BorderSide(outline, 1))`, focusedBorder same with `BorderSide(primary, 2)`, errorBorder `BorderSide(error, 1.5)`, `contentPadding: EdgeInsetsDirectional.fromSTEB(16, 14, 16, 14)`, `floatingLabelBehavior: FloatingLabelBehavior.always`, `labelStyle: labelMedium onSurfaceVariant`, `floatingLabelStyle: labelMedium primary`, `hintStyle: bodyMedium onSurfaceVariant` **at full opacity**, `helperStyle`/`errorStyle: bodySmall`, error style in `error`.
-- **SearchBarThemeData** — keep the M3 `SearchBar` widget (`app_test.dart:217` and `:222` do `enterText(find.byType(SearchBar))`) and restyle it: `backgroundColor: surfaceContainerLow`, `elevation: 0`, `shape: RoundedRectangleBorder(12)`, `side: BorderSide(outline, 1)`, `constraints: BoxConstraints(minHeight: 52)`, `textStyle: bodyLarge`, `hintStyle: bodyMedium onSurfaceVariant`, `padding: 16` horizontal.
-- **ListTileThemeData** — `minVerticalPadding: 12`, `contentPadding: EdgeInsetsDirectional.fromSTEB(16, 4, 12, 4)`, `horizontalTitleGap: 14`, `titleTextStyle: bodyLarge`, `subtitleTextStyle: bodySmall onSurfaceVariant`, `iconColor: onSurfaceVariant`, `selectedColor: primary`, `selectedTileColor: transparent`, `shape: RoundedRectangleBorder(10)` — selection is drawn by the row itself, never by M3's tint.
-- **TabBarThemeData** — `indicator: UnderlineTabIndicator(BorderSide(color: primary, width: 3))`, `indicatorSize: TabBarIndicatorSize.label`, `dividerColor: outlineVariant`, `dividerHeight: 1`, `labelStyle`/`unselectedLabelStyle: titleSmall`, `labelColor: onSurface`, `unselectedLabelColor: onSurfaceVariant`, `overlayColor: primary` at 8%.
-- **SnackBarThemeData** — `behavior: floating`, `backgroundColor: inverseSurface`, `contentTextStyle: bodyMedium onInverseSurface`, `actionTextColor: inversePrimary`, `shape: RoundedRectangleBorder(12)`, `elevation: 0`, `insetPadding: EdgeInsets.all(16)` — and at each of the eight `showSnackBar` call sites on an ad-bearing screen, pass a margin whose bottom is `16 + BannerSlot.heightOf(context)`, because `SnackBarThemeData` cannot express that.
-- **DialogThemeData** — `backgroundColor: surfaceContainerLow`, `surfaceTintColor: transparent`, `elevation: 0`, `shape: RoundedRectangleBorder(20, side: BorderSide(outlineVariant, 1))`, `insetPadding: 24`, `titleTextStyle: titleMedium`, `contentTextStyle: bodyMedium onSurfaceVariant`, `barrierColor:` black at 48% light / 64% dark.
-- **BottomSheetThemeData** — `backgroundColor: surfaceContainerLow`, `surfaceTintColor: transparent`, `elevation: 0`, `shape: RoundedRectangleBorder(vertical top 24)`, `showDragHandle: true`, `dragHandleColor: outline`, `dragHandleSize: Size(40, 4)`.
-- **SegmentedButtonThemeData** exposes only `style`, so build one `ButtonStyle` with `WidgetStateProperty.resolveWith` on `WidgetState.selected`: `backgroundColor` selected `primaryContainer` else transparent, `foregroundColor` selected `onPrimaryContainer` else `onSurfaceVariant`, `side: BorderSide(outline, 1)`, `shape: RoundedRectangleBorder(10)`, `minimumSize: Size(0, 48)`, `textStyle: labelLarge`, and give each segment `Text(..., maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: center)`.
-- **CheckboxThemeData** — `shape: RoundedRectangleBorder(4)`, `side: BorderSide(color: outline, width: 2)`, `fillColor:` selected `secondary`, `checkColor: onSecondary`.
-- **ProgressIndicatorThemeData** — `linearMinHeight: 6`, `linearTrackColor: outlineVariant`, `color: primary`, `borderRadius: BorderRadius.circular(3)`, `circularTrackColor: transparent`.
-- **DividerThemeData** — `color: outlineVariant`, `thickness: 1`, `space: 1`.
-- **PageTransitionsTheme** — `FadeUpwardsPageTransitionsBuilder` for android and iOS — the default zoom fights flat surfaces.
-- `splashFactory: InkRipple.splashFactory`, `highlightColor: transparent`.
-
-### Screen by screen
-
-**Navigation shell** (`home_screen.dart` `HomeScreen`) — keep both destinations, both labels, and the RUN-1 rule that the bar appears only once a recipe exists. `bottomNavigationBar` becomes `Column(mainAxisSize: min, children: [BannerSlot(screen: AdScreen.library), SizedBox(height: 8), NavigationBar(...)])` so ADS-3's "outside the scroll, in the bottom bar" and ADS-9's 8dp clearance hold by construction rather than by padding; the FAB keeps `endFloat` and `Scaffold` lifts it above the whole `Column`.
-
-**Library** (`home_screen.dart LibraryHome` + `library_view.dart`) — AppBar carries a 20dp khatam mark in primary before "وصفاتي", keeps both `IconButton`s with their tooltips ("استيراد من رابط", "الإعدادات"). TabBar: 3dp primary underline sized to the label, `tabAlignment: start`, 1dp outlineVariant rule beneath. Search: the restyled M3 SearchBar, 52dp min, 16/12/16/8 padding; the clear IconButton keeps "مسح البحث". **Filter bar:** delete `SizedBox(height: 56)` at `library_view.dart:142` — it is a real 1.3× overflow today; replace with `SingleChildScrollView(scrollDirection: horizontal, padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 12), child: Row(spacing: 8, children: chips))`, and move the pinned grid/list `IconButton` into the AppBar as a third action, keeping `viewList`/`viewGrid` tooltips. **List rows:** hand-built `Row`, min 88dp, 64dp thumbnail at 10dp radius with a 1dp outline inset border, 12dp gap, title `ContentText bodyLarge w600 maxLines 2`, subtitle the existing `sub.join(' · ')` in `bodySmall onSurfaceVariant`; separator `Divider(height: 1, indent: kInsetList, endIndent: 16)`. Wrap each row in `MergeSemantics`. **Grid:** drop `Card`; each cell is a `Column` of the photo (`AspectRatio 4/3`, 10dp radius, 1dp outline) over a `surfaceContainerLow` title block with 12dp padding and `titleSmall maxLines 2`; `gridDelegate maxCrossAxisExtent 200` with `mainAxisExtent` (not `childAspectRatio`, which cannot absorb a third line at 1.3×) computed as `cellWidth * 0.75 + textScaler.scale(15) * 1.75 * 2 + 24`. `RecipeThumb` placeholder: `KhatamPainter` at 10% onSurface over `surfaceContainerHigh` with a 24dp `Icons.restaurant_outlined` in `onSurfaceVariant` — replaces the flat `secondaryContainer` block. FAB: `FloatingActionButton.extended` at 12dp radius, primary fill, `onPrimary labelLarge`, elevation 0/0/0, 56dp tall. Bottom padding on both scrollers: `24 + BannerSlot.heightOf(context) + 72` when the FAB is present. Cookbooks tab: 72dp rows in a `surfaceContainerLow` 14dp container with a 1dp outline border, leading a 40dp 10dp-radius `secondaryContainer` square with a book glyph, title `ContentText bodyLarge`, subtitle the existing `cookbookRecipes` count in `labelMedium`; "دفتر جديد" becomes a full-width 52dp `OutlinedButton`. `CookbookScreen` gets its own `BannerSlot` (ADS-9 names Cookbooks).
-
-**Recipe page** (`recipe_screen.dart`) — becomes a `CustomScrollView`. With a photo: `SliverAppBar` pinned, `backgroundColor: transparent`, `expandedHeight: screenWidth * 0.75` capped at 300, photo full-bleed with `BorderRadiusDirectional.vertical(bottom: Radius.circular(18))`, and every AppBar action (including `Icons.edit_outlined` and the "حذف" tooltip, both of which tests find) sits on a 40dp opaque circle of `surface` with a 1dp `outline` ring — 16.53:1 whatever the dish looks like, no scrim. Without a photo: an ordinary surface AppBar. Body gutters 20, capped at 560. Title `headlineMedium` via `ContentText`. Source line `bodySmall onSurfaceVariant` with a 14dp link glyph. `_NextPlanned` becomes a band: 10dp radius, `secondaryContainer` fill, 12/10 padding, a 16dp calendar glyph and the existing `planNextMeal` string in `labelMedium onSecondaryContainer` (12.41:1) — not coloured text floating on nothing. **Fact strip** replaces the two time `Chip`s: a `Row` of `Expanded` cells on `surfaceContainerLow`, 12dp radius, 1dp outline, `ConstrainedBox(minHeight: 64)`, each cell 14dp padding with the existing composed string ("التحضير ٣٠ دقيقة") on two lines — caption in `labelSmall onSurfaceVariant`, value in `titleMedium onSurface` — split in the widget, not in the ARB, so no new message is needed and the ICU dual ("دقيقتان") still renders whole. Tags and cookbook chips keep the squared chip style. `_Heading` becomes `RailHeading`: 28dp above, 12dp below, a 3dp × 20dp primary rail then `titleLarge`. "ابدأ الطبخ" is a full-width 56dp `FilledButton` with the existing `Icons.soup_kitchen_outlined`. **Step rows:** the `CircleAvatar` at `recipe_screen.dart:253` becomes a 28×28 `Container` at 10dp radius in `tertiaryContainer` with the numeral (`s.number(n)`, so QTY-5 still applies) centred in a `DigitBox` at `labelLarge onTertiaryContainer` (13.30:1); gap 14; step text `bodyLarge`; `Divider(indent: kInsetStep, endIndent: 20)` between steps; `MergeSemantics` per row. Notes in `bodyLarge` on a `surfaceContainerLow` block, 14dp radius, 1dp outline, 16dp padding. `bottomNavigationBar`: `SafeArea(Column(min, [SizedBox(height: 8), BannerSlot(screen: AdScreen.recipe)]))`.
-
-**Ingredients** (`ingredients_section.dart`) — **the scale bar:** one `Container`, `ConstrainedBox(minHeight: 64)`, `surfaceContainerLow`, 12dp radius, 1dp outline, holding a 48dp `IconButton.outlined` minus (tooltip "حصص أقل"), an `Expanded` centred value in `titleMedium`, and a 48dp plus (tooltip "حصص أكثر"). The value keeps today's widget exactly — `Flexible` + `TextOverflow.ellipsis` around `l10n.servings(...)` or the LTR `times()` `Text` — because the Arabic plural absorbs the numeral ("حصة واحدة", "حصتان") and there is no bare number to put in a digit slot; only the ×factor form goes through `DigitBox`. "إعادة" moves under the bar, end-aligned, 48dp. **Multiplier chips:** the existing `ChoiceChip`s at 48dp in the squared style, `Wrap` with 8dp spacing. **Unit view:** keep `SegmentedButton` — the actual Arabic labels are short ("كما كُتبت", "غ / مل", "أكواب"), so the widely-claimed overflow is not real; give it the button style above at `minHeight 48` with `maxLines 2` + ellipsis per segment as belt-and-braces. **Ingredient rows:** `Icon(Icons.circle, size: 6)` at `ingredients_section.dart:198` becomes a 6dp square rotated 45° in primary at 70%, top padding 11, end gap 14, row vertical padding 10. The line itself becomes `AmountLine`: it takes the string `formatLine()` already produces and splits it once at U+2069 (PDI), rendering the isolated amount span in primary at w600 and the remainder — including the agreeing unit word, so "٢ كوبان" stays one phrase and QTY-6 is untouched — in `onSurface` at w400, through the same per-line direction logic `ContentText` uses. When `line.min == null` it renders `line.original` verbatim as a plain `ContentText`, exactly as today (QTY-2); it never reconstructs a line from name + note. The "لم يُعدَّل" mark gets a 14dp `Icons.info_outline` beside `labelSmall` in **tertiary** `#8A4D06` (6.25:1), not error — nothing is broken, and it keeps red exclusively for real failures so the two are never confused. `notScaledCount` becomes a 12dp-radius `tertiaryContainer` band with a 20dp glyph and the existing string in `bodyMedium onTertiaryContainer` (13.30:1). `GroupName` becomes a shelf label: a 2dp × 14dp rail, 8dp gap, `ContentText` in `titleSmall onSurface`, 12dp gap, then an `Expanded` 1dp `outlineVariant` hairline to the far edge — replacing today's primary-coloured text.
-
-**Cook mode** (`cook_mode_screen.dart`) — no `BannerSlot` is ever constructed here (COOK-1). Wrap the screen in a `Theme` whose surface is `surfaceContainerLowest` (`#FFFFFF` / `#0D0C09`, 17.66:1 and 15.92:1). AppBar 60dp: close at 56dp ("إغلاق الطبخ"), title `ContentText titleMedium` one line, and the ingredients action at 56dp keeping "المكونات". New, under the AppBar: a **step rail** — one 4dp cell per step with 3dp gaps at 2dp radius, done cells primary at 40%, the current cell solid primary and 6dp tall, future cells `outlineVariant`; above 14 steps it collapses to a single 6dp `LinearProgressIndicator`. The existing `l10n.stepOf` sentence stays a sentence at `titleMedium` in primary with its numbers in `DigitBox`es — it is not squeezed into a pill, because "الخطوة ٣ من ٨" is five words. New: the active scale factor is shown beside it as a 10dp-radius `tertiaryContainer` pill whenever `factor != 1`, using the same `times()` widget the recipe page uses, so a wrong ×2 is visible instead of silent. Step text: the `cookStep` token (27.2/500/1.75). Timer chips become 56dp buttons, min width 104, 12dp radius, `tertiaryContainer` fill, 24dp glyph, clock in a `DigitBox` at `labelLarge`; the tooltip is preserved. `_TimersBar`: a running timer becomes a band, not a chip — `surfaceContainerLow`, 12dp radius, a 24dp glyph and the countdown in a `titleLarge`-sized `DigitBox` (20/700) with the existing `stepN` string beside it in `labelMedium`, because the countdown is the number read from across a kitchen and 13sp is decoration; the bar is capped at 2 bands plus an "n more" row so a finishing timer can never push the step text under a reading finger. A finished timer keeps `errorContainer`, gains a 4dp leading error stripe, and its Dismiss becomes a 48dp `FilledButton.tonal`. **Bottom bar:** `ConstrainedBox(minHeight: 88)` with 16dp padding and `SafeArea`, holding two equal `Expanded` 56dp buttons with a 12dp gap — `OutlinedButton` for "السابق" (icon dropped, label `maxLines 1` + ellipsis) and `FilledButton.icon` for "التالي"; the existing `Icons.arrow_back` / `arrow_forward` are left alone because both are declared `matchTextDirection: true` and Flutter already mirrors them. A third 56dp control, the ingredients button, joins this bar so the pull-up sheet is reachable at the bottom edge with a wet thumb (COOK-2 asks for a pull-up sheet; today it is only in the top corner). The 20%/80% edge-tap zones keep their RTL mapping but are excluded over the timers bar, the timer buttons and the bottom bar, and a disabled timer button is wrapped in `AbsorbPointer` so a habitual tap never jumps a step. **Ingredients sheet:** rows go to `ConstrainedBox(minHeight: 56)` with a 28dp checkbox, and the checked style becomes `bodyLarge.copyWith(decoration: lineThrough, color: onSurfaceVariant)` — fixing a live bug where `cook_mode_screen.dart` passes a bare `TextStyle` and a ticked line silently shrinks. The sheet header carries the scale pill. **Done page:** an 88dp `KhatamPainter` in primary replaces `Icons.restaurant`, `displaySmall` title, a 56dp `FilledButton` and a 52dp `OutlinedButton`.
-
-**Meal plan** (`plan_screen.dart`) — week bar: `PreferredSize` height becomes `textScaler.scale(56).clamp(56.0, 76.0)`; the two chevron `IconButton`s go to 48dp and the manual mirror at `plan_screen.dart:126` and `:139` is deleted — `Icons.chevron_left`/`right` are both `matchTextDirection: true`, so `rtl ? chevron_right : chevron_left` mirrors twice and the arrows point the wrong way in Arabic today; write `Icons.chevron_left`/`Icons.chevron_right` plainly. The range `Text` keeps its `Flexible` + ellipsis and renders through `DigitBox`-free `settings.inDigits` as today. **Day cards:** drop `Card` and both alpha washes (`primaryContainer` at 0.45 and `surfaceContainerHighest` at 0.35 are the muddiest thing in the app); each day is a `Container` with a 14dp radius, `surfaceContainerLow`, 1dp outline border. Today takes `surfaceContainer`, a 3dp primary rail down its start edge via `BorderDirectional`, and the existing `planToday` string in a 10dp-radius `primaryContainer` pill at `labelMedium onPrimaryContainer` (12.22:1) — a far stronger "today" than bold text, and it survives being the last day of the week because the seven cards are still built eagerly for `_scrollToToday`. **Slot rows:** delete `SizedBox(width: 84)` at `plan_screen.dart:273` — "وجبة خفيفة" cannot fit it at 1.3×. Each slot becomes a `Column`: a header line of a 2dp × 12dp rail, 8dp gap, the meal name in `labelLarge onSurfaceVariant`, `Spacer`, and a 48dp "+" `IconButton` keeping tooltip "إضافة" (up from 40dp with compact density); then the entries indented 16dp from the start. An empty slot shows only that header line (PLAN-1's "only a small +"). **Entry tiles:** `InkWell`, `ConstrainedBox(minHeight: 56)`, 10dp radius, 18dp glyph, `ContentText bodyLarge`, and the amount at the end edge in a 10dp-radius `tertiaryContainer` pill at `labelMedium`, still forced LTR exactly as today; `MergeSemantics` per tile; the long-press menu is unchanged. The add-to-plan sheet keeps its `ChoiceChip`s for days and meals — `plan_test.dart:30` does `find.widgetWithText(ChoiceChip, 'عشاء')` — restyled only. Empty plan: the shared empty state. `bottomNavigationBar` comes from the shell; body bottom padding `24 + slot height`.
-
-**Recipe editor** (`recipe_editor_screen.dart`) — no `BannerSlot` (ADS-9). AppBar Save becomes a 44dp `FilledButton` at 10dp radius with 8dp end margin. Body gutters 16, capped at 560. The form is grouped under three `RailHeading`s using only strings that already exist (`l10n.ingredients`, `l10n.steps`, `l10n.notes` are already the field labels, so the headings reuse them; to keep `find.text` unambiguous, no duplicate headings are added — group visually with 24dp gaps and a 1dp `outlineVariant` rule, no new text). Every field takes the new `InputDecorationTheme` with `floatingLabelBehavior: always`, which is what removes most of the editor's 1.3× width pressure. **The three number fields** (servings / prep / cook) are the editor's real hazard: replace the fixed `Row` with `LayoutBuilder` + `Wrap` — three `SizedBox(width: (maxWidth - 24) / 3)` when `textScaler.scale(15) <= 18`, otherwise full-width stacked with 12dp gaps. Multiline ingredient/step/notes fields keep `minLines` 5/5/2 and take `bodyLarge` so the user writes in the type they will read. Photo row: the 64dp thumb becomes 80dp at 12dp radius with a 1dp outline, and its two buttons go into a `Wrap` of 48dp `OutlinedButton`s so they stack instead of squeezing.
-
-**Import** (`import_screen.dart`) — no `BannerSlot`, no upsell (ADS-1, IMP-5). Gutters 20. The URL field keeps `textDirection: TextDirection.ltr` and its "لصق" `IconButton` at 48dp. `importExplain` moves into a `surfaceContainerLow` aside: 12dp radius, 1dp outline, 14dp padding, a 20dp info glyph at the reading edge, `bodyMedium onSurfaceVariant` — it currently reads as orphaned fine print at `bodySmall`. The action is a full-width 56dp `FilledButton`, and the busy block reserves the same height so the layout does not jump when an import starts. Progress keeps the real `LinearProgressIndicator` widget (its semantics matter) at 6dp with a 3dp radius on an `outlineVariant` track, with the existing `importReading` / `importUnderstanding` string above it in `titleMedium` and Cancel as a 52dp `OutlinedButton` below. Failure becomes an `errorContainer` band: 12dp radius, 16dp padding, a 20dp `Icons.error_outline` in `onErrorContainer`, the message in `bodyMedium onErrorContainer` (13.16:1), and "أضف يدويًا" as a 52dp `OutlinedButton` inside the band.
-
-**Settings** (`settings_screen.dart`) — the screen the owner named, and the cheapest one to transform; every string and the `Icon(Icons.check)` survive. Body padding `EdgeInsetsDirectional.fromSTEB(0, 8, 0, 40)`, content capped at 560. Each `_Choice` renders as (1) a `RailHeading` — `EdgeInsetsDirectional.fromSTEB(16, 28, 16, 10)` around a 3dp × 18dp primary rail, 10dp gap, the title in `labelLarge w600 onSurface` — replacing today's primary-coloured `titleSmall`; and (2) a `Container` with 16dp horizontal margin, `surfaceContainerLow`, 14dp radius, a 1dp outline border and `clipBehavior: antiAlias`, holding the option rows separated by `Divider(indent: kInsetGroup)`. Each row is an `InkWell` with `ConstrainedBox(minHeight: 56)` and 16/12/16/12 padding, label in `bodyLarge`, wrapping (not ellipsised) because "مترية (غرام، مل)" is long at 1.3×. **The chosen row** shows three things at once, so selection never depends on a tint alone: a 3dp primary bar flush to the reading edge (6.19:1 against the row), a `primaryContainer` fill (`onSurface` on it is 12.57:1), the label at w600, and the existing `Icon(Icons.check)` kept, now in a 22dp 6dp-radius primary square with an `onPrimary` glyph at the end edge. `ListTile`'s `selected:` is dropped so M3's tint never appears. **Three groups preview themselves with no new strings:** the digit rows render their own label ("123" / "١٢٣") at `titleMedium` 22/600 in primary so `find.text('١٢٣')` still matches and the figures are actually comparable; the language rows go through `ContentText` so "English" reads left-to-right inside the Arabic UI and "العربية" right-to-left inside the English one (LANG-5, which `settings_screen.dart:111` violates today with a plain `Text`); the theme rows each carry a 40×28 leading swatch at 8dp radius with a 1dp outline, painted with a `Container` decoration — paper `#FBF7F0`, ink `#13120E`, and a diagonal split for "حسب الجهاز", with the painter given the ambient `TextDirection` so the diagonal mirrors. Group order is unchanged: language, digits, units, week start, theme; the later PAY-11 subscription row and the ADS-5 consent row drop straight into the same pattern. No `BannerSlot` on this screen.
-
-### Signature moves
-
-1. **The rail.** A 3dp × 20dp bar in deep firuzi teal standing at the reading edge of every heading the app owns — section headings, settings group titles, ingredient and step group names, the day card, sheet titles, the wordmark. Built from `EdgeInsetsDirectional` and `BorderDirectional`, so it flips to the right in Arabic and the left in English with no code branch. It measures 7.05:1 on paper and 10.73:1 in the dark, it costs about fifteen lines, and it is the whole identity in one rectangle.
-2. **Teal numbers, inside the line.** Every amount is set in primary at weight 600 while the words around it stay `onSurface` at 400 — done by splitting the string `formatLine()` already produces at its PDI character, so the numeral and the unit word that grammatically agrees with it ("٢ كوبان") stay one phrase and QTY-6 is never broken. The app's claim is that Arabic recipes scale correctly; this is that claim rendered on every row, and the accent was chosen precisely because it passes AA as text on every surface in both themes (4.62:1 at its worst).
-3. **Hairline architecture, zero shadow.** Elevation, surfaceTint and shadowColor are zero or transparent on every Material in the app, and depth is made by a five-step warm ladder plus a 1dp `outline` border that clears 3:1 against every step of that ladder in both themes (3.11–4.75 light, 3.40–5.55 dark). The pale decorative hairline is demoted to row separators inside an already-bounded group and may never be the edge of a control — which is the difference between a design that looks calm on a monitor and one you can still read in a kitchen.
-4. **Squared, never stadium.** Buttons and fields at 12dp, cards at 14dp, chips and pills at 10dp, the hero photo's bottom corners at 18dp, and the ingredient bullet a 6dp square rotated 45°. Material's stadium pill — the loudest "this is a stock Android app" tell — appears on no button, chip, FAB or navigation indicator. Paired with letterSpacing forced to 0 on all fifteen type tokens, because M3's Latin tracking visibly pulls a joined script apart.
-5. **The khatam.** One eight-point star drawn as a stroked `CustomPainter` — no bitmaps, no lanterns, no arches — appearing at 20dp beside the wordmark, at 120dp and 8% behind every empty state, at 88dp in primary on cook mode's finish page, and at 10% inside a photoless thumbnail so a library of hand-typed recipes looks composed instead of showing the same grey plate forty times.
-
-### New files
-
-- `lib/theme/wasfati_theme.dart` — the two `ThemeData` builders and every sub-theme listed above; `app.dart` keeps only `theme: wasfatiTheme(Brightness.light), darkTheme: wasfatiTheme(Brightness.dark)` and loses `ColorScheme.fromSeed`.
-- `lib/theme/wasfati_colors.dart` — the two hand-written `ColorScheme` literals plus the four named divider insets (`kInsetGroup 16`, `kInsetStep 52`, `kInsetList 92`, `kInsetFull 0`) and the radius constants.
-- `lib/theme/wasfati_type.dart` — the `TextTheme` with `leadingDistribution: even` on every token, `letterSpacing 0` everywhere, and `cookStep` derived as `bodyLarge.fontSize * 1.6`.
-- `lib/widgets/rail_heading.dart` — `RailHeading(text, {style, railHeight})` and `GroupShelf(text)` for the hairline-to-the-edge group label.
-- `lib/widgets/amount_line.dart` — `AmountLine(shown, digits, markUnscaled)`: splits `formatLine`'s output at U+2069 and colours the isolated amount in primary/600, falling back to plain `ContentText(line.original)` when `line.min == null`.
-- `lib/widgets/digit_box.dart` — `DigitBox(text, style)`: each digit in a `SizedBox` of `fontSize × 0.63` inside an LTR `Directionality`, for the running timer, the step numeral and the ×factor readout.
-- `lib/widgets/khatam.dart` — `KhatamPainter` (an {8/3} octagram at 1dp stroke, `innerRatio √2−1`, `shouldRepaint false`, wrapped in `RepaintBoundary`) and `KhatamMark(size, color, opacity)`.
-- `lib/widgets/banner_slot.dart` — `BannerSlot(screen: AdScreen)` with `assert(screen != AdScreen.cookMode)` and a static `heightOf(context)`; reserves the anchored-adaptive height from the first build whenever ads are enabled for this build and consent has been answered, paints nothing until an ad attaches (ADS-2), and adds a 1dp `outlineVariant` top hairline only when filled.
-- `lib/widgets/empty_state.dart` — one shared composition for `recipesEmpty`, `cookbooksEmpty`, `noResults`, `cookbookEmpty` and `planEmpty`, inside a `SingleChildScrollView` so 1.3× scrolls rather than overflows.
-- `test/theme/type_test.dart` — asserts `cookStep.fontSize >= bodyLarge.fontSize * 1.5` (COOK-2), that every wrapping token's height ≥ 1.75 and every token's height ≥ 1.50, and that letterSpacing is 0 on all fifteen.
-- `test/widget/app_test.dart` — extend the existing LANG-6 1.3× walk (it currently visits only library → recipe → editor) to cook mode, the meal plan, settings and import, in both languages, with a fixture carrying a long Arabic title with tashkeel and a 30-line ingredient list where most lines have no parsed amount.
-
-### Effort and risk
-
-About 1,300–1,500 net new lines across 14 files: three new theme files (~450 lines), six new widgets (~320), edits to all nine screens (~550), and two test files (~200). No new packages, no new fonts, no assets.
-
-The riskiest part is `AmountLine`: it depends on `formatLine(isolate: true)` emitting U+2066/U+2069, which only happens when `line.min != null`, so the widget must detect the PDI and fall back to a plain `ContentText` otherwise, and it must keep passing `source: line.original` so `ContentText` still decides direction from the unformatted text — get that wrong and an English ingredient inside an Arabic recipe flips.
-
-Second risk: the settings and recipe-page work touches widgets that tests find by text, tooltip and icon; keep `SearchBar`, the plan sheet's `ChoiceChip`s, `Icons.edit_outlined`, the "حذف" tooltip and `Icon(Icons.check)`, and run the suite (21 green today) after the theme lands and again after the screens.
-
-Land it in two PRs — theme + type + the three deletions first, then the per-screen layouts — verifying green after each.
-
----
-
-## زعفران · Saffron slab
-
-### What the user sees
-
-> "Every button you actually press becomes a solid saffron block with near-black writing on it — the brightest, highest-contrast thing on the screen in daylight or at night — and it sinks two pixels under your finger like a real key. Everything else goes quiet cream, so 'ابدأ الطبخ', 'التالي' in cook mode and the add button are impossible to miss with flour on your hands. One corner of every photo, badge, tab and step number is cut at forty-five degrees, on the right in Arabic, which is what will make a screenshot of this app recognisable at a glance."
-
-### Based on
-
-Saffron Slab (ink on saffron, the ledge, cook-mode-first sizing, the four-colour state code) and Quiet Geometry (the chamfered corner and the girih lattice as working parts rather than wallpaper), with the fix that all six critics of those two directions converged on:
-
-Both source directions proved that saffron cannot be **text** on light paper (2.04:1) and then used saffron and cream as **shapes** anyway, landing the focus ring, the nav indicator, the selected chip and the today card between 1.09:1 and 2.81:1. Here the saffron slab carries a 1.5dp `#A86C00` edge in light (4.19:1 against paper) so the button's shape is perceivable, `ColorScheme.primary` is the readable amber ink `#8A5200` rather than the slab colour so a stray `colorScheme.primary` foreground can never silently fail, and the slab itself lives in a `ThemeExtension` applied explicitly.
-
-Dropped: the two-column amount table, `FontFeature.tabularFigures`, Reem Kufi, the `FittedBox(scaleDown)` on amounts, and the 34–44dp targets both directions specified while claiming a 48dp floor.
-
-### Palette
-
-**ColorScheme roles** (M3 `*Fixed` roles are unused; omitted):
-
-| Role | Light | Dark |
+| Token | Light | Dark |
 |---|---|---|
-| primary | `#8A5200` | `#F5B84A` |
-| onPrimary | `#FFFFFF` | `#2A1A00` |
-| primaryContainer | `#FFDEAF` | `#5E3D00` |
-| onPrimaryContainer | `#2C1700` | `#FFDEAF` |
-| secondary | `#2F6B45` | `#8DD3A2` |
-| onSecondary | `#FFFFFF` | `#06371D` |
-| secondaryContainer | `#C5E8CF` | `#1E4F31` |
-| onSecondaryContainer | `#052014` | `#A9EFBC` |
-| tertiary | `#0F6058` | `#62D3C7` |
-| onTertiary | `#FFFFFF` | `#00352F` |
-| tertiaryContainer | `#B8E5DE` | `#004B44` |
-| onTertiaryContainer | `#00201C` | `#9BEFE2` |
-| error | `#A3231B` | `#FFB4A6` |
-| onError | `#FFFFFF` | `#5F1005` |
-| errorContainer | `#FFDAD4` | `#8C2A1E` |
-| onErrorContainer | `#410200` | `#FFDAD4` |
-| surface | `#FDFAF4` | `#14100C` |
-| onSurface | `#191410` | `#F2E9DB` |
-| onSurfaceVariant | `#5A5145` | `#C6B9A4` |
-| surfaceDim | `#E6DCC6` | `#14100C` |
-| surfaceBright | `#FFFEFA` | `#41382C` |
-| surfaceContainerLowest | `#FFFFFF` | `#0E0B08` |
-| surfaceContainerLow | `#F5EDDD` | `#201B14` |
-| surfaceContainer | `#EEE4CF` | `#29231B` |
-| surfaceContainerHigh | `#E6DAC2` | `#352D22` |
-| surfaceContainerHighest | `#DDD0B3` | `#41382C` |
-| outline | `#7C6E5C` | `#9A8A75` |
-| outlineVariant | `#C7B79E` | `#5C5243` |
-| shadow | `#000000` | `#000000` |
-| scrim | `#000000` | `#000000` |
-| inverseSurface | `#33291E` | `#F2E9DB` |
-| onInverseSurface | `#F8F0E3` | `#29231B` |
-| inversePrimary | `#F5B84A` | `#8A5200` |
-| surfaceTint | `#00000000` | `#00000000` |
-
-**Plus a `ThemeExtension<WasfatiSlab>`**, three values, **identical in both themes**:
-
-| Token | Value |
-|---|---|
-| slab | `#F2A118` |
-| onSlab | `#1B1205` |
-| ledge | `#A86C00` |
-
-### Contrast
+| `accent` | `#0F766E` | `#5EC9BD` |
+| `onAccent` | `#FFFFFF` | `#1F1A15` |
+| `accentSoft` | `#DDF1EE` | `#16332F` |
+| `onAccentSoft` | `#0B4F49` | `#BFEDE6` |
 
-_Recomputed with the WCAG 2.1 sRGB formula._
+`AppStyle.saffron` / `AppStyle.ink` (`lib/models/settings.dart`, unchanged) select which of these two four-row tables feeds the one Sufra `ColorScheme` builder — replacing today's `isInk` branches across every `ThemeData` sub-theme with a single shape language parameterised only by four colours. The stored default flips to `AppStyle.saffron` (LOOK-1); an install with a saved choice keeps it.
 
-**The signature pair:** `onSlab #1B1205` on `slab #F2A118` = 8.71:1, the same number day and night, so every primary action in the app is 8.71:1 in both themes with no theme-conditional code.
+### Flutter `ColorScheme` mapping
 
-**LIGHT body:** onSurface/surface 17.55:1; onSurface on surfaceContainerLow 15.70, Container 14.48, High 13.21, Highest 12.48; onSurfaceVariant/surface 7.47, on Low 6.69, Container 6.17, High 5.62, Highest 5.10.
+| Role | Token | Role | Token |
+|---|---|---|---|
+| `primary` | `accent` | `secondaryContainer` | `herbSoft` |
+| `onPrimary` | `onAccent` | `onSecondaryContainer` | `onHerbSoft` |
+| `primaryContainer` | `accentSoft` | `surface` | `page` |
+| `onPrimaryContainer` | `onAccentSoft` | `surfaceContainerLowest` | `card` |
+| `secondary` | `herb` | `onSurface` | `ink` |
+| `onSecondary` | `onHerb` | `onSurfaceVariant` | `ink2` |
+| | | `outline` | `border` |
+| | | `outlineVariant` | `line` |
 
-**primary `#8A5200` as text:** /surface 6.13, on Low 5.49, Container 5.06, High 4.62, Highest 4.18 — AA on the whole ladder, which is why primary is the amber ink and not the slab colour. onPrimary/primary 6.39; onPrimaryContainer/primaryContainer 13.27; onSurface on primaryContainer 14.20. tertiary `#0F6058` (the "you changed this number" teal): /surface 7.11, on Low 6.36, Container 5.87. secondary `#2F6B45` (planned or ticked): /surface 6.09, on Low 5.45. error/surface 7.16, onError/error 7.46, onErrorContainer/errorContainer 13.16. SnackBar: onInverseSurface/inverseSurface 12.57, action inversePrimary/inverseSurface 8.02.
+Every role above also gets a same-named field on a `SufraColors` `ThemeExtension`, so a Sufra-specific widget reads `Theme.of(context).extension<SufraColors>()!.ink2` by its design name instead of reaching through the M3 role, while ordinary Material widgets (dialogs, form fields) still pick up the right colour automatically through `ColorScheme`.
 
-**LIGHT non-text (1.4.11, 3:1):** outline `#7C6E5C` clears the whole ladder — 4.75 / 4.25 / 3.92 / 3.58 / 3.24 from surface to surfaceContainerHighest. **The slab as a shape:** `#F2A118` on paper is only 2.04:1, so in light every saffron slab carries a 1.5dp `ledge #A86C00` edge, which is 4.19:1 on surface and 3.75:1 on surfaceContainerLow — the button's outline is what you perceive, the fill is what you read the label against. A selected chip or nav indicator is `primaryContainer #FFDEAF`, only 1.14:1 against surfaceContainerLow, so it always carries a 2dp `primary #8A5200` border at 5.49:1 — the border is the state signal, never the tint. outlineVariant `#C7B79E` is 1.88:1 on surface / 1.69 on Low: decorative row separators only, never a control edge. Fill steps against surface: Low 1.12, Container 1.21, High 1.33, Highest 1.47 — tonal nuance, not structure.
+### `ThemeExtension<SufraColors>`: tokens `ColorScheme` has no role for
 
-**DARK body:** onSurface/surface 15.74, across the ladder to 9.55; onSurfaceVariant/surface 9.81 → 5.95; primary `#F5B84A` /surface 10.67 → 6.48; onPrimary/primary 9.50; onPrimaryContainer/primaryContainer 7.61; tertiary/surface 10.51; secondary/surface 10.79; error/surface 11.12; onErrorContainer/errorContainer 6.58; onInverseSurface/inverseSurface 13.39, inversePrimary/inverseSurface 5.31.
+- `sunk` (both brightnesses, above)
+- `navPillFill` — light: `ink` (`#1F1A15`); dark: `#2B2621`, 1 px border `navPillBorder` `#3A332C`
+- `navInactive` — `#A89C8F` in light (against the light-mode pill's `ink` fill); in dark the pill's own `ink2` (`#BDB2A6`) already does the job at 7.19:1 against `navPillFill`, so no second dark value is minted
+- `shadowLift` — `0 1px 2px rgba(47,32,18,.06), 0 8px 24px rgba(47,32,18,.08)`, light only
+- `shadowFloat` — `0 12px 32px rgba(31,26,21,.28)`, light only
+- `cardHairlineDark` — `line` (dark), the 1 dp border a card takes in place of a shadow
+- six `coverTint` / `coverTone` pairs (below), for the drawn cover
+- `radiusCard` 22, `radiusPhotoCard` 24, `radiusSheet` 28, `gutter` 20 (mirrors §Shape, kept here too since custom painters and the drawn cover read them directly rather than via `Theme.of(context).cardTheme`)
 
-**DARK non-text:** outline `#9A8A75` → 5.65 / 5.10 / 4.64 / 4.04 / 3.43, all ≥3:1; outlineVariant `#5C5243` is 2.47 / 2.23 / 2.03 → decorative only. In dark the slab needs no border: `#F2A118` on `#14100C` is 8.91:1 and on surfaceContainerLow 8.21:1. The ledge is 2.06:1 against the slab (it is a shading, not a boundary) and 4.34:1 against the dark page.
+### The six drawn-cover tints
 
-**DISABLED content** is onSurface at 55% in light (`#807B77`, 4.02:1) and 45% in dark (`#787269`, 3.98:1) — not M3's 38%, which is 2.41:1 in light.
+LOOK-10 picks one of six tints from the recipe's ID. The spec's mockups show only sage; the other five extend the same warm, muted family and clear contrast comfortably in both brightnesses (tone-on-tint in light, tone-on-`card` in dark, computed in §Contrast):
 
-**HINTS** render at full onSurfaceVariant (6.69:1 on the field fill), never at 60% alpha (2.75:1).
+| Name | Light tint | Light tone | Dark tone (on `card`) |
+|---|---|---|---|
+| sage | `#DDE8D5` | `#3F5A36` | `#8FBE86` |
+| clay | `#F3DCCB` | `#7A4B2E` | `#D69A6B` |
+| honey | `#F5E6B8` | `#7A5C12` | `#D9B84A` |
+| dusty rose | `#F0D9D9` | `#7A3F3F` | `#D99B9B` |
+| denim | `#D8E3EC` | `#35526E` | `#7FA8C9` |
+| plum | `#E6D9EC` | `#5B3E70` | `#B08FC4` |
 
-**COOK MODE** runs on surfaceContainerLowest: 18.28:1 light (`#191410` on `#FFFFFF`) and 16.31:1 dark (`#F2E9DB` on `#0E0B08`).
+## Contrast
 
-**APP-BAR ICONS OVER A USER PHOTO** sit on 40dp opaque chamfered squares of `surface`, 17.55:1 regardless of the dish — no scrim, because white on 55% black over a bright plate is only 4.74:1 and the delete action is in that row.
+Computed with the WCAG 2.1 sRGB relative-luminance formula; every value below is measured, not estimated. Bars: 4.5:1 for body text, 3:1 for large text (≥14 px at weight ≥600, which covers every accent-coloured amount, LOOK-4) and for a control's boundary, no bar for a purely decorative hairline (LOOK-3's own card exemption).
 
-### Typography
+**Light, shared tokens (both accents):** `ink`/page 15.36, /card 17.26, /sunk 14.20. `ink2`/page 6.26, /card 7.03, /sunk 5.78. `border`/card 3.67, /page 3.26 (both clear the 3:1 boundary bar). `line`/card 1.31 — decorative only, never a control edge.
 
-Identical spine to the other option — one family, **IBM Plex Sans Arabic**, no second font — with every label and button token one step larger, because this design is derived from reading a phone on a counter at 60cm. `letterSpacing` is 0 on every token. Every token sets `leadingDistribution: TextLeadingDistribution.even` and `MaterialApp` sets `textHeightBehavior` to match; Flutter's default `proportional` starves the descent band where Arabic bowls sit.
+**Light, Saffron:** `accent`/page 4.61, /card 5.18, /sunk **4.26**. `onAccent` (white) on `accent` 5.18. `herb`/page 5.61, /card 6.30; `onHerb` (white) on `herb` 6.30; `onHerbSoft`/`herbSoft` 8.57.
 
-**Two leading values**, derived from the font binary: the file is upem 1000, ascent 1085, descent −415, lineGap 0, `USE_TYPO_METRICS` set → its own line box is exactly 1.500em, and its maximum ink is 1.128em above the baseline and 0.601em below, so two stacked lines cannot collide at any baseline distance ≥ 1.729em. Therefore height 1.75 on every token that can wrap, and height 1.50 on single-line chrome.
+**Light, Ink:** `accent`/page 4.87, /card 5.47, /sunk **4.50**. `onAccent` (white) on `accent` 5.47.
 
-| Token | Size | Weight | Height | Letter-spacing | Usage |
-|---|---|---|---|---|---|
-| displaySmall | 32sp | 700 | 1.75 | 0 | cook mode's finish title only |
-| headlineMedium | 26sp | 700 | 1.75 | 0 | the recipe title |
-| headlineSmall | 22sp | 700 | 1.75 | 0 | empty-state titles |
-| titleLarge | 20sp | 700 | 1.50 | 0 | AppBar titles and section headings |
-| titleMedium | 18sp | 600 | 1.50 | 0 | the scale-bar value, the plan's day label, dialog and sheet titles, the cook-mode step counter |
-| titleSmall | 16sp | 700 | 1.75 | 0 | ingredient and step group names, settings group titles |
-| bodyLarge | 17sp | 400 | 1.75 | 0 | ingredient lines, step text on the recipe page, notes, list titles, plan entries, settings option labels |
-| bodyMedium | 15sp | 400 | 1.75 | 0 | general body text |
-| bodySmall | 13sp | 400 | 1.75 | 0 | helper/caption text |
-| labelLarge | 16sp | 600 | 1.50 | 0 | every button label, tab label, chip label (M3's 14 is too small to read at arm's length; the slabs carry 18/700) |
-| labelMedium | 14sp | 600 | 1.50 | 0 | navigation labels, the plan's amounts, the today badge |
-| labelSmall | 12sp | 600 | 1.50 | 0 | fine print |
-| timerClock | 22sp | 700 | 1.50 | 0 | the running countdown, which is the number you check from across a kitchen and which both source directions left at 13sp |
-| `cookStep` (derived, not a literal) | 27.2sp (= bodyLarge.fontSize × 1.6) | 500 | 1.75 | 0 | cook mode step text |
+**Dark, shared tokens:** `ink`/page 16.48, /card 14.83, /sunk 13.12. `ink2`/page 9.03, /card 8.13, /sunk 7.19. `border`/card 4.39, /page 4.88. `line`/card 1.25 — decorative, matches the light ratio's role.
 
-`cookStep` is defined as `textTheme.bodyLarge!.copyWith(fontSize: textTheme.bodyLarge!.fontSize! * 1.6, fontWeight: FontWeight.w500, height: 1.75)`, so COOK-2's 1.5× floor survives any future change to `bodyLarge`; a unit test asserts the ratio.
+**Dark, Saffron:** `accent`/page 7.63, /card 6.86, /sunk 6.07. `onAccent` (`#1F1A15`) on `accent` 7.00. `herb`/page 9.48, /card 8.53; `onHerbSoft`/`herbSoft` 10.06.
 
-**Numerals:** never `FontFeature.tabularFigures` — the four bundled TTFs carry `lnum, numr, dnom, frac, zero, ss01–ss06` but no `tnum`, and the Arabic-Indic digits are proportional (282, 263, 485, 630, 486, 526, 503, 531, 531, 508 per 1000em) while the Latin digits are already uniform at 600/1000. The running clock, the step numeral inside the saffron badge, the ×factor readout and the week range all go through `DigitBox`, which reserves `fontSize × 0.63` per digit so switching 123 ↔ ١٢٣ never resizes a badge or shifts a countdown. Amounts inside recipe text keep `formatLine`'s U+2066/U+2069 isolates untouched.
+**Dark, Ink:** `accent`/page 9.46, /card 8.52, /sunk 7.54. `onAccent` (`#1F1A15`) on `accent` 8.68.
 
-### Shape and spacing
+**Navigation pill.** Light (fill = `ink`): `onAccent`-white active icon+label/fill 17.26; `navInactive`/fill 6.42; the active dot, Saffron 3.33, Ink 3.15 — both clear 3:1 but only just, which is fine because LOOK-7 already marks the active slot by colour **and** the dot, never the dot alone. Dark (fill = `navPillFill` `#2B2621`): `ink`/fill 13.12; `ink2` (standing in for `navInactive`)/fill 7.19; `navPillBorder`/fill 1.21 and fill/page 1.26 — both below 3:1, accepted under the same exemption as a card's dark hairline: the pill is a container read by its shape, fixed position and icon content, not by an edge a finger has to find.
 
-**Radii:** 12 (chips, entry tiles, text fields, timer buttons), 16 (all buttons, the FAB, the scale bar, the control slab), 20 (cards, settings group cards, day cards), 24 (dialogs, bottom-sheet top corners). Stadium is used for nothing.
+**Flags — pairs under their bar, and what covers them:**
+1. `accent`/`sunk`, light: Saffron 4.26, Ink 4.50 — both under or right at the 4.5 body-text bar. Covered by construction: LOOK-4 sets every accent-coloured piece of text at weight ≥600 (700 for amounts), which is "large text" (3:1), cleared with margin. **Rule:** never set accent-coloured text at regular (400) weight on `sunk`; keep regular-weight accent text (a link, say) to `card` or `page`.
+2. `onHerb` white on `herb`-dark: **1.98:1, fails outright.** `herb`-dark (`#7FC7A0`) is a bright mint, the same shape of problem `accent`-dark solves by flipping its text colour (this document's dark-mode `ColorScheme` already does this for `onPrimary`). `onHerb` gets the identical flip — white in light, `#1F1A15` in dark (8.69:1) — so a dark-mode checked checkbox's check glyph stays legible. This token is new; nothing in the spec's dark table named it, because the spec only shows the recipe page (light) and cook mode (dark) — neither has a checked checkbox on-screen.
+3. Card and nav-pill hairlines in dark (both ~1.2–1.3:1) are intentionally under 3:1: LOOK-3 exempts a card's edge from the boundary bar because a card is "known by its content and a shadow," and the same logic covers the pill, a container rather than an interactive control.
 
-**The chamfer — `ChamferedBorder`**, a `ShapeBorder` that must extend `OutlinedBorder` and implement `copyWith` (`ButtonStyle.shape`, `ChipThemeData.shape` and `CardThemeData.shape` all require `OutlinedBorder`, not plain `ShapeBorder`): it cuts the top-start corner at 45°, rounds the other three, reading `TextDirection` from the paint context so the cut lands top-right in Arabic and top-left in English. Cut length = `shorterSide × 0.293` (the true regular-octagon ratio, so the motif is one shape at every size rather than five), clamped to 6–18dp. It is applied to **exactly five things**, and a code-review rule says so: the navigation indicator, recipe thumbnails, step-number badges, the settings tick badge, and the two library tab slabs.
+**Digits, hint text, disabled text** carry over from Decision 14 unchanged: Western 0–9 by default with an ١٢٣ Settings option (both parsed, QTY-1/QTY-5); hint text at full `ink2`, never faded; disabled text at `ink2` (already ≥3:1 everywhere above), never Material's 38% default.
 
-**Elevation is zero everywhere:** `shadowColor` transparent on `ThemeData`, `elevation 0` and `surfaceTintColor` transparent on every sub-theme, `scrolledUnderElevation 0` on the AppBar.
+## Type
 
-**The ledge is the only depth in the app:** `BoxShadow(color: ledge #A86C00, offset: Offset(0, 2), blurRadius: 0, spreadRadius: 0)` under exactly three objects — the library FAB, the recipe page's "ابدأ الطبخ", and cook mode's "التالي". Pressing collapses it to 0 and translates the slab down 2dp over 90ms, so those three feel like keys. Nothing else in `lib/` writes a `BoxShadow`.
+One family, **IBM Plex Sans Arabic** (400–700), `letterSpacing: 0` on every token — unchanged reasoning from Decision 14: the font's own metrics (upem 1000, `USE_TYPO_METRICS` on, winAscent 1.128 em, winDescent 0.601 em) put its collision-free floor at 1.729 em, so LOOK-5 rounds that to two built heights: **1.75** on any token whose text can wrap to a second line, **1.50** on chrome that is always one line by construction (a pill's label, a nav caption — sized and clipped so it never needs a second line).
 
-**Borders:** 1.5dp `outline` is the standard control boundary (3.24–4.75:1 light, 3.43–5.65:1 dark); 1.5dp `ledge` is the edge of a saffron slab in light (4.19:1) and is omitted in dark where the slab is 8.91:1 by itself; 2dp `primary` is focus and selection (5.49:1 light on the field fill, 9.64:1 dark); 4dp is the leading state stripe on a row or card; 1dp `outlineVariant` is a row separator inside a bounded group and nothing else.
+The mockups' own CSS line-heights (30/700/**1.45** for `display`, 14/400/**1.6** for `bodyS`, and so on) are a per-artboard visual choice for a screen that is a fixed screenshot and never reflows (§2 of the design spec). The built `TextTheme` applies LOOK-5's binary rule instead, since LOOK-8 requires every screen to survive 1.3× text on a 360 dp phone without clipping:
 
-**Dividers:** keep Flutter's `Divider` — already directional (`EdgeInsetsDirectional.only(start: indent, end: endIndent)`) — with `DividerThemeData(color: outlineVariant, thickness: 1, space: 1)` and four named insets in `wasfati_shapes.dart`: `kInsetGroup 16`, `kInsetStep 56`, `kInsetList 92`, `kInsetFull 0`.
+| Token | Size / weight | Height | Use |
+|---|---|---|---|
+| `display` | 30 / 700 | 1.75 | home greeting, welcome title |
+| `titleL` | 26 / 700 | 1.75 | recipe title, screen titles (الخطة، المشتريات، الإعدادات) |
+| `title` | 19 / 700 | 1.75 | section headings, aisle names |
+| `titleS` | 16 / 600 | 1.75 | card titles, list item titles |
+| `body` | 16 / 400 | 1.75 | ingredient lines, step text, paragraphs |
+| `bodyS` | 14 / 400 | 1.75 | subtitles, meta ("50 دقيقة · 4 حصص") |
+| `label` | 14 / 600 | 1.50 | button, chip and segmented labels (always `maxLines: 1`) |
+| `caption` | 12 / 600 | 1.50 | badges, nav labels, small counters (always `maxLines: 1`) |
+| `cookStep` (derived) | 27 / 500 | 1.75 | cook mode's step text |
 
-**Spacing:** 4, 8, 12, 16, 20, 24, 32, 40, 48. Screen gutter 16, cook mode 24, card inner padding 16, content capped at 560 and centred.
+`cookStep` is `body.fontSize * 1.6875` (16 → 27, the mockup's own value), defined as a multiplier rather than a literal so COOK-2's "at least 1.5× body" floor holds even if `body` ever moves; a unit test asserts `cookStep.fontSize >= body.fontSize * 1.5`, the same pattern Decision 14 used. `MaterialApp.textHeightBehavior` keeps `leadingDistribution: TextLeadingDistribution.even` app-wide, since Flutter's `proportional` default starves the descent band Arabic bowls and tashkeel live in.
 
-**Touch targets** — this direction keeps its own rule: 48dp minimum everywhere with no exception (including the plan's per-slot "+" — today 40dp with `VisualDensity.compact` — every chip via `materialTapTargetSize: MaterialTapTargetSize.padded`, never `compact`, the `SegmentedButton` at `minimumSize Size(0, 48)` and the servings stepper); 56dp for anything touched with wet hands (the cook-mode close, the ingredients control, the timer buttons, the ingredient-sheet rows); 64dp for a primary slab.
+## Shape, spacing and depth
 
-Every height is a minimum: `ConstrainedBox(minHeight:)` or `minimumSize`, never `SizedBox(height:)`. `library_view.dart:142`'s `SizedBox(height: 56)` and `plan_screen.dart:273`'s `SizedBox(width: 84)` are deleted, and `plan_screen.dart:119`'s `PreferredSize` becomes `Size.fromHeight(MediaQuery.textScalerOf(context).scale(56).clamp(56.0, 76.0))` — scaling the dimension, not `scale(1)`, which is wrong under Android 14's non-linear font scaling.
+**Radii:** cards 22, photo cards 24, a sheet's or dialog's top corners 28. Buttons, chips, the search field, segmented controls and steppers are pills (999); round icon buttons are circles. Smaller in-card radii: stat tiles and the quota-row border-card 18, add-sheet tiles and the scale-bar card 22, aisle/settings icon tiles 11–12, the "in the plan" / Ramadan-offer bands 16.
 
-### Components
+**Heights:** primary buttons 56, secondary buttons 48, chips 36 visual with a 48 tap target, round icon buttons 44 (48 in cook mode's top row; the bottom-row ingredients button in cook mode matches its 56 dp neighbours instead, so the row reads as one control), the search field 52, the navigation pill 68. Touch targets never drop under 44 × 44.
 
-- **AppBarThemeData** — `backgroundColor: surface`, `foregroundColor: onSurface`, `elevation: 0`, `scrolledUnderElevation: 0`, `surfaceTintColor: transparent`, `centerTitle: false`, `toolbarHeight: 64`, `titleTextStyle: titleLarge`, `shape: Border(bottom: BorderSide(color: outlineVariant, width: 1))` — static, not scroll-driven.
-- **NavigationBarThemeData** — `height: 80`, `backgroundColor: surfaceContainer`, `elevation: 0`, `surfaceTintColor: transparent`, `labelBehavior: alwaysShow`, `indicatorColor: primaryContainer`, `indicatorShape: ChamferedBorder(radius: 12, side: BorderSide(color: primary, width: 2))`, icon theme selected `onPrimaryContainer` 26dp / unselected `onSurfaceVariant` 26dp, label style selected `labelMedium onSurface w700` / unselected `labelMedium onSurfaceVariant`. The indicator is hard-coded 64×32 in `navigation_bar.dart` — shape and colour are themeable, size is not, so no size is specified; the 2dp primary border is the state signal because the indicator fill is 1.14:1 against the bar while the border is 5.49:1.
-- **CardThemeData** — `elevation: 0`, `color: surfaceContainerLow`, `surfaceTintColor: transparent`, `shadowColor: transparent`, `margin: EdgeInsets.zero`, `clipBehavior: antiAlias`, `shape: RoundedRectangleBorder(BorderRadius.circular(20), side: BorderSide(color: outline, width: 1.5))`.
-- **ChipThemeData** — `shape: RoundedRectangleBorder(BorderRadius.circular(12))`, side resolves to `BorderSide(color: primary, width: 2)` selected else `BorderSide(color: outline, width: 1.5)`, `backgroundColor: transparent`, `selectedColor: primaryContainer`, `labelStyle: labelLarge onSurfaceVariant`, `secondaryLabelStyle: labelLarge onPrimaryContainer w700`, `showCheckmark: false`, `padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12)`, `materialTapTargetSize: MaterialTapTargetSize.padded`, `elevation: 0`, `pressElevation: 0`.
-- **FilledButtonThemeData is THE SLAB** and is set explicitly from the `WasfatiSlab` extension rather than from `colorScheme.primary`: `backgroundColor: slab #F2A118`, `foregroundColor: onSlab #1B1205`, `side: BorderSide(color: ledge, width: 1.5)` in light and `BorderSide.none` in dark, `minimumSize: Size(0, 56)` (`Size(double.infinity, 64)` for the three ledge slabs), `shape: RoundedRectangleBorder(16)`, `textStyle: labelLarge` (18/700 on the three), `iconSize: 24` (26 on the three), `elevation: 0`, `overlayColor: onSlab` at 12%, disabled `backgroundColor: surfaceContainerHigh` + `foregroundColor: onSurface` at 55%. `FilledButton.tonal` keeps `secondaryContainer`/`onSecondaryContainer` at the same metrics.
-- **OutlinedButtonThemeData** — `side: BorderSide(outline, 2)`, `foregroundColor: onSurface`, `minimumSize: Size(0, 56)` (64 for cook mode's Previous), `shape: 16`, `textStyle: labelLarge`, pressed side `primary` + foreground `primary`.
-- **TextButtonThemeData** — `foregroundColor: primary`, `minimumSize: Size(0, 48)`, `shape: 12`.
-- **IconButtonThemeData** — `minimumSize: Size(48, 48)`, `iconSize: 24`, `foregroundColor: onSurfaceVariant`, `shape: RoundedRectangleBorder(12)`.
-- **InputDecorationTheme** — `filled: true`, `fillColor: surfaceContainerLow`, border/enabledBorder `OutlineInputBorder(12, BorderSide(outline, 1.5))`, focusedBorder `BorderSide(primary, 2)` — primary `#8A5200` at 5.49:1 on the fill, **not** the slab at 1.87:1 — errorBorder `BorderSide(error, 2)`, `contentPadding: EdgeInsetsDirectional.fromSTEB(16, 14, 16, 14)`, `constraints: BoxConstraints(minHeight: 56)`, `floatingLabelBehavior: FloatingLabelBehavior.always`, `labelStyle: labelSmall onSurfaceVariant`, `floatingLabelStyle: labelSmall primary`, `hintStyle: bodyMedium onSurfaceVariant` at full opacity, `errorStyle: bodySmall error`.
-- **SearchBarThemeData** — keep the M3 `SearchBar` widget (`app_test.dart:217`, `:222` use `find.byType(SearchBar)`): `backgroundColor: surfaceContainerLow`, `elevation: 0`, `shape: RoundedRectangleBorder(14)`, `side: BorderSide(outline, 1.5)`, `constraints: BoxConstraints(minHeight: 56)`, `textStyle: bodyLarge`, `hintStyle: bodyMedium onSurfaceVariant`.
-- **ListTileThemeData** — `minVerticalPadding: 12`, `contentPadding: EdgeInsetsDirectional.fromSTEB(16, 4, 12, 4)`, `horizontalTitleGap: 12`, `titleTextStyle: bodyLarge`, `subtitleTextStyle: bodyMedium onSurfaceVariant`, `iconColor: onSurfaceVariant`, `selectedColor: primary`, `selectedTileColor: transparent`, `shape: RoundedRectangleBorder(12)`.
-- **TabBarThemeData** is unused on the library (`SlabTabBar` replaces it) but is still themed for safety: `indicator: UnderlineTabIndicator(BorderSide(primary, 3))`, `dividerColor: outlineVariant`, `labelStyle`/`unselectedLabelStyle: labelLarge`.
-- **SnackBarThemeData** — `behavior: floating`, `backgroundColor: inverseSurface`, `contentTextStyle: bodyLarge onInverseSurface`, `actionTextColor: inversePrimary`, `shape: RoundedRectangleBorder(16)`, `elevation: 0`, `insetPadding: EdgeInsets.all(16)`; at each `showSnackBar` on an ad-bearing screen pass a margin whose bottom is `16 + BannerSlot.heightOf(context)`, since the theme cannot express it, and keep the 5-second undo window (DEL-2) with a 48dp action target.
-- **DialogThemeData** — `backgroundColor: surfaceContainerLow`, `surfaceTintColor: transparent`, `elevation: 0`, `shape: RoundedRectangleBorder(24, side: BorderSide(outline, 1.5))`, `insetPadding: 24`, `titleTextStyle: titleLarge`, `contentTextStyle: bodyLarge onSurfaceVariant`, `barrierColor:` black at 48% light / 64% dark; a two-choice dialog stacks its actions full-width in the content — affirmative a 56dp slab, dismissive a 56dp `TextButton` beneath — rather than two small buttons in a corner.
-- **BottomSheetThemeData** — `backgroundColor: surfaceContainerLow`, `surfaceTintColor: transparent`, `elevation: 0`, `shape: RoundedRectangleBorder(vertical top 24)`, `showDragHandle: true`, `dragHandleColor: outline`, `dragHandleSize: Size(40, 4)`.
-- **SegmentedButtonThemeData** exposes only `style`, so build one `ButtonStyle` resolving on `WidgetState.selected`: `backgroundColor` selected `primaryContainer` else transparent, `foregroundColor` selected `onPrimaryContainer` else `onSurfaceVariant`, `side: BorderSide(outline, 1.5)` with a selected override of `BorderSide(primary, 2)`, `shape: RoundedRectangleBorder(12)`, `minimumSize: Size(0, 48)`, `textStyle: labelLarge`; segments get `maxLines 2` + ellipsis.
-- **CheckboxThemeData** — `shape: RoundedRectangleBorder(4)`, `side: BorderSide(outline, 2)`, `fillColor:` selected `secondary`, `checkColor: onSecondary`, with the box scaled to 26dp inside a 48dp target.
-- **ProgressIndicatorThemeData** — `linearMinHeight: 8`, `linearTrackColor: outlineVariant`, `color: primary`, `borderRadius: BorderRadius.circular(4)`.
-- **DividerThemeData** — `color: outlineVariant`, `thickness: 1`, `space: 1`.
-- **PageTransitionsTheme** — `FadeUpwardsPageTransitionsBuilder` on android and iOS.
-- `splashFactory: InkRipple.splashFactory`, `highlightColor: transparent`.
+**Spacing:** a 20 dp screen gutter and a 28 dp gap between sections, both fixed tokens (`gutter`, above) rather than ad hoc numbers scattered per screen.
 
-### Screen by screen
+**Depth, two shadows, light only:**
+- `shadowLift` on every card, the search field and floating round buttons — a soft, close-in shadow plus a wider ambient one.
+- `shadowFloat`, deeper, on the navigation pill and the two primary-action buttons that float over content (a recipe page's "ابدأ الطبخ", cook mode's "التالي").
 
-**Navigation shell** (`home_screen.dart`) — both destinations and labels unchanged, still hidden until a recipe exists (RUN-1). `bottomNavigationBar` becomes `Column(mainAxisSize: min, children: [BannerSlot(screen: AdScreen.library), SizedBox(height: 8), NavigationBar(...)])` so ADS-3 and ADS-9's 8dp clearance hold by construction; the FAB stays `endFloat` and floats above the whole `Column`.
+Neither is a Material `elevation` value: both are hand-drawn two-layer `BoxShadow` lists on a `SufraCard`/`SufraButton`-style wrapper, because M3's single-shadow elevation can't reproduce a two-layer warm shadow, and `surfaceTintColor` stays `Colors.transparent` everywhere so Material's elevation tint never appears — carried over unchanged from Decision 14. **Dark mode drops both shadows entirely**: a card, sheet or the navigation pill instead takes a 1 dp `line`/`navPillBorder` hairline, per §Contrast's exemption.
 
-**Library** (`home_screen.dart` + `library_view.dart`) — AppBar 64dp, flat on surface, "وصفاتي" in `titleLarge`, both `IconButton`s at 48dp with their tooltips. **The TabBar becomes `SlabTabBar`:** a 16dp-gutter `Row` of two equal 48dp `ChamferedBorder` slabs with an 8dp gap, driving the same `DefaultTabController` and rendering the same two strings — selected is slab fill with ink `labelLarge w700` and a 1.5dp ledge edge (4.19:1 on paper), unselected is transparent with a 1.5dp outline border and an `onSurfaceVariant` label. No test finds tabs by type, so this is safe; it is the loudest single change to the library. SearchBar: the restyled M3 widget at 56dp min. **Filter row:** delete `SizedBox(height: 56)` at `library_view.dart:142`; replace with a horizontally scrolling `Row` of 48dp chips in the new squared style with 8dp gaps, and move the pinned grid/list `IconButton` to the AppBar keeping `viewList`/`viewGrid`. **List rows:** `ConstrainedBox(minHeight: 88)`, a 4dp leading state stripe (`secondary #2F6B45` when `lastCookedAt` is inside 7 days, an equal transparent box otherwise so rows stay aligned), 8dp, a 64dp `ChamferedBorder` thumbnail with a 1.5dp outline, 12dp, title `ContentText bodyLarge w600 maxLines 2`, subtitle the existing `sub.join(' · ')` in `bodyMedium onSurfaceVariant`; `Divider(indent: kInsetList, endIndent: 16)` between rows; `MergeSemantics` per row. **Grid:** cards at 20dp radius, 1.5dp outline, `clipBehavior: antiAlias`, photo on top and the title band in `surfaceContainerLow` underneath so text never sits on a photo, a 4dp state stripe across the bottom of the photo; `gridDelegate maxCrossAxisExtent 190` with `mainAxisExtent` computed from the text scaler (not `childAspectRatio`, which cannot absorb a third line at 1.3×), and the existing `maxLines 2` + ellipsis on the title kept. Photoless thumbnail: `LatticePainter` — an octagon-and-cross girih grid stroked 1.5dp in `outlineVariant` over `surfaceContainerHigh`, rotated by `(recipeId.hashCode % 8) × 11.25°` so every photoless recipe gets its own tile, with a 26dp chamfered `primaryContainer` badge and an `Icons.restaurant_outlined` in `onPrimaryContainer` at its centre. FAB: 64dp extended slab, 16dp radius, ink `labelLarge` 18/700, 26dp add icon, the 2dp ledge, wrapped in `PressableSlab`. Bottom padding on both scrollers: `24 + BannerSlot.heightOf(context) + 80` while the FAB is present. Cookbooks tab: 72dp rows with a 44dp chamfered `secondaryContainer` badge as leading, name in `bodyLarge`, the existing count in `bodyMedium`; "دفتر جديد" a full-width 56dp `OutlinedButton`. `CookbookScreen` gets its own `BannerSlot` (ADS-9 names Cookbooks).
+## Components
 
-**Recipe page** (`recipe_screen.dart`) — `CustomScrollView`. With a photo: `SliverAppBar` pinned, transparent, `expandedHeight: screenWidth × 0.75` capped at 300, photo full-bleed and square-cut, and every action (`Icons.edit_outlined` and the "حذف" tooltip both stay, tests find them) on a 40dp opaque chamfered `surface` square with a 1.5dp outline — 17.55:1 over any dish, no scrim guessing. Body gutters 16, capped at 560. Title `headlineMedium`. Source `bodySmall`. `_NextPlanned` becomes a 48dp `secondaryContainer` band with a 4dp leading `secondary` stripe, a 20dp calendar glyph and the existing `planNextMeal` string in `bodyMedium onSecondaryContainer` (12.93:1). **Fact strip** replaces the two `Chip`s: one `surfaceContainerLow` slab, 16dp radius, 1.5dp outline, `ConstrainedBox(minHeight: 64)`, one `Expanded` cell per fact split by 1dp `outlineVariant` vertical rules, each cell a 20dp glyph over the existing composed string in `bodyMedium` — wrapped in a `Wrap` with a 150dp minimum cell so 1.3× reflows instead of overflowing. Tag and cookbook chips at 48dp in the new style. `_Heading` gets `titleLarge` with a 4dp × 20dp primary bar at the reading edge, 32dp above and 12dp below. "ابدأ الطبخ" becomes the page's loudest object: full width, 64dp, 16dp radius, slab fill, ink 18/700, 26dp `Icons.soup_kitchen_outlined`, the ledge, `PressableSlab`, 24dp of clear space either side. **Step rows:** the `CircleAvatar` at `recipe_screen.dart:253` becomes a 40dp `ChamferedBorder` slab-filled badge with the numeral (still `s.number(n)`, QTY-5) in a `DigitBox` at `titleMedium onSlab` (8.71:1); gap 16; step text `bodyLarge`; `Divider(indent: kInsetStep, endIndent: 16)`; `MergeSemantics` per row. Notes in `bodyLarge` on a `surfaceContainerLow` block at 16dp radius with a 1.5dp outline. `bottomNavigationBar`: `SafeArea(Column(min, [SizedBox(height: 8), BannerSlot(screen: AdScreen.recipe)]))`.
+| Component | Maps to | Notes |
+|---|---|---|
+| Primary button | `FilledButtonThemeData` + `shadowFloat` wrapper | pill, `primary` fill, `onPrimary` text, 56 dp, full-width when it's a screen's one main action |
+| Secondary button | `OutlinedButtonThemeData` | pill, 1.5 dp `border`, `ink` text, 48–56 dp |
+| Chip | `ChipThemeData` | pill (999); unselected = `card` fill + `shadowLift` (library quick filters) or plain `sunk` fill (inline badges like `×2`); selected = `ink` fill + white text, or `accentSoft` fill + `onAccentSoft` text where it sits inside an already-accented context |
+| Card | `SufraCard` widget, not `CardThemeData`'s elevation | 22 dp (24 photo), `card` fill, `shadowLift`; dark drops the shadow for a 1 dp `line` border |
+| Text field | `InputDecorationTheme` | `card` fill, 1 dp `border` at rest / 2 dp `accent` focused; a 16 dp radius for multi-line fields (the editor), since a pill is wrong for a field that wraps |
+| Search field | `SufraSearchField` widget | pill, 52 dp, `card` fill, `shadowLift`, leading search icon, trailing 44 dp `accent`-circle filter button ("تصفية") |
+| Modal sheet | `BottomSheetThemeData` | `card` fill (a distinct floating surface over a `rgba(20,14,10,.45)` scrim), 28 dp top radius, 40×4 `border` grab handle — the add sheet |
+| Recipe page's content panel | not a `BottomSheetThemeData` sheet | `page` fill (it's the screen's own scroll body continuing past the photo, not a separate surface), same 28 dp top radius and overlap-by-30 dp |
+| Dialog | `DialogThemeData` | `card` fill, 22 dp radius, same scrim as the modal sheet |
+| Snackbar | a pill-shaped cousin of the nav pill | `ink` fill / `onSurface`-flip text in light, `card` fill + `line` border in dark, floating with `shadowLift`, 16 dp radius |
+| Checkbox | `CheckboxThemeData` | 24 dp **circle** (not M3's square); unchecked = 1.5 dp `border` ring; checked = `herb` fill, `onHerb` check |
+| Switch | `SwitchThemeData` | 44×26 pill track, `sunk` off / `accent` on, a `shadowLift` white knob |
+| Segmented pill | `SegmentedPill` widget (not M3 `SegmentedButton`, which is squared) | `sunk` track; two selected treatments share one widget behind a `raised` flag: a `card`-fill thumb + `shadowLift` for a screen's primary view switch (all-recipes/cookbooks, ingredients/steps), a flat `accentSoft` fill with no shadow for a secondary control nested inside another card (the scale bar's unit toggle) — so a screen never stacks two raised pills |
+| Servings stepper | `ServingsStepper` widget | `sunk` pill track holding two 40 dp circular ± buttons (`card` fill + `shadowLift`) around a `titleS` value |
+| Round icon button | `RoundIconButton` widget | circle; light = `card` fill + `shadowLift`; dark = `sunk` fill, no shadow (except the always-solid-`accent` centre "+"/play, which ignores brightness) |
+| Drawn cover | `DrawnCover` widget (`CustomPainter`), replaces the narrower `lib/widgets/ornament.dart` | one of six `coverTint` fills (§Palette), an 8-point khatam line pattern in the matching tone at 18% opacity (~28 dp pitch), the title's first Arabic letter centred at 72/700 in the tone |
+| Navigation pill | `FloatingNavBar` widget, replaces `NavigationBarThemeData`/`NavigationBar` | not expressible as a `NavigationBarThemeData` shape/indicator: a 68 dp pill floating 12 dp above the edge with a raised 52 dp accent circle at its centre, so it is hand-built |
+| Banner slot | `lib/widgets/ad_slot.dart` `AdSlot`, unchanged logic | restyled only: `sunk` fill, dashed `border` top/bottom, «إعلان» caption; still sits 8 dp above the nav pill, outside scrolling content (ADS-3, ADS-9) |
 
-**Ingredients** (`ingredients_section.dart`) — **the scale bar:** one `Container`, `ConstrainedBox(minHeight: 64)`, `surfaceContainerLow`, 16dp radius, 1.5dp outline, with 48dp `IconButton.outlined` minus and plus pinned to the two ends (`EdgeInsetsDirectional`, so they mirror) and the value centred in `titleMedium`. **When `factor != ×1`** the bar's border and its value turn **tertiary teal `#0F6058`** (7.11:1) — the app's one signal for "this number is not what was written", and the reason a wrong ×2 is never silent. The value keeps today's widget unchanged — `Flexible` + ellipsis around `l10n.servings(...)` or the LTR `times()` `Text` — because the Arabic plural absorbs the numeral ("حصة واحدة", "حصتان") and there is no bare figure to box; only the ×factor form goes through `DigitBox`. "إعادة" sits under the bar at 48dp in teal. **Multipliers:** the existing four `ChoiceChip`s at 48dp with 8dp gaps; the selected one takes the full slab fill with an ink label and the ledge, so the active scale is the loudest chip on the page. **Unit view:** keep `SegmentedButton` at `minHeight 48` with the button style above — the real Arabic labels are short ("كما كُتبت", "غ / مل", "أكواب"), so the overflow both source directions worried about is not real; `maxLines 2` + ellipsis is the safety net. **Ingredient rows:** the 6dp dot becomes a 10dp `ChamferedBorder` square in outline, top-aligned at 10dp; row vertical padding 10; the line rendered by `AmountLine`, which splits the string `formatLine()` already produces at U+2069 and sets the isolated amount in primary w700 (teal when scaling) while the rest — including the agreeing unit word — stays `onSurface`, so "٢ كوبان" remains one phrase and QTY-6 is never broken; when `line.min == null` it renders `line.original` verbatim (QTY-2) and never reconstructs from name + note. The "لم يُعدَّل" mark is **error `#A3231B`** with a 16dp `Icons.info_outline` beside it — never colour alone, since amber and red are close for a red-deficient user. `notScaledCount` becomes an `errorContainer` band at 12dp radius with a 4dp leading error stripe and the existing string in `bodyMedium onErrorContainer` (13.16:1). `GroupName` becomes `titleSmall` in primary with a 4dp × 16dp primary bar at the reading edge and a hairline to the far edge.
+## Screen by screen
 
-**Cook mode** (`cook_mode_screen.dart`) — the screen the whole system is derived from, and no `BannerSlot` is ever constructed here (COOK-1). Background `surfaceContainerLowest` (18.28:1 / 16.31:1). AppBar 64dp: a 56dp close ("إغلاق الطبخ"), title `titleMedium` one line, and the ingredients action as a 56dp `IconButton.filledTonal` ("المكونات"). **New progress row** under the timers bar: a 44dp `ChamferedBorder` slab badge holding the step numeral in a `DigitBox`, the existing `stepOf` sentence beside it in `titleMedium primary` (it is a five-word sentence, not "3/12", so it is never squeezed into a pill), a 6dp full-width progress bar at `(index+1)/total` whose fill starts at the reading edge, and — when `factor != ×1` — the teal scale pill, so you can always see you are cooking a doubled recipe. Step text: the `cookStep` token (27.2/500/1.75). Timer buttons: 56dp, 12dp radius, 1.5dp tertiary border, teal label, 24dp glyph; a running one becomes `tertiaryContainer`-filled and is wrapped in `AbsorbPointer` so a habitual tap cannot fall through to the edge-tap zone and jump a step. `_TimersBar`: a running timer becomes a band, not a chip — `surfaceContainerLow`, 16dp radius, a 24dp glyph and the countdown in the `timerClock` token (22/700) through `DigitBox`, with the existing `stepN` string beside it; the bar is capped at two bands plus an "n more" row so a finishing timer never pushes the step text under a reading finger. A finished timer keeps `errorContainer` with a 4dp leading error stripe, its title at `titleMedium`, and Dismiss promoted from a `TextButton` to a 48dp `FilledButton.tonal`. **The control slab:** an 88dp-minimum `surfaceContainer` bar with a 1dp `outlineVariant` top border, 12dp padding and `SafeArea`, holding three controls — "السابق" as a 64dp `OutlinedButton` with its label at `maxLines 1` + ellipsis and no icon, a 64dp ingredients button so COOK-2's pull-up sheet is reachable with a wet thumb at the bottom edge rather than only from the top corner, and "التالي" as a 64dp slab with the ledge and `PressableSlab` — laid out with equal `Expanded` widths and 12dp gaps so it cannot overflow at 360dp in either language. The existing `Icons.arrow_back` / `arrow_forward` stay exactly as written, because both are declared `matchTextDirection: true` and Flutter already mirrors them; the 20%/80% edge-tap zones keep their RTL mapping but are excluded over the timers bar, the timer row and the control slab. **Ingredients sheet:** rows to `ConstrainedBox(minHeight: 56)` with a 26dp checkbox in a 48dp target, and the checked style becomes `bodyLarge.copyWith(decoration: lineThrough, color: onSurfaceVariant)` — fixing a live bug where `cook_mode_screen.dart` passes a bare `TextStyle` and a ticked line silently loses its size. The sheet header carries the scale pill. **Done page:** a 96dp chamfered slab badge with a 44dp ink check replaces `Icons.restaurant`, `displaySmall` title, "تم طبخها" as a 64dp slab and "تم" as a 56dp `OutlinedButton`, over the lattice at 6%.
+**Navigation shell** (`home_screen.dart`) — `HomeScreen`'s `NavigationBar` is replaced by `FloatingNavBar`: خمس مواضع, right to left, الوصفات، الخطة، (centre +), المشتريات، الإعدادات (LOOK-7). `AdSlot` sits 8 dp above it. Pushed screens (a recipe, cook mode, the editor, import, a cookbook, purchase) build no pill.
 
-**Meal plan** (`plan_screen.dart`) — week bar: `PreferredSize` becomes `textScaler.scale(56).clamp(56.0, 76.0)`; the chevrons become 48dp `IconButton.filledTonal` and the manual mirror at `plan_screen.dart:126` and `:139` is deleted, because `Icons.chevron_left`/`right` are `matchTextDirection: true` and the current `rtl ? chevron_right : chevron_left` mirrors twice — the week arrows point the wrong way in Arabic today. The range keeps `Flexible` + ellipsis at `titleMedium`. **Day cards:** drop `Card` and both alpha washes; each day is a `Container` at 20dp radius, `surfaceContainerLow`, 1.5dp outline. Today takes `primaryContainer` at full opacity, a 4dp leading primary stripe (5.49:1) and the existing `planToday` string in a 28dp-minimum chamfered slab badge with ink `labelMedium` (8.71:1). **Slot rows:** delete `SizedBox(width: 84)` at `plan_screen.dart:273`, and — unlike the other option, which stacks — keep the meal name **on the same line** as its entries so a week still fits a sofa glance: `Row(crossAxisAlignment: start, children: [Flexible(flex: 0, child: ConstrainedBox(maxWidth: 120, child: Text(mealName, maxLines: 2, softWrap: true, style: labelLarge onSurfaceVariant))), SizedBox(width: 12), Expanded(entries), SizedBox(width: 8), 48dp '+' IconButton keeping 'إضافة'])`. The label wraps to two lines at 1.3× inside a `maxWidth` rather than overflowing a fixed width, and an empty slot still shows only the name and the "+" (PLAN-1). **Entry tiles:** `InkWell`, `ConstrainedBox(minHeight: 56)`, 12dp radius, `surfaceContainerHigh` fill, 1dp `outlineVariant` border, 6dp gaps, a 20dp glyph in secondary (restaurant) or `onSurfaceVariant` (note), `ContentText bodyLarge`, and the amount at the end edge in a 28dp-minimum chamfered pill with a 1.5dp tertiary border and teal `labelMedium`, still forced LTR exactly as today; `MergeSemantics` per tile; the long-press menu unchanged. The add-to-plan sheet keeps its `ChoiceChip`s for days and meals — `plan_test.dart:30` does `find.widgetWithText(ChoiceChip, 'عشاء')` — restyled only, at 48dp. `bottomNavigationBar` comes from the shell; body bottom padding `24 + slot height`.
+**Add sheet** (`AddSheet.dc.html`, LOOK-11) — a new bottom sheet opened by the pill's centre "+", replacing today's three scattered entry points (the FAB's direct `openEditor(context)` call and the AppBar's import icon). A 2×2 tile grid — link and pasted-text tiles both route into the existing `ImportScreen` (which already handles IMP-1/IMP-3 in one flow), the photo tile routes into `ImportScreen`'s photo picker (IMP-10), and "أضفها بنفسك" opens `RecipeEditorScreen` directly — plus the quota row (IMP-7) reusing whatever widget already renders "X من 10 متبقية". No new import logic, only a new front door.
 
-**Recipe editor** (`recipe_editor_screen.dart`) — no `BannerSlot` (ADS-9); the bottom bar is absent entirely and the form gets a 24dp `SafeArea` tail. AppBar Save becomes a 44dp slab at 12dp radius with ink `labelLarge` and an 8dp end margin. Gutters 16, capped at 560. Fields grouped into three 20dp-radius cards with 16dp padding, each preceded by a `titleSmall primary` label with a 4dp bar — using no new strings, so no duplicate of `l10n.ingredients` / `l10n.steps` / `l10n.notes` is introduced that could break a `find.text`; the cards are separated by 24dp and a 1dp rule. Every field takes the new decoration with `floatingLabelBehavior: always`, which is what removes most of the editor's 1.3× width pressure. **The three number fields** are the editor's real hazard: replace the fixed `Row` with `LayoutBuilder` + `Wrap` — three `SizedBox(width: (maxWidth - 24) / 3)` when `textScaler.scale(15) <= 18`, otherwise full-width stacked with 12dp gaps. Multiline fields keep `minLines` 5/5/2 and take `bodyLarge`. Photo row: the 64dp thumb becomes an 80dp chamfered preview with a 1.5dp outline, or the lattice tile with a dashed outline when empty; the two buttons go into a `Wrap` of 48dp `OutlinedButton`s.
+**Library and cookbooks** (`home_screen.dart` `LibraryHome`, `library_view.dart`) — the greeting/question header, the كل الوصفات/كتب الطبخ `SegmentedPill`, `SufraSearchField` with its filter circle, the quick-filter chip row, and the conditional "تابع الطبخ" resume card (COOK-6) all sit above `_RecipeCard`'s new photo-card treatment: full-bleed photo, bottom gradient to `rgba(20,14,10,.78)`, white text over it, a frosted source-badge chip. `RecipeThumb` becomes `DrawnCover` wherever a recipe has no photo (LOOK-10). `CookbookScreen` keeps its own `AdSlot` (ADS-9).
 
-**Import** (`import_screen.dart`) — no `BannerSlot`, no upsell card (ADS-1, PAY-5, IMP-5). Gutters 16. The URL field keeps `textDirection: TextDirection.ltr` and its 48dp "لصق" button. `importExplain` moves from `bodySmall` into a `surfaceContainerLow` aside: 12dp radius, 1.5dp outline, 14dp padding, a 20dp info glyph at the reading edge, `bodyMedium onSurfaceVariant`. The action is a full-width 64dp slab, and the busy block reserves the same height so nothing jumps when an import starts. Progress keeps the real `LinearProgressIndicator` widget (its semantics matter) at 8dp with a 4dp radius, the existing stage string above it in `titleMedium`, and Cancel as a 56dp `OutlinedButton`. Failure becomes an `errorContainer` slab at 12dp radius with a 4dp leading error stripe, a 24dp glyph, the message in `bodyLarge onErrorContainer` and "أضف يدويًا" as a 56dp `OutlinedButton` inside it. The duplicate dialog uses the stacked-action treatment.
+**Recipe page** (`recipe_screen.dart`, LOOK-13) — full-bleed hero photo (330 dp) with four floating `RoundIconButton`s (back, share, edit, more); the content panel (`page` fill, not `card` — see §Components) overlapping it by 30 dp holds the source/tag chip row, `titleL` title, up to three stat tiles (REC-3), the `herbSoft` "في الخطة" band (PLAN-3) when planned, the المكونات/طريقة التحضير `SegmentedPill` (opens on Ingredients), the scale bar (`ServingsStepper` + multiplier chips + a second, flat `SegmentedPill` for the unit view, SCALE-6), and the ingredient card (`AmountLine`-style rows, a rotated-square accent bullet, `line` hairlines). A fixed bottom bar over a `page`→transparent fade holds "ابدأ الطبخ" (COOK-1) and two `RoundIconButton`s for plan (PLAN-3) and groceries (GRO-2), then `AdSlot`. `RecipeDark.dc.html` is the same layout on dark tokens with طريقة التحضير selected: steps become rows with a 32 dp `accentSoft` numbered square, and any timer phrase inside a step's text becomes a small tappable `sunk` pill in `label`/`accent` (COOK-4's timer, surfaced inline rather than only in cook mode).
 
-**Settings** (`settings_screen.dart`) — the screen the owner named; every string and the `Icon(Icons.check)` survive. Body padding `EdgeInsetsDirectional.fromSTEB(0, 8, 0, 48)`, capped at 560. Each `_Choice` becomes a **group card**: 16dp horizontal margin, 20dp radius, `surfaceContainerLow`, 1.5dp outline, `clipBehavior: antiAlias`. Its title moves inside the card at 16/16/16/0 — `titleSmall` in primary with a 4dp × 18dp primary bar at the reading edge — so Settings uses the same heading device as the recipe page. Options are rows at `ConstrainedBox(minHeight: 56)` with 16dp padding, separated by `Divider(indent: kInsetGroup)`, labels in `bodyLarge` that wrap (not ellipsis) because "مترية (غرام، مل)" is long at 1.3×. **The chosen row** shows four cues at once, so selection is never a tint alone: a 4dp primary stripe flush to the reading edge (5.49:1), a `primaryContainer` fill (`onSurface` on it 14.20:1), the label at w700, and the existing `Icon(Icons.check)` kept, now inside a 26dp `ChamferedBorder` slab badge with a 16dp ink glyph at the end edge (8.71:1) — readable at arm's length, which is the point. `ListTile`'s `selected:` is dropped. **Three groups preview themselves with no new strings:** the digit rows render their own label ("123" / "١٢٣") at 24/700 in primary through `DigitBox` so `find.text('١٢٣')` still matches and the two figure sets are actually comparable; the language rows go through `ContentText` so each language reads in its own direction whatever the app's language is (LANG-5, which `settings_screen.dart:111` violates today); the theme group swaps its three rows for three 88dp-minimum swatch tiles in a `Row` — each a 16dp-radius, 1.5dp-outlined tile painted with a miniature screen in that theme's own colours (a saffron bar over two text bars on that theme's surface, with a diagonal split for "حسب الجهاز"), the existing label beneath so `find.text` still works, and the selected one taking a 2dp primary border and the tick badge; the painter receives the ambient `TextDirection` so the diagonal mirrors. Guard: fall back to the three plain rows when `textScaler.scale(14) > 18`. No `BannerSlot` on this screen.
+**Cook mode** (`cook_mode_screen.dart`, LOOK-14) — always dark tokens regardless of the device's theme setting, no `AdSlot` ever (COOK-1). A segmented step rail (done cells `accent` at 45%, the current cell solid and 6 dp tall, future cells `sunk`) replaces `_TimersBar`'s sibling progress indicator; the step counter and the active scale (`×2`, an `accentSoft` pill) sit under it; step text at `cookStep`; the timer card is a 150 dp ring (`sunk` track, `accent` arc) over a start-timer pill, with a `sunk` running-timer band below it once started. Three bottom controls — السابق (`OutlinedButton`, `border`), a round ingredients button (`sunk`), التالي (`FilledButton`, `shadowFloat`) — sit at the edge a wet thumb reaches (COOK-2).
 
-### Signature moves
+**Plan** (`plan_screen.dart`, PLAN-1) — a week-range header with a "أضف الأسبوع إلى المشتريات" `RoundIconButton`, a 7-pill week strip (`_DayCard`→ a 46×72 pill; today = `ink` fill + white text + an accent dot; a day with entries carries a `herb` dot, per the amended PLAN-1 that replaced last week's one-long-list view), then **one day's** timeline under a `line`-coloured vertical rail with a node per meal slot (فطور، غداء، عشاء، وجبة خفيفة, PLAN-1's fixed order): a recipe slot is a card with a 56 dp photo/`DrawnCover` thumb, a note slot (`_FromLine`-equivalent) is a plain card with a pencil icon, and an empty slot is a dashed `border` outline with «+ إضافة» in `accent` label text. RAM-3's offer card and RAM-4's رمضان/الأسبوع toggle sit above the strip using the same card and `SegmentedPill` components, unchanged in behaviour.
 
-1. **Ink on saffron, never white on colour.** Every primary action in the app is `#F2A118` with `#1B1205` on it — 8.71:1, the identical pair in light and dark, so there is no theme-conditional code and the loudest thing on the screen is always the thing you are meant to press. In light the slab carries a 1.5dp `#A86C00` edge (4.19:1 against paper) so the button's shape is perceivable too, which is the single failure every critic of this direction found; in dark the slab is 8.91:1 against the page and needs nothing.
-2. **The ledge.** Depth in this app is one 2dp zero-blur offset in a darker saffron under exactly three objects — the library's add button, "ابدأ الطبخ", and cook mode's "التالي". Press and the ledge collapses while the slab drops 2dp, so the three things you press with flour on your hands behave like keys. Nothing else in the app casts anything: elevation, surfaceTint and shadowColor are zero or transparent everywhere.
-3. **The chamfer.** One `ShapeBorder` that cuts the top-start corner at 45°, the cut always 0.293 of the shorter side so it is the same shape at 26dp and at 80dp, mirrored by `Directionality` so in Arabic it points top-right where the eye begins. Used on exactly five things — the navigation indicator, recipe thumbnails, step badges, the settings tick, the two library tabs — which keeps it a signature instead of a texture, and makes a screenshot of this app identifiable with no logo in it.
-4. **Four colours, each meaning one thing, everywhere.** Saffron is what is happening now or what to press; green is planned or ticked off; teal is a number you changed — the scale bar turns teal at ×2 and stays teal in cook mode and in the ingredient sheet, so a doubled recipe is never silent; red is something that needs you, and it never appears without a word or a glyph beside it.
-5. **Cook-mode-first sizing, applied backwards through the app.** 48dp minimum with no exceptions (including the plan's "+" and every chip, both below that today), 56dp for anything touched with wet hands, 64dp for a primary slab; the running countdown is set at 22/700 in a band rather than 13sp in a chip; and the ingredient sheet gets a control in cook mode's bottom bar so COOK-2's pull-up list is reachable with a thumb instead of only from the far top corner.
+**Groceries** (`groceries_screen.dart`, GRO-1–GRO-7) — an `ink`-filled progress card (dark-on-light for drama, the one card in the whole app that inverts the ladder on purpose) with a ring progress indicator and the "من: …" recipe-name caption; a `SufraSearchField`-styled add field (GRO-1's parse-on-type); a حسب الممر/حسب الوصفة `SegmentedPill`; then aisle cards (GRO-4's fixed order) with a tinted rounded-square icon tile, the aisle name, a count, and 52 dp item rows with a 24 dp circular checkbox, the name, and the amount right-aligned in `accent`/700 (LOOK-4), forced LTR. **The mockup's static frame shows a ticked item staying inline with strikethrough — the built screen still moves it into the collapsed "تم" section per GRO-5** once the tick animation (§Motion) finishes; "Clear done"/"Clear all" keep their Undo (DEL-2).
 
-### New files
+**Settings** (`settings_screen.dart`) — a Pro/Premium upsell card (no price, no badge, no countdown, PAY-6) using the same tile-icon-plus-text layout as every grouped row below it; three groups — المظهر واللغة، الطبخ والخطة، بياناتك — each a caption heading over one `SufraCard` of 60 dp rows (a tinted icon tile, the label, the current value, a chevron), `line` hairlines inset 64 dp. الطراز's value carries a 14 dp accent dot; الأرقام is an inline mini `SegmentedPill` (123/١٢٣) instead of a chevron row, matching Decision 5's rule that this is a toggle, not a picker; وضع رمضان gets the switch component in place of a chevron (RAM-1). PAY-11's subscription row and ADS-5's consent row join بياناتك in the same pattern once they exist (Phase 5).
 
-- `lib/theme/wasfati_theme.dart` — the two `ThemeData` builders and every sub-theme above; `app.dart` keeps only `theme:`/`darkTheme:` and loses `ColorScheme.fromSeed`.
-- `lib/theme/wasfati_colors.dart` — the two `ColorScheme` literals, the `WasfatiSlab` `ThemeExtension` (slab/onSlab/ledge with `copyWith` and `lerp`), and the named divider insets and radii.
-- `lib/theme/wasfati_type.dart` — the `TextTheme` with `leadingDistribution: even`, `letterSpacing 0`, the `timerClock` token, and `cookStep` derived as `bodyLarge.fontSize * 1.6`.
-- `lib/widgets/chamfered_border.dart` — `ChamferedBorder` extends `OutlinedBorder` (not `ShapeBorder`) with `copyWith`, `scale`, `getInnerPath`, `getOuterPath` and `paint`, `cut = shorterSide * 0.293` clamped 6–18dp, reading `TextDirection` from the paint call so it mirrors.
-- `lib/widgets/pressable_slab.dart` — wraps the three ledge buttons: 90ms collapse of the 2dp ledge with a 2dp downward translate, collapsing to `Duration.zero` when `MediaQuery.disableAnimationsOf(context)` is true, and forwarding all semantics so the button is still one node.
-- `lib/widgets/amount_line.dart` — `AmountLine`: splits `formatLine`'s output at U+2069 and sets the isolated amount in primary (teal while scaling) at w700 with the rest `onSurface`, falling back to plain `ContentText(line.original)` when `line.min == null`.
-- `lib/widgets/digit_box.dart` — each digit in a `SizedBox` of `fontSize × 0.63` inside an LTR `Directionality`, for the running clock, the step badge, the ×factor readout and the settings digit specimens.
-- `lib/widgets/lattice.dart` — `LatticePainter` (an octagon-and-cross girih grid, `shouldRepaint false`, recorded once per size and wrapped in `RepaintBoundary`) plus the deterministic per-recipe rotation for photoless thumbnails.
-- `lib/widgets/slab_tab_bar.dart` — two equal chamfered 48dp slabs driving the existing `DefaultTabController` and rendering the existing two strings.
-- `lib/widgets/banner_slot.dart` — `BannerSlot(screen: AdScreen)` with `assert(screen != AdScreen.cookMode)` and a static `heightOf(context)`; reserves the anchored-adaptive height from the first build whenever ads are enabled and consent has been answered, and paints nothing at all until an ad attaches (ADS-2).
-- `test/theme/type_test.dart` — asserts `cookStep.fontSize >= bodyLarge.fontSize * 1.5`, every wrapping token's height ≥ 1.75, every token's height ≥ 1.50, and letterSpacing 0 on all sixteen.
-- `test/widget/app_test.dart` — extend the existing LANG-6 1.3× walk (library → recipe → editor only today) to cook mode, the plan, settings and import in both languages, plus a 1.5× case on the plan and the editor, with a long tashkeel-bearing Arabic title and a 30-line ingredient list whose lines mostly have no parsed amount.
+**First run and the walkthrough** (`first_run_screen.dart`, `walkthrough_screen.dart`) — `Welcome.dc.html`'s four-page walkthrough: an `accentSoft` blob behind three rotated, badge-marked recipe cards, a `display` title, `ink2` body copy, 4 page-dots (an accent 24×8 pill for the current page, `border` 8×8 dots otherwise), and a full-width primary pill "التالي". `SetupScreen`'s choices (style, language, digits, week start — RUN-3/RUN-4) reuse `_Choice`'s existing grouped-row pattern restyled to match Settings.
 
-### Effort and risk
+**Purchase** (`purchase_screen.dart`, PAY-6/PAY-10) — `_TierCard` becomes a `SufraCard` per tier with the Pro/Premium colours and the primary-pill purchase button; store prices only (PAY-2), never invented ones.
 
-About 1,700–2,000 net new lines across 15 files: three theme files (~520 lines), eight new widgets and painters (~520), edits to all nine screens (~700), and two test files (~230). No new packages, no new fonts, no bitmaps.
+**Editor, import, preview and translate** (`recipe_editor_screen.dart`, `import_screen.dart`, `translate_flow.dart`) — restyled, not re-laid-out: the same field order, the same group labels now on `SufraCard` groups, the same progress/failure states, now in pill buttons and `InputDecorationTheme`'s new fill/radius. No `AdSlot` on any of the three (ADS-1, ADS-9).
 
-The riskiest part is `ChamferedBorder`: it must extend `OutlinedBorder` and implement `copyWith`, or `ButtonStyle.shape`, `ChipThemeData.shape` and `CardThemeData.shape` will reject it at compile time, and its mirroring must come from the `TextDirection` passed into `paint`/`getOuterPath` rather than from a captured `Directionality`, or the cut lands on the wrong corner inside a sheet.
+## Motion
 
-Second risk: `PressableSlab` must not swallow the child's `InkWell` semantics — wrap, do not replace. Third: `SlabTabBar` replaces the stock `TabBar`; no current test finds tabs by type, but check before landing.
+Five notes, all skipped under `MediaQuery.disableAnimations` / reduce-motion (a static swap replaces every transition below, with no missing state):
 
-Run the suite (21 green today) after the theme lands and again after the screens, and land it in three PRs — theme + type + the three deletions, then settings + recipe + ingredients, then library + cook mode + plan.
+1. Press feedback: scale to 0.97 over 120 ms on any pill button or tappable card.
+2. A modal sheet slides up over 280 ms, ease-out.
+3. The recipe hero photo parallaxes at 0.5× under the content panel while it scrolls.
+4. A ticked grocery item animates into the collapsed "تم" section 600 ms after the tick (GRO-5).
+5. Cook mode's step content cross-fades over 200 ms between steps.
 
----
+## Build order
 
-## What was rejected, and why
+Five PRs, `docs/ROADMAP.md`'s Redesign section, each based on `main` and merged in order:
 
-Both bundled display fonts are gone. Reem Kufi was rejected because it ships no matching Latin, so the English build would fall back mid-wordmark and the two locales would stop looking like the same app; Amiri was rejected because the critics' own numbers for it were guesses about a file nobody had opened, it needs more leading than the sans it was meant to tower over rather than the 1.45 that was specified, and both directions set it at 21sp in the library list — one point above their own stated floor. Expression now comes from weight, size, colour and rhythm, plus drawn geometry, which is what the constraint asked for.
-
-The two-column amount table (Bulaq's declared centrepiece) is dropped entirely. `formatLine` and `arabicUnitName` already make the unit agree with the number (QTY-6: 1 كوب, 2 كوبان, 3–10 أكواب, 11+ كوبًا), so putting the numeral in a 76dp margin column with the unit word beneath it reads as "two" over "two-cups", and at 11+ it strands an accusative singular that is only grammatical immediately after its numeral. Worse, the column is empty on most lines of a social-caption import, giving a fifth of a 360dp screen to a stack of em-dashes. Both options instead colour the amount span in place, so the phrase stays whole.
-
-Every `FontFeature.tabularFigures` claim is deleted. All four bundled TTFs were read directly: they expose `lnum, numr, dnom, frac, zero` and `ss01–ss06`, but no `tnum`, so the call is a no-op — and the Arabic-Indic digits really are proportional (advances 263 to 630 per 1000em, a 2.4× spread) while the Latin digits are already uniform at 600. The "Counter" signature move in Spice Shelf and the tabular claim in all four directions rested on a feature the font does not ship. Replaced by `DigitBox`, which reserves a fixed 0.63em slot per digit only where a number ticks in place.
-
-The bare-number counters are gone. `lib/l10n/app_ar.arb` defines servings as `{=1: حصة واحدة, =2: حصتان, few: {shown} حصص}` and minutes the same way, so at one and two the numeral is absorbed into the Arabic dual and there is no digit to align; and `stepOf` is "الخطوة {n} من {total}", a five-word sentence, not "3/12". Three of the four original directions specced pills sized for Latin counting. Both surviving options keep today's phrase widgets with `Flexible` + ellipsis and put the position indicator somewhere else — a step rail in one, a chamfered badge plus a progress bar in the other.
-
-The no-elevation bet is kept but re-founded. Every original direction proposed that a 1.09–1.19:1 fill step plus a 1.7–1.9:1 hairline would separate a card from the page; on a cheap LCD at low brightness it does not. Rather than abandon flatness, the boundary moved to `outline`, with values that clear 3:1 against every step of both ladders in both themes (3.11–4.75 light, 3.40–5.65 dark), demoting the pale hairline to row separators inside an already-bounded group.
-
-Three "fixes" that were wrong about the framework are dropped. Flutter's `Divider` is already directional (`divider.dart:201` uses `EdgeInsetsDirectional.only(start: indent, end: endIndent)`), so Bulaq's ban on it — and the four hand-rolled hairline variants that replaced it — go. The `NavigationBar` indicator cannot be resized (`navigation_bar.dart:462` constructs `NavigationIndicator` with no width or height), so every "64×36" and "56×32" spec is dropped in favour of shape and colour plus a 2dp border that carries the state at 5.49–6.19:1. And `MediaQuery.textScalerOf(context).scale(1)` is replaced by `scale(56)` everywhere, because `scale(1)` does not return the factor under Android 14's non-linear font scaling.
-
-One live bug the original directions preserved is fixed rather than inherited: `plan_screen.dart:126` and `:139` write `Icon(rtl ? Icons.chevron_right : Icons.chevron_left)`, but both chevrons are declared `matchTextDirection: true` in the framework, so Flutter mirrors an already-swapped glyph and the week arrows point the wrong way in Arabic today. The manual ternary is deleted in both options. Cook mode's `arrow_back`/`arrow_forward` are correct as written and are left alone.
-
-The `SegmentedButton` panic is dropped. Three critics called it the app's biggest 1.3× hazard on the assumption of long Arabic labels; the actual strings are "كما كُتبت", "غ / مل" and "أكواب" — short. The real fixed-size traps are `library_view.dart:142`'s `SizedBox(height: 56)` and `plan_screen.dart:273`'s `SizedBox(width: 84)` holding "وجبة خفيفة", and both are deleted outright.
-
-Scrims over user photos are gone. White on 55% black over a pure-white dish measures 4.74:1 and the delete action sits in that row, so both options put app-bar icons on opaque `surface` shapes instead — 16.53:1 and 17.55:1 regardless of the photo.
-
-Finally, the ad slot as "`SizedBox.shrink` until a request starts" is dropped: it violates the first half of ADS-2, which requires the height to be reserved *before* the slot asks. `BannerSlot` now reserves from the first build whenever ads are enabled and consent has been answered, and paints nothing until an ad attaches — satisfying both halves of the rule and keeping the navigation bar and the floating button from moving on load.
-
-## Recommendation at the time
-
-Ship Hibr (Ink on Paper). The app's whole claim is that Arabic recipes scale correctly, and Hibr renders that claim on every single row by setting the amount in a deep teal inside the line — an accent that passes AA as readable text on every surface in both themes (4.62:1 at its very worst), so there is no class of future bug where the brand colour is legible at night and invisible by day, and no need for a parallel non-scheme colour that a later refactor can quietly misuse. Mawqid is the louder answer and would photograph better on a store page, but its saffron only works as a fill with ink on it — it needs an extra edge colour in light mode, a `ThemeExtension`, and a standing rule that nothing ever sets text to the brand colour, and it is roughly 500 more lines on a branch that is already carrying the meal plan uncommitted. Take Mawqid instead if the owner's real complaint is that the app does not stand out in a screenshot, because the chamfered corner and the ink-on-saffron block are the more recognisable pair; but for someone cooking from it, Hibr is calmer and the numbers are just as loud.
-
-## How two looks live in one app
-
-The screens stay one widget tree; the styles are data, not forks.
-
-- `lib/theme/` holds `AppStyle { ink, saffron }`, a `ColorScheme` and `TextTheme` per style and brightness, and the component themes.
-- A `ThemeExtension` called `Decor` carries what a `ThemeData` can't: the section rail (width and colour, 0 for none), card/button/chip/photo shapes, the amount emphasis (colour and weight), the press ledge (depth and colour, 0 for flat), the row hairline colour (null for none), the grouped-row fill, and which ornament the empty states draw. `Decor.of(context)` reads it.
-- Shared widgets read `Decor` instead of hard-coding: a section heading, an amount-aware line (it splits the string `formatLine` already produces at its isolate characters, so the number and the Arabic unit word that agrees with it stay one phrase, QTY-6), a ledge button for the three primary actions, a chamfered `OutlinedBorder`, and the ornament painter.
-- The style sits in `AppSettings` beside the light/dark mode, so the two are independent and a backup carries the choice (BAK-6).
-- Tests: every screen renders in both styles, in both brightnesses, at 1.3× text (LANG-6), and a pure-Dart test computes the WCAG ratio of each theme's key text pairs and fails below 4.5:1 (3:1 for non-text boundaries).
+1. **Foundation, navigation, the add sheet** (LOOK-1–LOOK-8, LOOK-10) — this PR: both accents' tokens in light and dark, the contrast test, the shared components above, `FloatingNavBar` with الإعدادات in it, the add sheet, `AdSlot` restyled. زعفران becomes the default for new installs.
+2. **Library and adding** (LOOK-12, ORG-3–ORG-6, IMP-1–IMP-5) — the library home, cookbooks, the import screens, preview and editor.
+3. **Recipe page and cook mode** (LOOK-13, LOOK-14, COOK-1–COOK-6, SCALE-6, IMP-14) — the hero, the sheet, the tabs, the action bar; cook mode; translate and shared images (SHARE-3) in the new palette.
+4. **Plan and groceries** (PLAN-1–PLAN-5, RAM-1–RAM-4, GRO-1–GRO-6) — the week strip and day timeline, Ramadan, the progress card and aisle cards.
+5. **Settings, first run, purchase** (RUN-3, RUN-4, PAY-6, PAY-10, PAY-11, ADS-5) — grouped settings rows, setup and the walkthrough, the purchase screen; retire the Ink/Saffron-only widgets (`rail_heading.dart`, `ornament.dart`, `chamfered_border.dart`, `pressable_slab.dart`) that this design no longer needs.

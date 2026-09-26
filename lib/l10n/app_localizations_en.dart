@@ -93,6 +93,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recipesAdd => 'Add a recipe';
 
   @override
+  String get addSheetSubtitle => 'From wherever you found it, in clean Arabic.';
+
+  @override
   String recipesCount(int count, String shown) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -564,6 +567,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get importTitle => 'Import from a link';
 
   @override
+  String get addSheetPhoto => 'From a photo';
+
+  @override
+  String get addSheetLinkDesc => 'Fatafeat, Cookpad, TikTok…';
+
+  @override
+  String get addSheetPhotoDesc => 'A cookbook or a handwritten page';
+
+  @override
+  String get addSheetPasteText => 'Paste text';
+
+  @override
+  String get addSheetPasteDesc => 'A post\'s caption, or a message';
+
+  @override
   String get importHint => 'Paste a recipe link';
 
   @override
@@ -595,6 +613,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addByHand => 'Add by hand';
+
+  @override
+  String get addSheetByHandDesc => 'Write your recipe your own way';
 
   @override
   String get duplicateTitle => 'Already saved';
@@ -1370,4 +1391,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsAdPrivacy => 'Ad privacy choices';
+
+  @override
+  String get addSheetQuotaLabel => 'Smart import';
+
+  @override
+  String addSheetQuotaCount(String shown, String quota) {
+    return '$shown of $quota left';
+  }
+
+  @override
+  String get addSheetQuotaCaption =>
+      'Resets at the start of each month · website imports stay free and unlimited.';
 }

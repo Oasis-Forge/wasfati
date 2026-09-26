@@ -50,6 +50,8 @@ Future<void> _waitFor(WidgetTester tester, Finder finder) async {
 }
 
 Future<void> _openImport(WidgetTester tester) async {
+  await tester.tap(find.byTooltip('أضف وصفة'));
+  await settle(tester);
   await tester.tap(find.text('استيراد من رابط'));
   await settle(tester);
 }
@@ -358,6 +360,8 @@ void main() {
     ) async {
       await pumpApp(tester);
       await tester.tap(find.text('أضف وصفة'));
+      await settle(tester);
+      await tester.tap(find.text('أضفها بنفسك'));
       await settle(tester);
       await tester.drag(find.byType(ListView).first, const Offset(0, -2000));
       await settle(tester);
