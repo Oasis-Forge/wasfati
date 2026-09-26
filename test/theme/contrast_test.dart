@@ -22,6 +22,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wasfati/models/settings.dart' show AppStyle;
+import 'package:wasfati/screens/groceries_screen.dart'
+    show progressCaptionAlpha;
 import 'package:wasfati/theme/app_theme.dart';
 import 'package:wasfati/theme/colors.dart';
 import 'package:wasfati/theme/decor.dart';
@@ -121,6 +123,19 @@ void main() {
           // selected) and a selected `ChoiceChip`'s (secondaryLabelStyle):
           // both `card` on the chip's `selectedColor` fill (`onSurface`).
           'selected chip label (card/onSurface)': (n.card, cs.onSurface),
+          // GRO-5: in light, the progress card's "تم شراؤها" and "من: …"
+          // are the card colour at progressCaptionAlpha over its ink fill
+          // (dark uses onSurface/onSurfaceVariant on sunk, covered above).
+          if (brightness == Brightness.light)
+            'progress card caption (card@$progressCaptionAlpha on ink)': (
+              Color.alphaBlend(
+                cs.surfaceContainerLowest.withValues(
+                  alpha: progressCaptionAlpha,
+                ),
+                cs.onSurface,
+              ),
+              cs.onSurface,
+            ),
         };
         for (final MapEntry(key: name, value: pair) in onFillPairs.entries) {
           test('$name >= $bodyMin:1', () {

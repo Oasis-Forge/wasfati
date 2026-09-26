@@ -462,8 +462,8 @@ ThemeData wasfatiTheme(AppStyle style, Brightness brightness) {
         navActive: isLight ? Colors.white : n.ink,
         coverTints: sufraCoverTints(brightness),
         gutter: 20,
-        // The plan's own "today" highlight bar (unrelated to RailHeading,
-        // which no longer draws one).
+        // Unused since the Sufra plan (PR 4); kept for Decor's own
+        // copyWith/lerp tests until PR 5's sweep.
         railWidth: 4,
         railColor: cs.primary,
         cardShape: cardShape,
