@@ -4,6 +4,15 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-09-26
+
+### Changed
+- The plan shows a strip of the week's days with one day's meals under it: tap a day to see its meals. Days that have meals carry a dot, and "هذا الأسبوع" brings you back to the current week.
+- In the "رمضان" view, the month shows as rows of days in the same style, with عيد الفطر and its date at the end.
+- Choosing a recipe for a meal uses the same search field as the library, and shows each recipe with its photo.
+- Groceries open with your progress: a card shows how many items you've bought out of the list, with a ring, and which recipes they're from.
+- Grocery items are grouped in a card per aisle, each showing how many of its items are done.
+
 ## [0.20.0] - 2026-09-26
 
 ### Changed

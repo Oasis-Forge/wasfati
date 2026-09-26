@@ -7,15 +7,16 @@ import '../theme/decor.dart';
 /// (`Decor.cardHairline`) instead. Material's own elevation tint is never
 /// used.
 ///
-/// [onTap], when set, wraps the padded content in a transparent [Material]
-/// and an [InkWell] (should-fix): a plain [Container] has no `Material`
-/// underneath it, so an `InkWell` nested straight inside one paints its
-/// splash and its keyboard/switch-access focus highlight on whatever
-/// `Material` is further up the tree — typically the `Scaffold`'s, under
-/// this card's own opaque fill, where neither is ever visible. This only
-/// helps when [child] doesn't itself paint something opaque over the whole
-/// card (a full-bleed photo): that caller still needs its own ink layer
-/// stacked above the photo.
+/// The padded content always sits on a transparent [Material] (should-fix):
+/// a plain [Container] has no `Material` underneath it, so an `InkWell`
+/// inside the card — the card's own for [onTap], or a child's, such as a
+/// grocery row's long press (GRO-4) — would paint its splash and its
+/// keyboard/switch-access focus highlight on whatever `Material` is further
+/// up the tree, typically the `Scaffold`'s, under this card's own opaque
+/// fill, where neither is ever visible. [onTap], when set, adds the card's
+/// own [InkWell] on that layer. This only helps when [child] doesn't itself
+/// paint something opaque over the whole card (a full-bleed photo): that
+/// caller still needs its own ink layer stacked above the photo.
 ///
 /// design-styles.md, Motion #1: a tappable card also scales to 0.97 over
 /// 120ms while pressed, skipped when [MediaQuery.disableAnimationsOf] is set
@@ -29,6 +30,7 @@ class SufraCard extends StatefulWidget {
     this.radius = 22,
     this.clip = true,
     this.onTap,
+    this.onLongPress,
   });
 
   final Widget child;
@@ -39,6 +41,10 @@ class SufraCard extends StatefulWidget {
   final double radius;
   final bool clip;
   final VoidCallback? onTap;
+
+  /// A second action on the same card (the plan's entry menu, PLAN-4); it
+  /// only takes effect alongside [onTap], which gives the card its ink.
+  final VoidCallback? onLongPress;
 
   @override
   State<SufraCard> createState() => _SufraCardState();
@@ -55,18 +61,17 @@ class _SufraCardState extends State<SufraCard> {
         ? Padding(padding: widget.padding!, child: widget.child)
         : widget.child;
     if (widget.onTap != null) {
-      content = Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: widget.onTap,
-          onHighlightChanged: (v) => setState(() => _pressed = v),
-          customBorder: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(widget.radius),
-          ),
-          child: content,
+      content = InkWell(
+        onTap: widget.onTap,
+        onLongPress: widget.onLongPress,
+        onHighlightChanged: (v) => setState(() => _pressed = v),
+        customBorder: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(widget.radius),
         ),
+        child: content,
       );
     }
+    content = Material(type: MaterialType.transparency, child: content);
     final card = Container(
       decoration: BoxDecoration(
         color: widget.color ?? cs.surfaceContainerLowest,

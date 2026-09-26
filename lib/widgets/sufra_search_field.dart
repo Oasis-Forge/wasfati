@@ -7,7 +7,9 @@ import 'round_icon_button.dart';
 /// LOOK-6: the library's (and, from PR 4, groceries') search field — a
 /// pill that carries the same soft warm shadow as a card in light
 /// (`Decor.liftShadow`), with the filter action as a 44dp accent circle
-/// inside its trailing edge rather than a separate button beside it.
+/// inside its trailing edge rather than a separate button beside it. The
+/// filter circle is drawn only when [onFilterTap] is given: the plan's
+/// recipe picker (PLAN-3) uses the same pill without one.
 class SufraSearchField extends StatelessWidget {
   const SufraSearchField({
     super.key,
@@ -16,18 +18,21 @@ class SufraSearchField extends StatelessWidget {
     required this.onChanged,
     required this.onClear,
     required this.clearTooltip,
-    required this.onFilterTap,
-    required this.filterTooltip,
+    this.onFilterTap,
+    this.filterTooltip,
     this.filterActive = false,
-  });
+  }) : assert(
+         onFilterTap == null || filterTooltip != null,
+         'an icon-only filter button names itself',
+       );
 
   final TextEditingController controller;
   final String hintText;
   final ValueChanged<String> onChanged;
   final VoidCallback onClear;
   final String clearTooltip;
-  final VoidCallback onFilterTap;
-  final String filterTooltip;
+  final VoidCallback? onFilterTap;
+  final String? filterTooltip;
 
   /// ORG-6: a dot on the filter circle while a filter with no quick chip
   /// of its own is in effect, so choosing one in the sheet leaves a trace.
@@ -60,44 +65,48 @@ class SufraSearchField extends StatelessWidget {
                 icon: const Icon(Icons.close),
                 onPressed: onClear,
               ),
-            SizedBox(
-              width: 44,
-              height: 44,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  RoundIconButton(
-                    icon: Icons.tune,
-                    tooltip: filterTooltip,
-                    size: 44,
-                    backgroundColor: cs.primary,
-                    color: cs.onPrimary,
-                    onPressed: onFilterTap,
-                  ),
-                  if (filterActive)
-                    PositionedDirectional(
-                      top: 2,
-                      end: 2,
-                      // ORG-6: named for a screen reader (was-fix: a plain
-                      // decorative dot carried no semantics at all), and the
-                      // accent rather than `cs.error` — a filter in effect
-                      // isn't a validation error.
-                      child: Semantics(
-                        label: l10n.filterActiveHint,
-                        child: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: cs.primary,
-                            border: Border.all(color: cs.onPrimary, width: 1.5),
+            if (onFilterTap != null)
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    RoundIconButton(
+                      icon: Icons.tune,
+                      tooltip: filterTooltip!,
+                      size: 44,
+                      backgroundColor: cs.primary,
+                      color: cs.onPrimary,
+                      onPressed: onFilterTap,
+                    ),
+                    if (filterActive)
+                      PositionedDirectional(
+                        top: 2,
+                        end: 2,
+                        // ORG-6: named for a screen reader (was-fix: a plain
+                        // decorative dot carried no semantics at all), and the
+                        // accent rather than `cs.error` — a filter in effect
+                        // isn't a validation error.
+                        child: Semantics(
+                          label: l10n.filterActiveHint,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: cs.primary,
+                              border: Border.all(
+                                color: cs.onPrimary,
+                                width: 1.5,
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ),

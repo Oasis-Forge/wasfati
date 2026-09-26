@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
@@ -16,11 +17,17 @@ import '../providers/settings_state.dart';
 import '../theme/decor.dart';
 import '../widgets/content_direction.dart';
 import '../widgets/digit_counter.dart';
-import '../widgets/empty_state.dart';
+import '../widgets/recipe_cover.dart';
+import '../widgets/recipe_photo.dart';
+import '../widgets/round_icon_button.dart';
+import '../widgets/segmented_pill.dart';
+import '../widgets/sufra_card.dart';
+import '../widgets/sufra_search_field.dart';
 import 'home_screen.dart';
 
-/// The meal plan: one week at a time, four meals a day (PLAN-1). Adding,
-/// moving and removing never touch the recipe itself (PLAN-3, PLAN-4).
+/// The meal plan (PLAN-1, amended by Decision 23): a strip of the week's 7
+/// days and, under it, the chosen day's meals as a timeline. Adding, moving
+/// and removing never touch the recipe itself (PLAN-3, PLAN-4).
 class PlanScreen extends StatefulWidget {
   const PlanScreen({super.key});
 
@@ -31,8 +38,11 @@ class PlanScreen extends StatefulWidget {
 /// The meal the add sheet offers first: the one last used (PLAN-3).
 MealSlot _lastMeal = MealSlot.lunch;
 
+/// The strip's pills are 46dp wide in the mockup; each day's tap target is
+/// its whole column of the strip, at least 48dp on a 360dp phone.
+const double _pillWidth = 46;
+
 class _PlanScreenState extends State<PlanScreen> {
-  final _todayKey = GlobalKey();
   int? _firstWeekday;
 
   /// RAM-4: "الأسبوع" or "رمضان" — only meaningful while the toggle shows.
@@ -41,6 +51,16 @@ class _PlanScreenState extends State<PlanScreen> {
   /// The week showing before switching to the Ramadan month, so "الأسبوع"
   /// comes back to it rather than always jumping to today's week (RAM-4).
   DateTime? _weekBeforeMonthView;
+
+  /// The chosen day (PLAN-1); null means today. It's screen state only:
+  /// choosing a day never reloads anything, since the whole week (or the
+  /// Ramadan month) is already loaded.
+  DateTime? _selected;
+  DateTime? _selectedBeforeMonthView;
+
+  /// The chosen day's heading, scrolled to when a day is chosen in the
+  /// month view (RAM-4), where the grid pushes it below the fold.
+  final _dayHeadingKey = GlobalKey();
 
   @override
   void didChangeDependencies() {
@@ -72,14 +92,10 @@ class _PlanScreenState extends State<PlanScreen> {
         // must-fix: the "رمضان" toggle only exists in this window: it was
         // turned off in Settings, or today has moved past the last day
         // (Eid) or before the window opens. Without this, the screen got
-        // stuck showing a month that no longer applies, with no way back
-        // to a week short of toggling the mode off and on.
+        // stuck showing a month that no longer applies.
         _monthView = false;
-        plan
-            .showWeek(_weekBeforeMonthView ?? weekStartFor(plan.today, first))
-            .then((_) {
-              if (mounted) _scrollToToday();
-            });
+        _selected = _selectedBeforeMonthView;
+        plan.showWeek(_weekBeforeMonthView ?? weekStartFor(plan.today, first));
         return;
       }
       if (dateKey(plan.days.firstOrNull ?? DateTime(0)) !=
@@ -89,16 +105,13 @@ class _PlanScreenState extends State<PlanScreen> {
         // must-fix: a moon-sighting shift moves the whole month even while
         // its view is open — reload so it doesn't keep showing yesterday's
         // range (a day short, or one day into what's no longer Ramadan).
-        plan.showRange(ramadanMonth.start, ramadanMonth.last).then((_) {
-          if (mounted) _scrollToToday();
-        });
+        plan.showRange(ramadanMonth.start, ramadanMonth.last);
       }
       return;
     }
     if (!weekChanged) return;
-    plan.showWeek(weekStartFor(plan.today, first)).then((_) {
-      if (mounted) _scrollToToday();
-    });
+    // The week that holds the chosen day, from the (new) first weekday.
+    plan.showWeek(weekStartFor(_selected ?? plan.today, first));
   }
 
   /// The week's first day: the setting, else the phone's region (PLAN-1).
@@ -108,37 +121,92 @@ class _PlanScreenState extends State<PlanScreen> {
     arabic: Localizations.localeOf(context).languageCode == 'ar',
   );
 
+  /// The day whose meals show (PLAN-1): the chosen one when it's in the
+  /// range shown; else the same weekday, so the arrows keep it even for the
+  /// moment before the next week has loaded; else today; else the first.
+  DateTime _chosenDay(PlanState plan) {
+    final days = plan.days;
+    final wanted = dateOnly(_selected ?? plan.today);
+    bool isShown(DateTime d) => days.any((x) => dateKey(x) == dateKey(d));
+    if (isShown(wanted)) return wanted;
+    if (days.length == 7) {
+      for (final d in days) {
+        if (d.weekday == wanted.weekday) return d;
+      }
+    }
+    if (isShown(plan.today)) return plan.today;
+    return days.first;
+  }
+
+  void _choose(DateTime day) {
+    setState(() => _selected = dateOnly(day));
+    // RAM-4: the month's 5 rows of pills put the chosen day's meals below
+    // the fold, so choosing one brings its heading up, with its meals under
+    // it; otherwise only the pill's fill would change on screen. Only on a
+    // choice: entering the month view keeps the grid the user just opened.
+    if (!_monthView) return;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final target = _dayHeadingKey.currentContext;
+      if (!mounted || target == null) return;
+      Scrollable.ensureVisible(
+        target,
+        alignment: 0.05,
+        duration: reduceMotion
+            ? Duration.zero
+            : const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  /// The arrows: a week at a time, keeping the chosen weekday (PLAN-1).
+  void _shiftWeek(int weeks) {
+    final plan = context.read<PlanState>();
+    final chosen = _chosenDay(plan);
+    setState(
+      () => _selected = DateTime(
+        chosen.year,
+        chosen.month,
+        chosen.day + 7 * weeks,
+      ),
+    );
+    plan.shiftWeeks(weeks);
+  }
+
+  /// "هذا الأسبوع": back to the current week, with today chosen (PLAN-1).
+  void _thisWeek() {
+    final plan = context.read<PlanState>();
+    setState(() => _selected = null);
+    plan.showWeek(weekStartFor(plan.today, _firstWeekday!));
+  }
+
   /// RAM-4: switches between the week and the whole Ramadan month, which
   /// PlanState loads as an arbitrary range.
   Future<void> _setMonthView(bool month, RamadanMonth ramadanMonth) async {
     final plan = context.read<PlanState>();
-    setState(() => _monthView = month);
+    if (month == _monthView) return;
     if (month) {
       _weekBeforeMonthView = plan.weekStart;
+      _selectedBeforeMonthView = _selected;
+      // Today when it's in the month, else day 1 (the window opens 7 days
+      // before it).
+      setState(() {
+        _monthView = true;
+        _selected = ramadanMonth.contains(plan.today)
+            ? null
+            : ramadanMonth.start;
+      });
       await plan.showRange(ramadanMonth.start, ramadanMonth.last);
-      // must-fix: switching to the month used to leave the scroll position
-      // wherever it was (usually the top, day 1), so opening it on, say,
-      // day 20 gave no way to see today without scrolling by hand.
-      if (mounted) _scrollToToday();
     } else {
+      setState(() {
+        _monthView = false;
+        _selected = _selectedBeforeMonthView;
+      });
       await plan.showWeek(
         _weekBeforeMonthView ?? weekStartFor(plan.today, _firstWeekday!),
       );
-      if (mounted) _scrollToToday();
     }
-  }
-
-  void _scrollToToday() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ctx = _todayKey.currentContext;
-      if (ctx != null) {
-        Scrollable.ensureVisible(
-          ctx,
-          alignment: 0.05,
-          duration: const Duration(milliseconds: 250),
-        );
-      }
-    });
   }
 
   Future<void> _clearWeek() async {
@@ -155,6 +223,8 @@ class _PlanScreenState extends State<PlanScreen> {
           content: Text(
             l10n.planClearedCount(ids.length, settings.number(ids.length)),
           ),
+          // DEL-2: Undo for about 5 seconds, then the notice goes away on
+          // its own, never lingering over the screen.
           duration: const Duration(seconds: 5),
           persist: false,
           action: ids.isEmpty
@@ -167,17 +237,34 @@ class _PlanScreenState extends State<PlanScreen> {
       );
   }
 
+  /// The header's "more": "مسح الأسبوع" (PLAN-4).
+  Future<void> _more() async {
+    final l10n = AppLocalizations.of(context);
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.delete_sweep_outlined),
+              title: Text(l10n.planClearWeek),
+              onTap: () => Navigator.pop(ctx, 'clear'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (choice == 'clear' && mounted) await _clearWeek();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final plan = context.watch<PlanState>();
     final settings = context.watch<SettingsState>();
-    final dates = MaterialLocalizations.of(context);
-    final days = plan.days;
-    final range = days.isEmpty
-        ? ''
-        : '${settings.inDigits(dates.formatShortMonthDay(days.first))} – '
-              '${settings.inDigits(dates.formatShortMonthDay(days.last))}';
+    final text = Theme.of(context).textTheme;
+    final gutter = Decor.of(context).gutter;
 
     // RAM-3, RAM-4: both key off the current-or-next Ramadan relative to
     // today, from the calendar PlanState was given (RAM-2).
@@ -194,115 +281,913 @@ class _PlanScreenState extends State<PlanScreen> {
         inRamadanWindow(plan.today, ramadanMonth);
     // must-fix: the raw _monthView flag can briefly be stale (the toggle
     // just disappeared because today left the window, or the mode just
-    // turned off) until didChangeDependencies's post-write catches up —
-    // this is what the screen actually renders as "in the month view".
+    // turned off) until didChangeDependencies catches up — this is what
+    // the screen actually renders as "in the month view".
     final monthView = _monthView && showMonthToggle;
 
+    if (!plan.loaded) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    final days = plan.days;
+    final chosen = _chosenDay(plan);
+    final dates = MaterialLocalizations.of(context);
+    final range =
+        '${settings.inDigits(dates.formatShortMonthDay(days.first))} – '
+        '${settings.inDigits(dates.formatShortMonthDay(days.last))}';
+    final onCurrentWeek =
+        dateKey(days.first) ==
+        dateKey(weekStartFor(plan.today, _firstWeekday ?? DateTime.saturday));
+
+    // One scroll view for the whole screen (LOOK-8): at 1.3x text the
+    // header, the strip and the day together can outgrow a short phone.
+    // Choosing a day or a week only rebuilds it; the loaded data stays on
+    // screen, never a spinner (the week's own entries are already loaded).
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.planTitle),
-        actions: [
-          IconButton(
-            tooltip: l10n.planThisWeek,
-            icon: const Icon(Icons.today_outlined),
-            // must-fix: kept working in the month view too — it used to
-            // disappear there, with no other way to jump back to today
-            // without scrolling by hand.
-            onPressed: monthView
-                ? _scrollToToday
-                : () {
-                    plan
-                        .showWeek(weekStartFor(plan.today, _firstWeekday!))
-                        .then((_) => _scrollToToday());
-                  },
-          ),
-          IconButton(
-            tooltip: l10n.addToGroceries,
-            icon: const Icon(Icons.shopping_basket_outlined),
-            onPressed: () => openPlanAddToGroceries(context),
-          ),
-          if (!monthView)
-            PopupMenuButton<String>(
-              onSelected: (_) => _clearWeek(),
-              itemBuilder: (_) => [
-                PopupMenuItem(value: 'clear', child: Text(l10n.planClearWeek)),
-              ],
-            ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: monthView
-              ? Center(
+      body: SafeArea(
+        bottom: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsetsDirectional.only(top: 12, bottom: 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: EdgeInsetsDirectional.symmetric(horizontal: gutter),
+                child: Row(
+                  children: [
+                    Expanded(
+                      // The screen's heading, as AppBar's title was
+                      // (should-fix), so a screen reader can jump to it.
+                      child: Semantics(
+                        header: true,
+                        namesRoute: true,
+                        child: Text(
+                          l10n.planTitle,
+                          style: text.titleLarge,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    // PLAN-5: the week's (or, RAM-4, the month's) entries.
+                    RoundIconButton(
+                      icon: Icons.shopping_basket_outlined,
+                      tooltip: l10n.addToGroceries,
+                      onPressed: () => openPlanAddToGroceries(context),
+                    ),
+                    if (!monthView) ...[
+                      const SizedBox(width: 4),
+                      RoundIconButton(
+                        icon: Icons.more_horiz,
+                        tooltip: l10n.moreActions,
+                        onPressed: _more,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (card != null)
+                Padding(
+                  padding: EdgeInsetsDirectional.fromSTEB(
+                    gutter,
+                    16,
+                    gutter,
+                    0,
+                  ),
+                  child: _RamadanCard(card: card),
+                ),
+              if (showMonthToggle)
+                Padding(
+                  padding: EdgeInsetsDirectional.fromSTEB(
+                    gutter,
+                    16,
+                    gutter,
+                    0,
+                  ),
+                  child: SegmentedPill<bool>(
+                    options: {
+                      false: l10n.planViewWeek,
+                      true: l10n.planViewRamadan,
+                    },
+                    value: monthView,
+                    onChanged: (v) => _setMonthView(v, ramadanMonth),
+                  ),
+                ),
+              const SizedBox(height: 12),
+              if (monthView)
+                Padding(
+                  padding: EdgeInsetsDirectional.symmetric(horizontal: gutter),
                   child: Text(
                     range,
                     textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: text.titleSmall,
                   ),
                 )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      tooltip: l10n.planPreviousWeek,
-                      // Mirrors itself in right-to-left (matchTextDirection):
-                      // it points to the reading start either way (LANG-5).
-                      icon: const Icon(Icons.chevron_left),
-                      onPressed: () => plan.shiftWeeks(-1),
-                    ),
-                    Flexible(
-                      child: Text(
-                        range,
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium,
+              else
+                Padding(
+                  padding: EdgeInsetsDirectional.symmetric(
+                    horizontal: gutter - 12,
+                  ),
+                  child: _WeekNav(
+                    range: range,
+                    onPrevious: () => _shiftWeek(-1),
+                    onNext: () => _shiftWeek(1),
+                  ),
+                ),
+              if (!monthView && !onCurrentWeek)
+                Center(child: _ThisWeekChip(onTap: _thisWeek)),
+              const SizedBox(height: 12),
+              Padding(
+                // The strip runs 8dp nearer the edges than the gutter, so
+                // each of its 7 columns is a 48dp target on a 360dp phone.
+                padding: EdgeInsetsDirectional.symmetric(
+                  horizontal: gutter - 8,
+                ),
+                child: monthView
+                    ? _MonthGrid(days: days, chosen: chosen, onChoose: _choose)
+                    : _DayRow(days: days, chosen: chosen, onChoose: _choose),
+              ),
+              if (plan.entries.isEmpty)
+                Padding(
+                  padding: EdgeInsetsDirectional.fromSTEB(
+                    gutter,
+                    16,
+                    gutter,
+                    0,
+                  ),
+                  child: const _EmptyHint(),
+                ),
+              Padding(
+                padding: EdgeInsetsDirectional.fromSTEB(gutter, 28, gutter, 0),
+                child: _DayHeading(key: _dayHeadingKey, day: chosen),
+              ),
+              Padding(
+                padding: EdgeInsetsDirectional.fromSTEB(gutter, 16, gutter, 0),
+                child: _DayTimeline(day: chosen),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The week range between its two arrows (PLAN-1). The arrows mirror
+/// themselves in right to left: each points back toward its own side.
+class _WeekNav extends StatelessWidget {
+  const _WeekNav({
+    required this.range,
+    required this.onPrevious,
+    required this.onNext,
+  });
+
+  final String range;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Row(
+      children: [
+        IconButton(
+          tooltip: l10n.planPreviousWeek,
+          // Mirrors itself in right-to-left (matchTextDirection): it points
+          // to the reading start either way (LANG-5).
+          icon: const Icon(Icons.chevron_left),
+          onPressed: onPrevious,
+        ),
+        Expanded(
+          child: Text(
+            range,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+        ),
+        IconButton(
+          tooltip: l10n.planNextWeek,
+          icon: const Icon(Icons.chevron_right),
+          onPressed: onNext,
+        ),
+      ],
+    );
+  }
+}
+
+/// "هذا الأسبوع", only off the current week: back to today (PLAN-1).
+class _ThisWeekChip extends StatelessWidget {
+  const _ThisWeekChip({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final decor = Decor.of(context);
+    return Semantics(
+      button: true,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const StadiumBorder(),
+          child: ConstrainedBox(
+            // A 48dp target around a smaller drawn pill.
+            constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+            child: Center(
+              widthFactor: 1,
+              // Ink, not a DecoratedBox: the fill is painted on the
+              // Material, under the InkWell's splash and focus highlight
+              // rather than over them. LOOK-3: the outline gives the chip
+              // its 3:1 edge against the page, as the theme's chips have.
+              child: Ink(
+                decoration: ShapeDecoration(
+                  shape: StadiumBorder(side: BorderSide(color: cs.outline)),
+                  color: decor.sunk,
+                ),
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.symmetric(
+                    horizontal: 14,
+                    vertical: 4,
+                  ),
+                  child: Text(
+                    AppLocalizations.of(context).planThisWeek,
+                    style: Theme.of(context).textTheme.labelSmall
+                        ?.copyWith(color: cs.onSurfaceVariant),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A weekday's key for [AppLocalizations.planWeekdayShort].
+String _weekdayKey(int weekday) => const {
+  DateTime.monday: 'mon',
+  DateTime.tuesday: 'tue',
+  DateTime.wednesday: 'wed',
+  DateTime.thursday: 'thu',
+  DateTime.friday: 'fri',
+  DateTime.saturday: 'sat',
+  DateTime.sunday: 'sun',
+}[weekday]!;
+
+/// RAM-2: the Hijri label of [day] ("٥ رمضان", or "عيد الفطر" the day after
+/// the last one), only with the mode on, so it can stay on all year
+/// without marking days outside any Ramadan.
+String? _hijriLabel(
+  AppLocalizations l10n,
+  PlanState plan,
+  SettingsState settings,
+  DateTime day,
+) {
+  if (!plan.ramadanMode) return null;
+  if (plan.isEid(day)) return l10n.ramadanEidLabel;
+  final month = plan.ramadanMonthOf(day);
+  if (month == null) return null;
+  return l10n.ramadanDayLabel(settings.number(month.dayOf(day)!));
+}
+
+/// The weekday and date, "الخميس، 25 سبتمبر", in the user's digits.
+String _longDate(BuildContext context, SettingsState settings, DateTime day) =>
+    settings.inDigits(
+      DateFormat.MMMMEEEEd(Localizations.localeOf(context).toString())
+          .format(day),
+    );
+
+int _entryCount(PlanState plan, DateTime day) =>
+    plan.entries.where((e) => dateKey(e.date) == dateKey(day)).length;
+
+/// The week strip (PLAN-1): 7 day pills, one per column.
+class _DayRow extends StatelessWidget {
+  const _DayRow({
+    required this.days,
+    required this.chosen,
+    required this.onChoose,
+  });
+
+  final List<DateTime> days;
+  final DateTime chosen;
+  final ValueChanged<DateTime> onChoose;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final plan = context.watch<PlanState>();
+    final settings = context.watch<SettingsState>();
+    // A Ramadan day's Hijri line makes every pill in the row taller.
+    final tall = days.any((d) => _hijriLabel(l10n, plan, settings, d) != null);
+    return Row(
+      children: [
+        for (final d in days)
+          Expanded(
+            child: _DayPill(
+              day: d,
+              chosen: dateKey(d) == dateKey(chosen),
+              height: tall ? 88 : 72,
+              onTap: () => onChoose(d),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// RAM-4's month: the same pills in rows of 7, then "عيد الفطر" after the
+/// last day.
+class _MonthGrid extends StatelessWidget {
+  const _MonthGrid({
+    required this.days,
+    required this.chosen,
+    required this.onChoose,
+  });
+
+  final List<DateTime> days;
+  final DateTime chosen;
+  final ValueChanged<DateTime> onChoose;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final settings = context.watch<SettingsState>();
+    final cs = Theme.of(context).colorScheme;
+    final last = days.last;
+    final eid = DateTime(last.year, last.month, last.day + 1);
+    final eidDate = settings.inDigits(
+      MaterialLocalizations.of(context).formatShortMonthDay(eid),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < days.length; i += 7)
+          Padding(
+            padding: EdgeInsetsDirectional.only(top: i == 0 ? 0 : 8),
+            child: Row(
+              children: [
+                for (var j = i; j < i + 7; j++)
+                  Expanded(
+                    child: j < days.length
+                        ? _DayPill(
+                            day: days[j],
+                            chosen: dateKey(days[j]) == dateKey(chosen),
+                            height: 88,
+                            onTap: () => onChoose(days[j]),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 12),
+        Center(
+          child: DecoratedBox(
+            decoration: ShapeDecoration(
+              shape: const StadiumBorder(),
+              color: cs.primaryContainer,
+            ),
+            child: Padding(
+              padding: const EdgeInsetsDirectional.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
+              child: Text(
+                l10n.ramadanEidOn(eidDate),
+                style: Theme.of(context).textTheme.labelLarge
+                    ?.copyWith(color: cs.onPrimaryContainer),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One day of the strip (PLAN-1): its short name and date; the chosen day
+/// ink-filled with an accent dot, today ringed in the accent even when not
+/// chosen, and a herb dot on a day with entries. A screen reader hears the
+/// whole date, "اليوم", its Hijri day and how many meals it has, as one
+/// selectable button.
+class _DayPill extends StatelessWidget {
+  const _DayPill({
+    required this.day,
+    required this.chosen,
+    required this.height,
+    required this.onTap,
+  });
+
+  final DateTime day;
+  final bool chosen;
+  final double height;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final plan = context.watch<PlanState>();
+    final settings = context.watch<SettingsState>();
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final decor = Decor.of(context);
+    final isToday = dateKey(day) == dateKey(plan.today);
+    final count = _entryCount(plan, day);
+    final hijri = _hijriLabel(l10n, plan, settings, day);
+
+    final fill = chosen ? cs.onSurface : cs.surfaceContainerLowest;
+    final main = chosen
+        ? cs.surfaceContainerLowest
+        : isToday
+        ? cs.primary
+        : cs.onSurface;
+    final secondary = chosen
+        ? cs.surfaceContainerLowest
+        : isToday
+        ? cs.primary
+        : cs.onSurfaceVariant;
+    final dot = chosen
+        ? cs.primary
+        : count > 0
+        ? cs.secondary
+        : Colors.transparent;
+    final label = [
+      _longDate(context, settings, day),
+      if (isToday) l10n.planToday,
+      ?hijri,
+      l10n.planMealCount(count, settings.number(count)),
+    ].join(l10n.labelSeparator);
+
+    return Semantics(
+      key: ValueKey('plan-day-${dateKey(day)}'),
+      button: true,
+      selected: chosen,
+      label: label,
+      // The pill's own texts are summed up in [label]; the tap is kept
+      // here, since excluding them drops the InkWell's action too.
+      excludeSemantics: true,
+      onTap: onTap,
+      // The ink sits in its own layer over the pill (should-fix): the
+      // pill's opaque fill would cover a splash or focus highlight painted
+      // under it, and an Ink fill would clip the pill's shadow to the
+      // column. The tap target stays the whole column.
+      child: SizedBox(
+        height: height,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = constraints.maxWidth - 2 < _pillWidth
+                      ? constraints.maxWidth - 2
+                      : _pillWidth;
+                  return Center(
+                    child: Container(
+                      width: width,
+                      height: height,
+                      decoration: ShapeDecoration(
+                        color: fill,
+                        shape: StadiumBorder(
+                          side: isToday && !chosen
+                              ? BorderSide(color: cs.primary, width: 1.5)
+                              : decor.cardHairline != null && !chosen
+                              ? BorderSide(color: decor.cardHairline!)
+                              : BorderSide.none,
+                        ),
+                        shadows: chosen ? const [] : decor.liftShadow,
+                      ),
+                      padding: const EdgeInsetsDirectional.symmetric(
+                        horizontal: 3,
+                        vertical: 6,
+                      ),
+                      // Scales down rather than clipping at 1.3x text, in a
+                      // pill that can be as narrow as 46dp (LOOK-8).
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              l10n.planWeekdayShort(_weekdayKey(day.weekday)),
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                fontSize: 11,
+                                color: secondary,
+                              ),
+                            ),
+                            Text(
+                              settings.number(day.day),
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                height: 1.5,
+                                color: main,
+                              ),
+                            ),
+                            if (hijri != null)
+                              Text(
+                                hijri,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  fontSize: 10,
+                                  color: chosen
+                                      ? cs.surfaceContainerLowest
+                                      : cs.primary,
+                                ),
+                              ),
+                            const SizedBox(height: 4),
+                            Container(
+                              key: const ValueKey('plan-dot'),
+                              width: 5,
+                              height: 5,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: dot,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    IconButton(
-                      tooltip: l10n.planNextWeek,
-                      icon: const Icon(Icons.chevron_right),
-                      onPressed: () => plan.shiftWeeks(1),
+                  );
+                },
+              ),
+            ),
+            Positioned.fill(
+              child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  onTap: onTap,
+                  customBorder: const StadiumBorder(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "اليوم · الخميس 25 سبتمبر", or just the date, with the day's meal count
+/// and, on a Ramadan day, its Hijri date (RAM-2).
+class _DayHeading extends StatelessWidget {
+  const _DayHeading({super.key, required this.day});
+  final DateTime day;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final plan = context.watch<PlanState>();
+    final settings = context.watch<SettingsState>();
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final date = _longDate(context, settings, day);
+    final heading = dateKey(day) == dateKey(plan.today)
+        ? l10n.planDayHeadingToday(date)
+        : date;
+    final count = _entryCount(plan, day);
+    final hijri = _hijriLabel(l10n, plan, settings, day);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Semantics(
+                header: true,
+                child: Text(heading, style: theme.textTheme.headlineSmall),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Padding(
+              padding: const EdgeInsetsDirectional.only(bottom: 4),
+              child: Text(
+                l10n.planMealCount(count, settings.number(count)),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (hijri != null)
+          Text(
+            hijri,
+            style: theme.textTheme.labelLarge?.copyWith(color: cs.primary),
+          ),
+      ],
+    );
+  }
+}
+
+/// The chosen day's meals (PLAN-1, RAM-1) down a vertical line, with a
+/// node per meal: the accent when it holds entries, a ring when empty.
+class _DayTimeline extends StatelessWidget {
+  const _DayTimeline({required this.day});
+  final DateTime day;
+
+  @override
+  Widget build(BuildContext context) {
+    final plan = context.watch<PlanState>();
+    // RAM-1: suhoor, iftar, snack on a Ramadan day; the usual four
+    // otherwise — either way, plus any slot that already holds an entry.
+    final slots = slotsFor(
+      day,
+      ramadan: plan.ramadanMode,
+      month: plan.ramadanMode ? plan.ramadanMonthOf(day) : null,
+      withEntries: plan.slotsWithEntries(day),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final (i, slot) in slots.indexed)
+          _SlotBlock(day: day, slot: slot, last: i == slots.length - 1),
+      ],
+    );
+  }
+}
+
+class _SlotBlock extends StatelessWidget {
+  const _SlotBlock({required this.day, required this.slot, required this.last});
+
+  final DateTime day;
+  final MealSlot slot;
+  final bool last;
+
+  // Plan.dc.html: the rail is inset inside the gutter — the node at 24dp,
+  // under the title rather than flush with it, and the meal's content at
+  // 48dp.
+  static const double _node = 12;
+  static const double _nodeStart = 24;
+  static const double _indent = 48;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final entries = context.watch<PlanState>().entriesFor(day, slot);
+    final nameStyle = theme.textTheme.labelLarge!.copyWith(
+      color: cs.onSurfaceVariant,
+    );
+    // The node sits centred on the meal's name line, whatever the text size.
+    final lineHeight =
+        MediaQuery.textScalerOf(context).scale(nameStyle.fontSize!) *
+        (nameStyle.height ?? 1.5);
+    final nodeTop = (lineHeight - _node) / 2;
+    final filled = entries.isNotEmpty;
+    return Stack(
+      children: [
+        if (!last)
+          PositionedDirectional(
+            start: _nodeStart + _node / 2 - 1,
+            top: nodeTop + _node / 2,
+            bottom: 0,
+            width: 2,
+            child: ColoredBox(color: cs.outlineVariant),
+          ),
+        PositionedDirectional(
+          start: _nodeStart,
+          top: nodeTop,
+          child: ExcludeSemantics(
+            child: Container(
+              width: _node,
+              height: _node,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: filled ? cs.primary : cs.surface,
+                border: filled
+                    ? null
+                    : Border.all(color: cs.outline, width: 1.5),
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: EdgeInsetsDirectional.only(
+            start: _indent,
+            bottom: last ? 0 : 16,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(mealName(l10n, slot), style: nameStyle),
+              const SizedBox(height: 6),
+              for (final e in entries)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(bottom: 8),
+                  child: _EntryCard(entry: e),
+                ),
+              if (entries.isEmpty)
+                _DashedAdd(onTap: () => _addToSlot(context, day, slot))
+              else
+                // PLAN-2: up to 10 per meal; a full one says so on tap.
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: TextButton.icon(
+                    onPressed: () => _addToSlot(context, day, slot),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: Text(l10n.planAdd),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// An empty meal: a dashed card, "+ إضافة", opening PLAN-3's picker.
+class _DashedAdd extends StatelessWidget {
+  const _DashedAdd({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    const radius = 20.0;
+    return Semantics(
+      button: true,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          customBorder: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(radius),
+          ),
+          child: CustomPaint(
+            painter: _DashedBorderPainter(color: cs.outline, radius: radius),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add, size: 18, color: cs.primary),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        l10n.planAdd,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: cs.primary,
+                        ),
+                      ),
                     ),
                   ],
                 ),
+              ),
+            ),
+          ),
         ),
       ),
-      body: !plan.loaded
-          ? const Center(child: CircularProgressIndicator())
-          // must-fix: the card and the "الأسبوع"/"رمضان" toggle used to be
-          // the first children of the scrolling list below, so opening on
-          // today (never the first day shown, most weeks) scrolled them
-          // off-screen at once — RAM-3's card and RAM-4's toggle were
-          // invisible on open. They're pinned above the scrolling days
-          // now, so nothing can carry them out of view.
-          : Column(
-              children: [
-                if (card != null) _RamadanCard(card: card),
-                if (showMonthToggle)
-                  _RamadanViewToggle(
-                    monthView: _monthView,
-                    onChanged: (v) => _setMonthView(v, ramadanMonth),
-                  ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsetsDirectional.only(bottom: 24),
-                    child: Column(
-                      children: [
-                        if (plan.entries.isEmpty) _EmptyPlan(l10n: l10n),
-                        for (final day in days)
-                          _DayCard(
-                            key: dateKey(day) == dateKey(plan.today)
-                                ? _todayKey
-                                : null,
-                            day: day,
-                            isToday: dateKey(day) == dateKey(plan.today),
+    );
+  }
+}
+
+/// A 1.5dp dashed rounded rectangle (LOOK-6: drawn, never a bitmap).
+class _DashedBorderPainter extends CustomPainter {
+  _DashedBorderPainter({required this.color, required this.radius});
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const stroke = 1.5;
+    const dash = 5.0;
+    const gap = 4.0;
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke;
+    final rect = (Offset.zero & size).deflate(stroke / 2);
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(rect, Radius.circular(radius)));
+    for (final metric in path.computeMetrics()) {
+      var d = 0.0;
+      while (d < metric.length) {
+        canvas.drawPath(metric.extractPath(d, d + dash), paint);
+        d += dash + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBorderPainter old) =>
+      old.color != color || old.radius != radius;
+}
+
+/// A planned recipe (its photo or drawn cover, its title, its servings or
+/// multiplier, and a more button) or a note (a pencil). A tap opens the
+/// recipe, or a note's menu; a long press opens PLAN-4's menu.
+class _EntryCard extends StatelessWidget {
+  const _EntryCard({required this.entry});
+
+  final PlanEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final settings = context.watch<SettingsState>();
+    final recipes = context.watch<RecipesState>();
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final decor = Decor.of(context);
+    final LibraryEntry? recipe = entry.isNote
+        ? null
+        : recipes.recipes.where((r) => r.id == entry.recipeId).firstOrNull;
+    final title = entry.isNote ? entry.note! : (recipe?.title ?? '');
+    final amount = entry.servings != null
+        ? l10n.servings(entry.servings!, settings.number(entry.servings!))
+        : entry.multiplier != null && entry.multiplier != Rational.one
+        ? factorLabel(entry.multiplier!, settings.digits)
+        : null;
+
+    // A button, not an image (should-fix): a photo's own image semantics
+    // would otherwise merge into the card's tap. Not excluding, so the more
+    // button stays its own node.
+    return Semantics(
+      button: true,
+      child: SufraCard(
+        radius: 20,
+        padding: entry.isNote
+            ? const EdgeInsetsDirectional.fromSTEB(14, 12, 14, 12)
+            : const EdgeInsetsDirectional.fromSTEB(10, 10, 4, 10),
+        onTap: entry.isNote
+            ? () => _entryMenu(context, entry)
+            : () => openRecipe(context, entry.recipeId!),
+        onLongPress: () => _entryMenu(context, entry),
+        child: Row(
+          children: [
+            if (entry.isNote)
+              Icon(Icons.edit_outlined, size: 20, color: cs.onSurfaceVariant)
+            else
+              ExcludeSemantics(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: SizedBox.square(
+                    dimension: 56,
+                    child: recipe == null
+                        ? RecipeCover(recipeId: entry.recipeId!, title: title)
+                        : RecipePhoto(
+                            recipeId: recipe.id,
+                            title: recipe.title,
+                            photoPath: recipe.photoPath,
                           ),
-                      ],
-                    ),
                   ),
                 ),
-              ],
+              ),
+            SizedBox(width: entry.isNote ? 10 : 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ContentText(
+                    title,
+                    style: theme.textTheme.titleSmall,
+                    maxLines: entry.isNote ? null : 2,
+                    overflow: entry.isNote ? null : TextOverflow.ellipsis,
+                  ),
+                  if (amount != null) ...[
+                    const SizedBox(height: 4),
+                    DecoratedBox(
+                      decoration: ShapeDecoration(
+                        shape: const StadiumBorder(),
+                        color: decor.sunk,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsetsDirectional.symmetric(
+                          horizontal: 10,
+                          vertical: 2,
+                        ),
+                        // The ambient direction: "٦ حصص" reads right to left,
+                        // and a "×2" carries its own left-to-right isolate
+                        // (LANG-5).
+                        child: Text(
+                          amount,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
+            if (!entry.isNote)
+              IconButton(
+                tooltip: l10n.moreActions,
+                icon: const Icon(Icons.more_horiz),
+                color: cs.onSurfaceVariant,
+                onPressed: () => _entryMenu(context, entry),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -317,249 +1202,59 @@ class _RamadanCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final settings = context.read<SettingsState>();
     final text = card.started
         ? l10n.ramadanCardNow
         : l10n.ramadanCardSoon(card.daysUntil, settings.number(card.daysUntil));
-    return Card(
-      margin: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 0),
-      color: theme.colorScheme.primaryContainer,
-      child: Padding(
-        padding: const EdgeInsetsDirectional.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              text,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onPrimaryContainer,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              alignment: WrapAlignment.end,
-              spacing: 8,
-              children: [
-                TextButton(
-                  onPressed: () => settings.update(
-                    settings.settings.copyWith(
-                      ramadanCardDismissedYear: card.month.hijriYear,
-                    ),
-                  ),
-                  child: Text(l10n.ramadanCardNotNow),
-                ),
-                FilledButton(
-                  onPressed: () => settings.update(
-                    settings.settings.copyWith(ramadanMode: true),
-                  ),
-                  child: Text(l10n.ramadanCardEnable),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// RAM-4: "الأسبوع" / "رمضان", shown from 7 days before Ramadan through
-/// its end while the mode is on.
-class _RamadanViewToggle extends StatelessWidget {
-  const _RamadanViewToggle({required this.monthView, required this.onChanged});
-
-  final bool monthView;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 0),
-      child: Center(
-        child: SegmentedButton<bool>(
-          segments: [
-            ButtonSegment(value: false, label: Text(l10n.planViewWeek)),
-            ButtonSegment(value: true, label: Text(l10n.planViewRamadan)),
-          ],
-          selected: {monthView},
-          showSelectedIcon: false,
-          onSelectionChanged: (s) => onChanged(s.first),
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyPlan extends StatelessWidget {
-  const _EmptyPlan({required this.l10n});
-  final AppLocalizations l10n;
-
-  @override
-  Widget build(BuildContext context) => EmptyState(
-    title: l10n.planEmptyTitle,
-    body: l10n.planEmptyBody,
-    // Sits inside the week's own scrolling Column, above the day cards,
-    // which still render below it — never the sole content of the screen.
-    scrollable: false,
-  );
-}
-
-class _DayCard extends StatelessWidget {
-  const _DayCard({super.key, required this.day, required this.isToday});
-
-  final DateTime day;
-  final bool isToday;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final settings = context.watch<SettingsState>();
-    final plan = context.watch<PlanState>();
-    final label = settings.inDigits(
-      MaterialLocalizations.of(context).formatMediumDate(day),
-    );
-    // RAM-2: only with the mode on, so it can stay on all year without
-    // marking days outside any Ramadan.
-    final ramadanMonth = plan.ramadanMode ? plan.ramadanMonthOf(day) : null;
-    final hijriLabel = !plan.ramadanMode
-        ? null
-        : plan.isEid(day)
-        ? l10n.ramadanEidLabel
-        : ramadanMonth == null
-        ? null
-        : l10n.ramadanDayLabel(settings.number(ramadanMonth.dayOf(day)!));
-    // RAM-1: suhoor, iftar, snack on a Ramadan day; the usual four
-    // otherwise — either way, plus any slot that already holds an entry.
-    final slots = slotsFor(
-      day,
-      ramadan: plan.ramadanMode,
-      month: ramadanMonth,
-      withEntries: plan.slotsWithEntries(day),
-    );
-    final decor = Decor.of(context);
-    return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 12, 0),
-      // LOOK-6: the look's grouped-row fill and card shape, in place of a
-      // Card washed with a translucent tint; a Material, so each entry's
-      // ink still paints on it. Today keeps its bold date and "اليوم", and
-      // gains the look's rail down its reading edge. The Semantics container
-      // is the one Card added, so a screen reader still reads each day as
-      // one group: its date, "اليوم", its meals, then its add buttons.
-      child: Semantics(
-        container: true,
-        child: Material(
-          color: decor.groupedRowFill,
-          shape: decor.cardShape,
-          clipBehavior: Clip.antiAlias,
-          child: Stack(
+    return SufraCard(
+      padding: const EdgeInsetsDirectional.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsetsDirectional.symmetric(vertical: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                        16,
-                        4,
-                        16,
-                        4,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  label,
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: isToday
-                                        ? FontWeight.bold
-                                        : null,
-                                  ),
-                                ),
-                                if (hijriLabel != null)
-                                  Text(
-                                    hijriLabel,
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme.colorScheme.primary,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                          if (isToday)
-                            Text(
-                              l10n.planToday,
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    for (final slot in slots) _SlotRow(day: day, slot: slot),
-                  ],
+              ExcludeSemantics(
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: cs.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.nightlight_outlined,
+                    size: 20,
+                    color: cs.onPrimaryContainer,
+                  ),
                 ),
               ),
-              if (isToday && decor.railWidth > 0)
-                PositionedDirectional(
-                  start: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: decor.railWidth,
-                  child: ColoredBox(color: decor.railColor),
-                ),
+              const SizedBox(width: 12),
+              Expanded(child: Text(text, style: theme.textTheme.bodyLarge)),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SlotRow extends StatelessWidget {
-  const _SlotRow({required this.day, required this.slot});
-
-  final DateTime day;
-  final MealSlot slot;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final entries = context.watch<PlanState>().entriesFor(day, slot);
-    return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(16, 2, 4, 2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 84,
-            child: Padding(
-              padding: const EdgeInsetsDirectional.only(top: 10),
-              child: Text(
-                mealName(l10n, slot),
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+          const SizedBox(height: 12),
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              TextButton(
+                onPressed: () => settings.update(
+                  settings.settings.copyWith(
+                    ramadanCardDismissedYear: card.month.hijriYear,
+                  ),
                 ),
+                child: Text(l10n.ramadanCardNotNow),
               ),
-            ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [for (final e in entries) _EntryTile(entry: e)],
-            ),
-          ),
-          IconButton(
-            tooltip: l10n.planAdd,
-            visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.add),
-            onPressed: () => _addToSlot(context, day, slot),
+              FilledButton(
+                onPressed: () => settings.update(
+                  settings.settings.copyWith(ramadanMode: true),
+                ),
+                child: Text(l10n.ramadanCardEnable),
+              ),
+            ],
           ),
         ],
       ),
@@ -567,66 +1262,29 @@ class _SlotRow extends StatelessWidget {
   }
 }
 
-class _EntryTile extends StatelessWidget {
-  const _EntryTile({required this.entry});
-
-  final PlanEntry entry;
+/// RUN-1: an empty week explains itself; its first action is right below,
+/// on every meal ("+ إضافة").
+class _EmptyHint extends StatelessWidget {
+  const _EmptyHint();
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final settings = context.watch<SettingsState>();
-    final recipes = context.watch<RecipesState>();
-    final LibraryEntry? recipe = entry.isNote
-        ? null
-        : recipes.recipes.where((r) => r.id == entry.recipeId).firstOrNull;
-    final title = entry.isNote ? entry.note! : (recipe?.title ?? '');
-    final amount = entry.servings != null
-        ? l10n.servings(entry.servings!, settings.number(entry.servings!))
-        : entry.multiplier != null && entry.multiplier != Rational.one
-        ? factorLabel(entry.multiplier!, settings.digits)
-        : null;
-
-    return InkWell(
-      onTap: entry.isNote
-          ? () => _entryMenu(context, entry)
-          : () => openRecipe(context, entry.recipeId!),
-      onLongPress: () => _entryMenu(context, entry),
-      child: Padding(
-        padding: const EdgeInsetsDirectional.symmetric(
-          vertical: 8,
-          horizontal: 4,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              entry.isNote ? Icons.sticky_note_2_outlined : Icons.restaurant,
-              size: 18,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+    final theme = Theme.of(context);
+    return SufraCard(
+      padding: const EdgeInsetsDirectional.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.planEmptyTitle, style: theme.textTheme.titleSmall),
+          const SizedBox(height: 4),
+          Text(
+            l10n.planEmptyBody,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(width: 8),
-            // The amount sits at the end of the title's line, or drops
-            // below it when the two don't fit side by side: never an
-            // overflow at 1.3x text on a 360dp phone (LANG-6).
-            Expanded(
-              child: Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 8,
-                children: [
-                  ContentText(title),
-                  // The ambient direction: "٦ حصص" reads right to left, and
-                  // a "×2" carries its own left-to-right isolate (LANG-5).
-                  if (amount != null)
-                    Text(
-                      amount,
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -643,7 +1301,11 @@ String mealName(AppLocalizations l10n, MealSlot slot) => switch (slot) {
   MealSlot.iftar => l10n.mealIftar,
 };
 
-/// A slot's "+": a recipe, or a written note (PLAN-2, PLAN-3).
+/// The picker's answer for "اكتب ملاحظة"; any other answer is a recipe ID.
+const _noteChoice = '\u0000note';
+
+/// A slot's add: a recipe, or a written note (PLAN-2, PLAN-3). A full slot
+/// says so instead (PLAN-2).
 Future<void> _addToSlot(
   BuildContext context,
   DateTime day,
@@ -654,50 +1316,157 @@ Future<void> _addToSlot(
   final recipes = context.read<RecipesState>();
   final settings = context.read<SettingsState>();
   if (plan.entriesFor(day, slot).length >= PlanEntry.maxPerSlot) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.planSlotFull(settings.number(PlanEntry.maxPerSlot))),
-      ),
-    );
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n.planSlotFull(settings.number(PlanEntry.maxPerSlot)),
+          ),
+        ),
+      );
     return;
   }
-  final choice = await showModalBottomSheet<String>(
-    context: context,
-    builder: (ctx) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.restaurant_menu),
-            title: Text(l10n.planAddRecipe),
-            onTap: () => Navigator.pop(ctx, 'recipe'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.sticky_note_2_outlined),
-            title: Text(l10n.planAddNote),
-            onTap: () => Navigator.pop(ctx, 'note'),
-          ),
-        ],
-      ),
-    ),
-  );
+  final choice = await _pickForSlot(context, mealName(l10n, slot));
   if (choice == null || !context.mounted) return;
   _lastMeal = slot;
 
-  if (choice == 'note') {
+  if (choice == _noteChoice) {
     final note = await askPlanNote(context);
     if (note == null) return;
     await plan.add(date: day, slot: slot, note: note);
     return;
   }
-  final recipeId = await pickRecipe(context);
-  if (recipeId == null) return;
   await plan.add(
     date: day,
     slot: slot,
-    recipeId: recipeId,
-    servings: await recipes.repository.servingsOf(recipeId),
+    recipeId: choice,
+    servings: await recipes.repository.servingsOf(choice),
   );
+}
+
+/// PLAN-3's picker: "اكتب ملاحظة", then the library with its search
+/// (ORG-3), in one sheet.
+Future<String?> _pickForSlot(BuildContext context, String title) =>
+    showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => _SlotPicker(title: title),
+    );
+
+/// The sheet's own state, so the search survives the sheet rebuilding as
+/// the keyboard opens.
+class _SlotPicker extends StatefulWidget {
+  const _SlotPicker({required this.title});
+  final String title;
+
+  @override
+  State<_SlotPicker> createState() => _SlotPickerState();
+}
+
+class _SlotPickerState extends State<_SlotPicker> {
+  final _search = TextEditingController();
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final hits = context.read<RecipesState>().query(
+      LibraryQuery(text: _search.text),
+    );
+    return Padding(
+      padding: EdgeInsetsDirectional.only(
+        bottom: MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      // A fixed share of the screen, so the list under the search field has
+      // room to scroll and the sheet never jumps in height as a search
+      // narrows it.
+      child: FractionallySizedBox(
+        heightFactor: 0.7,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 4),
+              child: Text(widget.title, style: theme.textTheme.titleMedium),
+            ),
+            ListTile(
+              contentPadding: const EdgeInsetsDirectional.symmetric(
+                horizontal: 20,
+              ),
+              leading: const Icon(Icons.edit_outlined),
+              title: Text(l10n.planAddNote),
+              onTap: () => Navigator.pop(context, _noteChoice),
+            ),
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 8),
+              child: Text(
+                l10n.planAddRecipe,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            // LOOK-6: the library's search pill, without its filter.
+            Padding(
+              padding: const EdgeInsetsDirectional.symmetric(horizontal: 20),
+              child: SufraSearchField(
+                controller: _search,
+                hintText: l10n.searchHint,
+                onChanged: (_) => setState(() {}),
+                onClear: () => setState(_search.clear),
+                clearTooltip: l10n.searchClear,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: hits.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsetsDirectional.all(24),
+                      child: Text(l10n.noResults, textAlign: TextAlign.center),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsetsDirectional.only(bottom: 16),
+                      itemCount: hits.length,
+                      itemBuilder: (_, i) {
+                        final r = hits[i].entry;
+                        return ListTile(
+                          contentPadding: const EdgeInsetsDirectional.symmetric(
+                            horizontal: 20,
+                          ),
+                          // LOOK-10: the photo, else the drawn cover; the
+                          // title already names the row.
+                          leading: ExcludeSemantics(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: SizedBox.square(
+                                dimension: 40,
+                                child: RecipePhoto(
+                                  recipeId: r.id,
+                                  title: r.title,
+                                  photoPath: r.photoPath,
+                                ),
+                              ),
+                            ),
+                          ),
+                          title: ContentText(r.title),
+                          onTap: () => Navigator.pop(context, r.id),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// Move, copy, change the amount, or remove (PLAN-2, PLAN-4).
@@ -782,6 +1551,7 @@ Future<void> _entryMenu(BuildContext context, PlanEntry entry) async {
           ..showSnackBar(
             SnackBar(
               content: Text(l10n.planRemoved),
+              // DEL-2: Undo for about 5 seconds, then gone on its own.
               duration: const Duration(seconds: 5),
               persist: false,
               action: SnackBarAction(
@@ -911,63 +1681,6 @@ Future<String?> askPlanNote(BuildContext context, {String initial = ''}) {
   );
 }
 
-/// The library, searchable (ORG-3), to pick one recipe (PLAN-3).
-Future<String?> pickRecipe(BuildContext context) {
-  final l10n = AppLocalizations.of(context);
-  return showModalBottomSheet<String>(
-    context: context,
-    isScrollControlled: true,
-    builder: (ctx) {
-      var text = '';
-      return SafeArea(
-        child: StatefulBuilder(
-          builder: (ctx, setInner) {
-            final hits = ctx.read<RecipesState>().query(
-              LibraryQuery(text: text),
-            );
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(ctx).viewInsets.bottom,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsetsDirectional.all(12),
-                    child: TextField(
-                      autofocus: true,
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.search),
-                        hintText: l10n.searchHint,
-                      ),
-                      onChanged: (v) => setInner(() => text = v),
-                    ),
-                  ),
-                  Flexible(
-                    child: hits.isEmpty
-                        ? Padding(
-                            padding: const EdgeInsetsDirectional.all(24),
-                            child: Text(l10n.noResults),
-                          )
-                        : ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: hits.length,
-                            itemBuilder: (_, i) => ListTile(
-                              title: ContentText(hits[i].entry.title),
-                              onTap: () => Navigator.pop(ctx, hits[i].entry.id),
-                            ),
-                          ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      );
-    },
-  );
-}
-
 /// Day and meal chips, for "Add to plan" and for moving an entry (PLAN-3).
 /// [dayOptions] overrides the default 7-day-from-today list (RAM-4, so the
 /// month view can offer its own days). [homeSlot], for move/copy only,
@@ -1021,79 +1734,74 @@ Future<(DateTime, MealSlot)?> _askDayAndMeal(
     // The chips wrap over several rows, and grow with the text size
     // (LANG-6), so the sheet scrolls instead of overflowing.
     isScrollControlled: true,
-    builder: (ctx) => SafeArea(
-      child: StatefulBuilder(
-        builder: (ctx, setInner) {
-          final slots = offeredSlots(pickedDay);
-          return SingleChildScrollView(
-            padding: const EdgeInsetsDirectional.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: Theme.of(ctx).textTheme.titleMedium),
-                const SizedBox(height: 12),
-                Text(
-                  l10n.planChooseDay,
-                  style: Theme.of(ctx).textTheme.labelLarge,
-                ),
-                const SizedBox(height: 4),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    for (final d in options)
-                      ChoiceChip(
-                        label: Text(
-                          dateKey(d) == dateKey(today)
-                              ? l10n.planToday
-                              : settings.inDigits(dates.formatShortMonthDay(d)),
-                        ),
-                        selected: dateKey(d) == dateKey(pickedDay),
-                        onSelected: (_) => setInner(() {
-                          pickedDay = d;
-                          // RAM-1: repeat the mapping every time the day
-                          // changes, so a slot the new day doesn't offer
-                          // (suhoor picked, then a non-Ramadan day chosen)
-                          // doesn't stay silently selected off-screen.
-                          final offered = offeredSlots(pickedDay);
-                          if (!offered.contains(pickedSlot)) {
-                            pickedSlot = slotOnDay(pickedSlot, offered);
-                          }
-                        }),
+    useSafeArea: true,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setInner) {
+        final theme = Theme.of(ctx);
+        final caption = theme.textTheme.labelLarge?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        );
+        final slots = offeredSlots(pickedDay);
+        return SingleChildScrollView(
+          padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(title, style: theme.textTheme.titleMedium),
+              const SizedBox(height: 16),
+              Text(l10n.planChooseDay, style: caption),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  for (final d in options)
+                    ChoiceChip(
+                      label: Text(
+                        dateKey(d) == dateKey(today)
+                            ? l10n.planToday
+                            : settings.inDigits(dates.formatShortMonthDay(d)),
                       ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  l10n.planChooseMeal,
-                  style: Theme.of(ctx).textTheme.labelLarge,
-                ),
-                const SizedBox(height: 4),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    for (final m in slots)
-                      ChoiceChip(
-                        label: Text(mealName(l10n, m)),
-                        selected: m == pickedSlot,
-                        onSelected: (_) => setInner(() => pickedSlot = m),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: FilledButton(
-                    onPressed: () =>
-                        Navigator.pop(ctx, (pickedDay, pickedSlot)),
-                    child: Text(l10n.save),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
+                      selected: dateKey(d) == dateKey(pickedDay),
+                      onSelected: (_) => setInner(() {
+                        pickedDay = d;
+                        // RAM-1: repeat the mapping every time the day
+                        // changes, so a slot the new day doesn't offer
+                        // (suhoor picked, then a non-Ramadan day chosen)
+                        // doesn't stay silently selected off-screen.
+                        final offered = offeredSlots(pickedDay);
+                        if (!offered.contains(pickedSlot)) {
+                          pickedSlot = slotOnDay(pickedSlot, offered);
+                        }
+                      }),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(l10n.planChooseMeal, style: caption),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  for (final m in slots)
+                    ChoiceChip(
+                      label: Text(mealName(l10n, m)),
+                      selected: m == pickedSlot,
+                      onSelected: (_) => setInner(() => pickedSlot = m),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, (pickedDay, pickedSlot)),
+                child: Text(l10n.save),
+              ),
+            ],
+          ),
+        );
+      },
     ),
   );
 }
@@ -1205,7 +1913,7 @@ Future<void> openPlanAddToGroceries(BuildContext context) async {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 4),
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 20, 4),
                 child: Text(
                   l10n.addToGroceries,
                   style: Theme.of(ctx).textTheme.titleMedium,
@@ -1229,7 +1937,7 @@ Future<void> openPlanAddToGroceries(BuildContext context) async {
                     ),
                   ),
               Padding(
-                padding: const EdgeInsetsDirectional.all(16),
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 16, 20, 0),
                 child: FilledButton(
                   // Disabled while busy or with nothing ticked (should-fix,
                   // UI review): a double tap used to add everything twice.

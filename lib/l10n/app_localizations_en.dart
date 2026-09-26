@@ -884,6 +884,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get planToday => 'Today';
 
   @override
+  String planMealCount(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown meals',
+      one: '$shown meal',
+      zero: 'No meals',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String planDayHeadingToday(String date) {
+    return 'Today · $date';
+  }
+
+  @override
+  String planWeekdayShort(String day) {
+    String _temp0 = intl.Intl.selectLogic(day, {
+      'mon': 'Mon',
+      'tue': 'Tue',
+      'wed': 'Wed',
+      'thu': 'Thu',
+      'fri': 'Fri',
+      'sat': 'Sat',
+      'other': 'Sun',
+    });
+    return '$_temp0';
+  }
+
+  @override
   String get mealBreakfast => 'Breakfast';
 
   @override
@@ -1036,6 +1067,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groceriesDoneSection => 'Done';
 
   @override
+  String groceriesDoneOf(String done, String total) {
+    return '$done of $total';
+  }
+
+  @override
+  String get groceriesBought => 'bought';
+
+  @override
   String get groceriesClearDone => 'Clear done';
 
   @override
@@ -1145,6 +1184,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ramadanEidLabel => 'Eid al-Fitr';
+
+  @override
+  String ramadanEidOn(String date) {
+    return 'Eid al-Fitr · $date';
+  }
 
   @override
   String get settingsRamadanSection => 'Ramadan';

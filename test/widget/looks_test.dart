@@ -12,7 +12,6 @@ import 'dart:io' show File;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderFlex, RenderParagraph;
-import 'package:flutter/semantics.dart' show SemanticsNode;
 import 'package:flutter/services.dart' show ByteData, FontLoader;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wasfati/widgets/nav_pill.dart';
@@ -523,14 +522,25 @@ void main() {
       );
     });
 
-    testWidgets('${style.name}: the plan\'s day cards take the look\'s '
-        'fill and card shape, and only today carries its rail (LOOK-6)', (
-      tester,
-    ) async {
+    // LOOK-2: the accent changes colour only — the strip marks the chosen
+    // day, today and a day with entries the same way in both (PLAN-1).
+    testWidgets('${style.name}: the plan\'s week strip fills the chosen day '
+        'with ink and its accent dot, and marks a day with entries with the '
+        'herb dot (LOOK-2, PLAN-1)', (tester) async {
       final (_, settings) = await pumpApp(tester, withRecipe: true);
-      await tester.runAsync(
-        () => settings.update(settings.settings.copyWith(style: style)),
-      );
+      await tester.runAsync(() async {
+        await settings.update(
+          settings.settings.copyWith(
+            style: style,
+            weekStart: WeekStart.saturday,
+          ),
+        );
+        await plan.add(
+          date: DateTime(2026, 9, 21),
+          slot: MealSlot.lunch,
+          note: 'مطعم',
+        );
+      });
       await settle(tester);
       await tester.tap(
         find.descendant(
@@ -540,32 +550,38 @@ void main() {
       );
       await settle(tester);
 
-      final decor = Decor.of(tester.element(find.text('اليوم')));
-      final dayCards = find.byWidgetPredicate(
-        (w) =>
-            w is Material &&
-            w.shape == decor.cardShape &&
-            w.color == decor.groupedRowFill,
+      Finder pill(String key) => find.byKey(ValueKey('plan-day-$key'));
+      Color? dot(String key) =>
+          (tester
+                      .widget<Container>(
+                        find.descendant(
+                          of: pill(key),
+                          matching: find.byKey(const ValueKey('plan-dot')),
+                        ),
+                      )
+                      .decoration!
+                  as BoxDecoration)
+              .color;
+      final cs = Theme.of(tester.element(pill('2026-09-19'))).colorScheme;
+      final today = tester.widget<Container>(
+        find
+            .descendant(
+              of: pill('2026-09-19'),
+              matching: find.byType(Container),
+            )
+            .first,
       );
-      final today = find.ancestor(of: find.text('اليوم'), matching: dayCards);
-      expect(today, findsOneWidget);
-      final rail = find.byWidgetPredicate(
-        (w) => w is ColoredBox && w.color == decor.railColor,
-      );
-      // One rail across every day card built, and it's today's.
-      expect(find.descendant(of: dayCards, matching: rail), findsOneWidget);
-      expect(find.descendant(of: today, matching: rail), findsOneWidget);
-      expect(
-        tester.getSize(find.descendant(of: today, matching: rail)).width,
-        decor.railWidth,
-      );
+      expect((today.decoration! as ShapeDecoration).color, cs.onSurface);
+      expect(dot('2026-09-19'), cs.primary);
+      expect(dot('2026-09-21'), cs.secondary);
+      expect(dot('2026-09-20'), Colors.transparent);
     });
 
-    // must-fix, look-pass review: the day card's Card became a Material,
-    // which dropped the semantics container Card adds, and TalkBack read
-    // all seven days as one flat run of dates, meals and add buttons.
-    testWidgets('${style.name}: a screen reader still reads each day card '
-        'as one group: date, "اليوم", meals, then its add buttons', (
+    // must-fix, look-pass review (carried over from the day cards): a
+    // screen reader reads each day as one control, not a loose run of
+    // numbers and dots.
+    testWidgets('${style.name}: a screen reader hears each day of the strip '
+        'as one selectable button: its date, "اليوم" and its meals', (
       tester,
     ) async {
       final semantics = tester.ensureSemantics();
@@ -582,28 +598,22 @@ void main() {
       );
       await settle(tester);
 
-      // Today (the fake clock's Saturday 19 September) is one node whose
-      // label runs date, "اليوم", then the four meals.
+      // Today (the fake clock's Saturday 19 September), chosen.
       final today = find.bySemanticsLabel(
-        RegExp(r'^السبت، 19 سبتمبر\nاليوم\nفطور\nغداء\nعشاء\nوجبة خفيفة$'),
+        RegExp(r'^السبت، 19 سبتمبر، اليوم، لا وجبات$'),
       );
       expect(today, findsOneWidget);
-      // The date is no longer a node of its own, loose among other days'.
-      expect(find.bySemanticsLabel('السبت، 19 سبتمبر'), findsNothing);
-      expect(find.bySemanticsLabel('اليوم'), findsNothing);
-      // Its four add buttons (IconButtons, named by their tooltip) sit
-      // inside it, one per meal.
-      final adds = <String>[];
-      void collect(SemanticsNode node) {
-        if (node.tooltip == 'إضافة') adds.add(node.tooltip);
-        node.visitChildren((child) {
-          collect(child);
-          return true;
-        });
-      }
-
-      collect(tester.getSemantics(today));
-      expect(adds, hasLength(4));
+      expect(
+        tester.getSemantics(today),
+        isSemantics(
+          isButton: true,
+          hasSelectedState: true,
+          isSelected: true,
+          hasTapAction: true,
+        ),
+      );
+      // Its short name and number aren't nodes of their own.
+      expect(find.bySemanticsLabel('سبت'), findsNothing);
       semantics.dispose();
     });
   }
