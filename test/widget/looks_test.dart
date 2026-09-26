@@ -31,7 +31,8 @@ import 'package:wasfati/widgets/ad_slot.dart';
 import 'package:wasfati/widgets/digit_box.dart';
 
 import '../helpers.dart' show kabsa;
-import 'app_test.dart' show groceries, plan, pumpApp, settle;
+import 'app_test.dart'
+    show groceries, openStepsTab, plan, pumpApp, settle, tapOnPage;
 
 const _offers = [
   StoreOffer(product: Product.pro, price: 'AED 14.99'),
@@ -232,25 +233,32 @@ void main() {
         await tester.tap(find.text(l.tabAllRecipes));
         await settle(tester);
 
-        // The recipe page (ingredients through AmountLine and RailHeading,
-        // the hero photo/cards/chips through Decor).
+        // The recipe page (LOOK-13): the cover header, the facts, the scale
+        // card and the ingredients, then the Steps tab, top to bottom each,
+        // and the "more" sheet.
+        final back = c.language == LanguagePref.ar ? 'رجوع' : 'Back';
         await tester.tap(find.text('كبسة لحم'));
         await settle(tester);
         _fits(tester, 'recipe');
-
-        // Cook mode (LOOK-7's ledge, COOK-2's sizes in both looks). A
-        // generous single drag (never past the list's own clamped end)
-        // rather than scrollUntilVisible/ensureVisible: both of those stop
-        // as soon as the button's leading edge merely enters the cache
-        // extent, which can still leave its centre — what tap() targets —
-        // a few pixels past the bottom of a 360x800 view at 1.3x text.
-        await tester.drag(find.byType(ListView).first, const Offset(0, -2000));
+        await _scrollThrough(tester, find.byType(Scrollable).first, 'recipe');
+        await openStepsTab(tester, label: l.steps);
+        _fits(tester, 'recipe steps');
+        await _scrollThrough(
+          tester,
+          find.byType(Scrollable).first,
+          'recipe steps',
+        );
+        await tester.tap(find.byTooltip(l.moreActions));
         await settle(tester);
-        _fits(tester, 'recipe, scrolled');
-        await tester.tap(find.byIcon(Icons.soup_kitchen_outlined));
+        _fits(tester, 'recipe more');
+        await tester.tapAt(const Offset(180, 40)); // the sheet's barrier
+        await settle(tester);
+
+        // Cook mode (COOK-2's sizes, LOOK-14), from the action bar.
+        await tester.tap(find.text(l.startCooking));
         await settle(tester);
         _fits(tester, 'cook mode');
-        await tester.tap(find.byTooltip(l.ingredients));
+        await tester.tap(find.byTooltip(l.ingredients).first);
         await settle(tester);
         _fits(tester, 'cook ingredients');
         await tester.tapAt(const Offset(180, 40)); // the sheet's barrier
@@ -277,7 +285,7 @@ void main() {
         await settle(tester);
         _fits(tester, 'back to recipe');
 
-        await tester.tap(find.byType(BackButton).first);
+        await tester.tap(find.byTooltip(back));
         await settle(tester);
         _fits(tester, 'back to library');
 
@@ -295,7 +303,9 @@ void main() {
         await tester.tap(find.text(_englishTitle));
         await settle(tester);
         _fits(tester, 'English recipe');
-        await tester.tap(find.byType(BackButton).first);
+        await openStepsTab(tester, label: l.steps);
+        _fits(tester, 'English recipe steps');
+        await tester.tap(find.byTooltip(back));
         await settle(tester);
 
         // The meal plan and groceries (the shell's own tabs) — scoped to
@@ -333,7 +343,7 @@ void main() {
         await settle(tester);
         _fits(tester, 'import');
 
-        await tester.tap(find.byType(BackButton).first);
+        await tester.tap(find.byTooltip(back));
         await settle(tester);
         _fits(tester, 'back to library');
 
@@ -608,32 +618,27 @@ void main() {
 
     await tester.tap(find.text('كبسة لحم'));
     await settle(tester);
-    // Decision 23's larger type scale can push the button out of the
-    // ListView's initial build range.
-    await tester.scrollUntilVisible(
-      find.text('ابدأ الطبخ'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await settle(tester);
     await tester.tap(find.text('ابدأ الطبخ'));
     await settle(tester);
     expect(boxed('الخطوة 1 من 2'), findsWidgets);
 
     await tester.tap(find.text('التالي'));
     await settle(tester);
-    await tester.tap(find.text('15:00'));
+    await tester.tap(find.text('ابدأ مؤقت 15:00'));
     await settle(tester);
-    // The countdown may already have ticked: this clock is real.
-    final running = find.textContaining(RegExp(r'^1[45]:\d\d · الخطوة 2$'));
-    expect(running, findsOneWidget);
+    // The running band's countdown (LOOK-14), beside its step. The
+    // countdown may already have ticked: this clock is real.
     expect(
-      find.ancestor(of: running, matching: find.byType(DigitBox)),
+      find.descendant(
+        of: find.byType(DigitBox),
+        matching: find.textContaining(RegExp(r'^1[45]:\d\d$')),
+      ),
       findsOneWidget,
     );
+    expect(find.text('الخطوة 2'), findsOneWidget);
     await tester.tap(find.byTooltip('إغلاق وضع الطبخ'));
     await settle(tester);
-    await tester.tap(find.byType(BackButton).first);
+    await tester.tap(find.byTooltip('رجوع'));
     await settle(tester);
 
     // Three servings at ×½ isn't a whole number of servings, so the
@@ -670,8 +675,7 @@ void main() {
     await settle(tester);
     await tester.tap(find.text('شوربة'));
     await settle(tester);
-    await tester.tap(find.text('×½'));
-    await settle(tester);
+    await tapOnPage(tester, find.text('×½'));
     expect(boxed('×½'), findsOneWidget);
   });
 

@@ -7,7 +7,8 @@ import 'package:wasfati/models/quantity/rational.dart';
 import 'package:wasfati/models/settings.dart';
 
 import '../helpers.dart' show kabsa;
-import 'app_test.dart' show groceries, plan, pumpApp, settle, sharer, shown;
+import 'app_test.dart'
+    show groceries, plan, pumpApp, settle, sharer, shown, tapOnPage;
 
 /// A tab in the bottom navigation, by its icon (language-agnostic).
 Finder _navTab(IconData icon) =>
@@ -64,8 +65,7 @@ void main() {
       await pumpApp(tester, withRecipe: true);
       await tester.tap(shown('كبسة لحم'));
       await settle(tester);
-      await tester.tap(find.text('×2'));
-      await settle(tester);
+      await tapOnPage(tester, find.text('×2'));
 
       await tester.tap(find.byTooltip('أضف إلى المشتريات'));
       await settle(tester);
@@ -307,7 +307,10 @@ void main() {
 
     await tester.tap(shown('كبسة لحم'));
     await settle(tester);
-    await tester.tap(find.byTooltip('حذف'));
+    // LOOK-13: delete is under the page's "more" button.
+    await tester.tap(find.byTooltip('المزيد'));
+    await settle(tester);
+    await tester.tap(find.text('حذف'));
     await settle(tester); // deleting already pops back to the list
 
     await tester.tap(_navTab(Icons.shopping_basket_outlined));

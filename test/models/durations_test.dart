@@ -49,6 +49,36 @@ void main() {
     });
   });
 
+  group('LOOK-13: where each duration sits in the text as written', () {
+    List<String> phrases(String text) => [
+      for (final s in findDurationSpans(text)) text.substring(s.start, s.end),
+    ];
+
+    test('the phrase itself, harakat and Eastern digits kept', () {
+      expect(phrases('يترك على النار لمدة ٢٥ دَقِيقَة حتى ينضج.'), [
+        '٢٥ دَقِيقَة',
+      ]);
+      expect(phrases('Roast for 90 minutes, then rest 10 mins.'), [
+        '90 minutes',
+        '10 mins',
+      ]);
+    });
+
+    test('joined units are one phrase; a repeat is found twice', () {
+      expect(phrases('يطهى ساعة و20 دقيقة'), ['ساعة و20 دقيقة']);
+      expect(phrases('اقلب 5 دقائق ثم 5 دقائق أخرى'), ['5 دقائق', '5 دقائق']);
+    });
+
+    test('an isolated amount keeps both its isolate marks in the phrase', () {
+      final lri = String.fromCharCode(0x2066);
+      final pdi = String.fromCharCode(0x2069);
+      final text = 'اتركه $lri${'15'}$pdi دقيقة';
+      final span = findDurationSpans(text).single;
+      expect(span.duration, const Duration(minutes: 15));
+      expect(text.substring(span.start, span.end), '${lri}15$pdi دقيقة');
+    });
+  });
+
   test('clock text', () {
     expect(clockText(const Duration(minutes: 15)), '15:00');
     expect(clockText(const Duration(minutes: 90, seconds: 5)), '1:30:05');

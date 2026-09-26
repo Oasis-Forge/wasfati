@@ -173,6 +173,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareTooltip => 'Share';
 
   @override
+  String get moreActions => 'More';
+
+  @override
+  String get factPrep => 'Prep';
+
+  @override
+  String get factCook => 'Cook';
+
+  @override
+  String get factServings => 'Servings';
+
+  @override
+  String get linkOpenFailed => 'Couldn\'t open the link.';
+
+  @override
   String get shareAsText => 'As text';
 
   @override

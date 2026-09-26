@@ -37,6 +37,32 @@ class MainActivity : FlutterActivity() {
                 result.success(false)
             }
         }
+        // LOOK-13: the recipe page's source chip opens the recipe's own
+        // link in the browser (lib/services/links.dart). ACTION_VIEW for an
+        // http(s) link only: no permission, and no <queries> entry, since
+        // nothing is resolved before it starts.
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "com.oasisforge.wasfati/links",
+        ).setMethodCallHandler { call, result ->
+            if (call.method != "open") {
+                result.notImplemented()
+                return@setMethodCallHandler
+            }
+            val uri = Uri.parse(call.argument<String>("url") ?: "")
+            if (uri.scheme != "http" && uri.scheme != "https") {
+                result.success(false)
+                return@setMethodCallHandler
+            }
+            val intent = Intent(Intent.ACTION_VIEW, uri)
+                .addCategory(Intent.CATEGORY_BROWSABLE)
+            try {
+                startActivity(intent)
+                result.success(true)
+            } catch (e: ActivityNotFoundException) {
+                result.success(false)
+            }
+        }
         // PAY-11: "Manage or cancel" opens Google Play's own page for this
         // app's subscription (lib/services/play_store.dart), where it's
         // changed or cancelled. An ACTION_VIEW intent for Play's https link:

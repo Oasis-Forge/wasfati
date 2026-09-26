@@ -68,10 +68,9 @@ void main() {
       find.ancestor(of: banner, matching: find.byType(Scrollable)),
       findsNothing,
     );
-    // ADS-9: "ابدأ الطبخ", scrolled as far down as it goes, keeps 8 dp.
-    await tester.drag(find.byType(ListView).first, const Offset(0, -2000));
-    await settle(tester);
-    final start = find.byIcon(Icons.soup_kitchen_outlined);
+    // ADS-9, LOOK-13: "ابدأ الطبخ", in the action bar over the banner,
+    // keeps 8 dp.
+    final start = find.text('ابدأ الطبخ');
     expect(
       tester.getRect(start).bottom,
       lessThanOrEqualTo(tester.getRect(banner).top - AdSlot.gap),
@@ -93,7 +92,8 @@ void main() {
     expect(banner, findsNothing, reason: 'editor');
     await tester.tap(find.byType(BackButton).first);
     await settle(tester);
-    await tester.tap(find.byType(BackButton).first);
+    // LOOK-13: the recipe page's own round back button.
+    await tester.tap(find.byTooltip('رجوع'));
     await settle(tester);
     expect(banner, findsOneWidget, reason: 'back on the library');
 

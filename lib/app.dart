@@ -22,6 +22,7 @@ import 'services/backup_files.dart';
 import 'services/cook_services.dart';
 import 'services/import_photos.dart';
 import 'services/importer.dart';
+import 'services/links.dart';
 import 'services/mail.dart';
 import 'services/photo_store.dart';
 import 'services/recipe_pages.dart' show ShareStorage;
@@ -56,6 +57,7 @@ class WasfatiApp extends StatelessWidget {
     required this.backupFiles,
     required this.backupState,
     required this.mail,
+    required this.links,
     required this.importPhotos,
     required this.purchases,
     required this.ads,
@@ -107,6 +109,10 @@ class WasfatiApp extends StatelessWidget {
   /// every draft, so a test that forgot one should fail loudly.
   final MailComposer mail;
 
+  /// Opens a recipe's source link in the browser (LOOK-13). No default,
+  /// like [mail]: the test fake records every link it was asked to open.
+  final LinkOpener links;
+
   /// The camera and photo picker for a photo import (IMP-1, IMP-10,
   /// IMP-12). No default, like [mail]: the test fake is scripted per test.
   final ImportPhotoPicker importPhotos;
@@ -152,6 +158,7 @@ class WasfatiApp extends StatelessWidget {
         Provider<BackupFiles>.value(value: backupFiles),
         ChangeNotifierProvider.value(value: backupState),
         Provider<MailComposer>.value(value: mail),
+        Provider<LinkOpener>.value(value: links),
         Provider<ImportPhotoPicker>.value(value: importPhotos),
         ChangeNotifierProvider.value(value: purchases),
         ChangeNotifierProvider.value(value: ads),

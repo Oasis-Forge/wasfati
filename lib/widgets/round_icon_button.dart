@@ -39,35 +39,43 @@ class RoundIconButton extends StatelessWidget {
     // (Android's minimum). When [size] is smaller, the hit area extends
     // beyond the painted circle rather than shrinking to match it.
     final tapSize = size < 48 ? 48.0 : size;
-    return SizedBox.square(
-      dimension: tapSize,
-      child: Material(
-        type: MaterialType.transparency,
-        shape: const CircleBorder(),
-        child: Tooltip(
-          message: tooltip,
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onPressed,
-            child: Center(
-              child: Container(
-                width: size,
-                height: size,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: backgroundColor ?? cs.surfaceContainerLowest,
-                  boxShadow: decor.liftShadow,
-                  border: decor.cardHairline != null
-                      ? Border.all(color: decor.cardHairline!)
-                      : null,
-                ),
-                child: Icon(
-                  icon,
-                  size: size * 0.5,
-                  color: onPressed == null
-                      ? Theme.of(context).disabledColor
-                      : (color ?? cs.onSurface),
+    // A bare InkWell carries only a tap action: the button role and its
+    // enabled state are added here, as IconButton would (a disabled one is
+    // read as "disabled", not just its name).
+    return Semantics(
+      container: true,
+      button: true,
+      enabled: onPressed != null,
+      child: SizedBox.square(
+        dimension: tapSize,
+        child: Material(
+          type: MaterialType.transparency,
+          shape: const CircleBorder(),
+          child: Tooltip(
+            message: tooltip,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onPressed,
+              child: Center(
+                child: Container(
+                  width: size,
+                  height: size,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: backgroundColor ?? cs.surfaceContainerLowest,
+                    boxShadow: decor.liftShadow,
+                    border: decor.cardHairline != null
+                        ? Border.all(color: decor.cardHairline!)
+                        : null,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: size * 0.5,
+                    color: onPressed == null
+                        ? Theme.of(context).disabledColor
+                        : (color ?? cs.onSurface),
+                  ),
                 ),
               ),
             ),

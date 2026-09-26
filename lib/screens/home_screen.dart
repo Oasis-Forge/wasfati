@@ -790,7 +790,7 @@ class CookbookScreen extends StatelessWidget {
         label: Text(l10n.recipesAdd),
       ),
       // ADS-9: a pushed screen (LOOK-7 gives it no navigation pill) still
-      // carries its own banner, "aboveSystemBar" like the recipe page's.
+      // carries its own banner, clear of the system bar ("aboveSystemBar").
       bottomNavigationBar: const AdSlot(aboveSystemBar: true),
       body: LibraryView(cookbookId: cookbookId),
     );

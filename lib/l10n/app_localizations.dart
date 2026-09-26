@@ -344,6 +344,36 @@ abstract class AppLocalizations {
   /// **'Share'**
   String get shareTooltip;
 
+  /// LOOK-13. Tooltip of the recipe page's round 'more' button, which opens every other action (translate, delete).
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get moreActions;
+
+  /// LOOK-13, REC-3. Caption of the recipe page's prep-time tile.
+  ///
+  /// In en, this message translates to:
+  /// **'Prep'**
+  String get factPrep;
+
+  /// LOOK-13, REC-3. Caption of the recipe page's cook-time tile.
+  ///
+  /// In en, this message translates to:
+  /// **'Cook'**
+  String get factCook;
+
+  /// LOOK-13, REC-3. Caption of the recipe page's servings tile.
+  ///
+  /// In en, this message translates to:
+  /// **'Servings'**
+  String get factServings;
+
+  /// LOOK-13. Shown when the recipe's source link can't be opened (no browser).
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open the link.'**
+  String get linkOpenFailed;
+
   /// SHARE-1. Share-sheet option: plain text.
   ///
   /// In en, this message translates to:

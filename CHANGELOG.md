@@ -4,6 +4,14 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-09-26
+
+### Changed
+- A recipe now opens under its photo, with round buttons over it to go back, share, edit and more. Its prep time, cook time and servings show as tiles, and المكونات and طريقة التحضير sit on two tabs, with the servings and units in the Ingredients tab and the notes after the steps. Tapping the source chip opens the original page.
+- "ابدأ الطبخ", add to plan and add to groceries stay at the bottom of the recipe, always at hand.
+- Cook mode shows how far you've got on a step rail, gives each timer a bigger start button, shows running timers in a band under the rail, and puts "السابق", the ingredients and "التالي" at the bottom edge, where your thumb reaches them.
+- Recipes shared as pictures follow the new سُفرة colours, with the amounts in bold.
+
 ## [0.19.0] - 2026-09-26
 
 ### Added

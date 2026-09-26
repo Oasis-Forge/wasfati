@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
@@ -13,20 +16,33 @@ import '../providers/review_prompt_state.dart';
 import '../providers/settings_state.dart';
 import '../providers/timers_state.dart';
 import '../services/cook_services.dart';
+import '../theme/decor.dart';
 import '../theme/type.dart' show cookStep;
 import '../widgets/amount_line.dart';
 import '../widgets/content_direction.dart';
 import '../widgets/digit_box.dart';
-import '../widgets/pressable_slab.dart';
+import '../widgets/round_icon_button.dart';
+import '../widgets/sufra_card.dart';
+import 'ingredients_section.dart' show GroupName;
+import 'recipe_screen.dart' show StepText;
 
-/// Cook mode (COOK-1–COOK-6): free, no ads, one step per page in large
-/// text, the screen kept on, timers from the step text, the ingredients one
-/// pull away with the recipe page's scale and units (SCALE-6).
+/// Cook mode (COOK-1–COOK-6, LOOK-14): free, no ads, one step per page in
+/// large text, the screen kept on, timers from the step text, the
+/// ingredients one tap away with the recipe page's scale and units
+/// (SCALE-6). Follows the light/dark setting like every other screen.
 class CookModeScreen extends StatefulWidget {
   const CookModeScreen({super.key, required this.recipe, required this.factor});
 
   final Recipe recipe;
   final Rational factor;
+
+  /// LOOK-14: up to this many steps the rail has one segment each; a
+  /// longer recipe gets a progress bar instead.
+  static const maxRailSegments = 14;
+
+  /// COOK-4: how tall the running-timer bands grow before they scroll,
+  /// about two bands, so the step keeps its room however many run.
+  static const maxBandsHeight = 152.0;
 
   @override
   State<CookModeScreen> createState() => _CookModeScreenState();
@@ -78,6 +94,11 @@ class _CookModeScreenState extends State<CookModeScreen>
 
   void _go(int delta) {
     final target = (_page + delta).clamp(0, _last);
+    // Reduce motion: a static swap instead of the slide.
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _pages.jumpToPage(target);
+      return;
+    }
     _pages.animateToPage(
       target,
       duration: const Duration(milliseconds: 250),
@@ -123,14 +144,17 @@ class _CookModeScreenState extends State<CookModeScreen>
     review.afterCooking();
   }
 
+  /// COOK-2's ingredients sheet: 56 dp rows with round checkboxes, each
+  /// line through [AmountLine] (LOOK-4), the ×factor in its header.
   void _showIngredients() {
     final l10n = AppLocalizations.of(context);
     final s = context.read<SettingsState>();
     final r = widget.recipe;
+    final gutter = Decor.of(context).gutter;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      showDragHandle: true,
+      useSafeArea: true,
       builder: (context) => DraggableScrollableSheet(
         expand: false,
         initialChildSize: 0.6,
@@ -138,41 +162,58 @@ class _CookModeScreenState extends State<CookModeScreen>
         builder: (context, scroll) => StatefulBuilder(
           builder: (context, setSheet) => ListView(
             controller: scroll,
+            padding: const EdgeInsetsDirectional.only(bottom: 16),
             children: [
               Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 8),
-                child: Text(
-                  l10n.ingredients,
-                  style: Theme.of(context).textTheme.titleLarge,
+                padding: EdgeInsetsDirectional.fromSTEB(gutter, 0, gutter, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.ingredients,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ),
+                    if (widget.factor != Rational.one)
+                      _FactorPill(widget.factor, digits: s.digits),
+                  ],
                 ),
               ),
               for (final section in r.ingredients) ...[
                 if (section.name != null)
                   Padding(
-                    padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 0),
-                    child: ContentText(
-                      section.name!,
-                      style: Theme.of(context).textTheme.titleSmall,
+                    padding: EdgeInsetsDirectional.symmetric(
+                      horizontal: gutter,
                     ),
+                    child: GroupName(section.name!),
                   ),
                 for (final line in section.items)
                   CheckboxListTile(
                     value: _checked.contains(line.id),
                     controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: const EdgeInsetsDirectional.symmetric(
+                      horizontal: 12,
+                    ),
                     onChanged: (v) {
                       setSheet(() {});
                       setState(() {
                         v! ? _checked.add(line.id) : _checked.remove(line.id);
                       });
                     },
-                    title: AmountLine(
-                      _shownText(line, r.unitView, s.digits),
-                      source: line.original,
-                      style: _checked.contains(line.id)
-                          ? const TextStyle(
-                              decoration: TextDecoration.lineThrough,
-                            )
-                          : null,
+                    title: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 32),
+                      child: Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: AmountLine(
+                          _shownText(line, r.unitView, s.digits),
+                          source: line.original,
+                          style: _checked.contains(line.id)
+                              ? const TextStyle(
+                                  decoration: TextDecoration.lineThrough,
+                                )
+                              : null,
+                        ),
+                      ),
                     ),
                   ),
               ],
@@ -198,121 +239,288 @@ class _CookModeScreenState extends State<CookModeScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final s = context.watch<SettingsState>();
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final gutter = Decor.of(context).gutter;
     final dir = Directionality.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          tooltip: l10n.closeCooking,
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: ContentText(
-          widget.recipe.title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        actions: [
-          if (widget.recipe.ingredients.isNotEmpty)
-            IconButton(
-              tooltip: l10n.ingredients,
-              // Ticks at the reading start: this icon doesn't mirror
-              // itself (LANG-5).
-              icon: Icon(
-                dir == TextDirection.rtl
-                    ? Icons.checklist_rtl
-                    : Icons.checklist,
-              ),
-              onPressed: _showIngredients,
-            ),
-        ],
+    final hasIngredients = widget.recipe.ingredients.any(
+      (s) => s.items.isNotEmpty,
+    );
+    // Ticks at the reading start: this icon doesn't mirror itself (LANG-5).
+    final ingredientsIcon = dir == TextDirection.rtl
+        ? Icons.checklist_rtl
+        : Icons.checklist;
+
+    // No app bar sets the status bar's icons here: they follow the theme
+    // (status-bar fields only; the navigation bar keeps its own style).
+    final icons = theme.brightness == Brightness.dark
+        ? Brightness.light
+        : Brightness.dark;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: icons,
+        statusBarBrightness: icons == Brightness.light
+            ? Brightness.dark
+            : Brightness.light,
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            const _TimersBar(),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, box) => GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  // Tap the edges to move (COOK-2). In right-to-left the
-                  // next step is on the left.
-                  onTapUp: (d) {
-                    final x = d.localPosition.dx / box.maxWidth;
-                    final forward = dir == TextDirection.rtl
-                        ? x < 0.2
-                        : x > 0.8;
-                    final back = dir == TextDirection.rtl ? x > 0.8 : x < 0.2;
-                    if (forward) _go(1);
-                    if (back) _go(-1);
-                  },
-                  child: PageView.builder(
-                    controller: _pages,
-                    itemCount: _steps.length + 1,
-                    onPageChanged: (p) {
-                      setState(() => _page = p);
-                      context.read<RecipesState>().setCookPage(
-                        widget.recipe.id,
-                        p,
-                        _steps.length,
-                      );
-                    },
-                    itemBuilder: (context, i) => i == _last
-                        ? _DonePage(
-                            onCooked: _markCooked,
-                            onDone: _closeFromLastPage,
-                          )
-                        : _StepPage(
-                            index: i,
-                            total: _steps.length,
-                            group: _steps[i].$1,
-                            step: _steps[i].$2,
-                            recipeId: widget.recipe.id,
-                            onTimer: (d) => _startTimer(i + 1, d),
+      child: Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsetsDirectional.fromSTEB(gutter, 12, gutter, 0),
+                child: Row(
+                  children: [
+                    RoundIconButton(
+                      size: 48,
+                      icon: Icons.close,
+                      tooltip: l10n.closeCooking,
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          // The route's name and heading, as the app bar's
+                          // title used to be.
+                          Semantics(
+                            header: true,
+                            namesRoute: true,
+                            child: ContentText(
+                              widget.recipe.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: cs.onSurfaceVariant,
+                              ),
+                            ),
                           ),
+                          if (widget.factor != Rational.one) ...[
+                            const SizedBox(height: 4),
+                            _FactorPill(widget.factor, digits: s.digits),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    if (hasIngredients)
+                      RoundIconButton(
+                        size: 48,
+                        icon: ingredientsIcon,
+                        tooltip: l10n.ingredients,
+                        onPressed: _showIngredients,
+                      )
+                    else
+                      const SizedBox(width: 48),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: EdgeInsetsDirectional.fromSTEB(gutter, 20, gutter, 0),
+                child: _StepRail(current: _page, total: _steps.length),
+              ),
+              // COOK-4: running timers show in the header, outside the pages.
+              _TimerBands(recipeId: widget.recipe.id),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, box) => GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    // Tap the edges to move (COOK-2). In right-to-left the
+                    // next step is on the left.
+                    onTapUp: (d) {
+                      final x = d.localPosition.dx / box.maxWidth;
+                      final forward = dir == TextDirection.rtl
+                          ? x < 0.2
+                          : x > 0.8;
+                      final back = dir == TextDirection.rtl ? x > 0.8 : x < 0.2;
+                      if (forward) _go(1);
+                      if (back) _go(-1);
+                    },
+                    child: PageView.builder(
+                      controller: _pages,
+                      itemCount: _steps.length + 1,
+                      onPageChanged: (p) {
+                        setState(() => _page = p);
+                        context.read<RecipesState>().setCookPage(
+                          widget.recipe.id,
+                          p,
+                          _steps.length,
+                        );
+                      },
+                      itemBuilder: (context, i) => i == _last
+                          ? _DonePage(
+                              onCooked: _markCooked,
+                              onDone: _closeFromLastPage,
+                            )
+                          : _StepPage(
+                              index: i,
+                              total: _steps.length,
+                              group: _steps[i].$1,
+                              step: _steps[i].$2,
+                              recipeId: widget.recipe.id,
+                              onTimer: (d) => _startTimer(i + 1, d),
+                            ),
+                    ),
                   ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsetsDirectional.all(12),
-              child: Row(
-                // Equal Expanded widths, not a Spacer (should-fix, LOOK-8):
-                // at 1.3x text a Spacer-separated Row let "السابق"/"التالي"
-                // overflow the 360dp floor by a few px; splitting the
-                // width between them the way design-styles.md's cook-mode
-                // bottom bar asks for fixes it in both looks and both
-                // languages, not just at this one text scale.
-                children: [
-                  Expanded(
-                    child: TextButton.icon(
-                      onPressed: _page > 0 ? () => _go(-1) : null,
-                      icon: const Icon(Icons.arrow_back),
-                      label: Text(
-                        l10n.previousStep,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // LOOK-7: the third of Saffron's three ledge actions; a
-                  // no-op in Ink (Decor.ledgeDepth 0).
-                  Expanded(
-                    child: PressableSlab(
-                      child: FilledButton.icon(
-                        onPressed: _page < _last ? () => _go(1) : null,
-                        icon: const Icon(Icons.arrow_forward),
-                        label: Text(
-                          l10n.nextStep,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+              // LOOK-14: three large controls where a wet thumb reaches them.
+              // In right-to-left, "التالي" is on the left and points left.
+              // "Next" stays the widest; the split is a little less lopsided
+              // than the mockup's 1:1.6, which is 390 dp wide, so "Previous"
+              // keeps its room on a 360 dp phone, and both labels shrink to
+              // fit rather than clip (LOOK-7's rule, LOOK-8).
+              Padding(
+                padding: EdgeInsetsDirectional.fromSTEB(gutter, 12, gutter, 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 10,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(0, 56),
+                          padding: const EdgeInsetsDirectional.symmetric(
+                            horizontal: 8,
+                          ),
+                        ),
+                        onPressed: _page > 0 ? () => _go(-1) : null,
+                        icon: const Icon(Icons.chevron_left),
+                        label: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(l10n.previousStep, maxLines: 1),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    if (hasIngredients) ...[
+                      const SizedBox(width: 12),
+                      RoundIconButton(
+                        size: 56,
+                        icon: ingredientsIcon,
+                        tooltip: l10n.ingredients,
+                        onPressed: _showIngredients,
+                      ),
+                    ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 14,
+                      child: DecoratedBox(
+                        decoration: ShapeDecoration(
+                          shape: const StadiumBorder(),
+                          shadows: _page < _last
+                              ? Decor.of(context).floatShadow
+                              : const [],
+                        ),
+                        child: FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsetsDirectional.symmetric(
+                              horizontal: 8,
+                            ),
+                          ),
+                          onPressed: _page < _last ? () => _go(1) : null,
+                          iconAlignment: IconAlignment.end,
+                          icon: const Icon(Icons.chevron_right),
+                          label: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(l10n.nextStep, maxLines: 1),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The scale factor as a small soft-accent pill ("×2"), laid out left to
+/// right so "×" stays before its number.
+class _FactorPill extends StatelessWidget {
+  const _FactorPill(this.factor, {required this.digits});
+  final Rational factor;
+  final DigitStyle digits;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsetsDirectional.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: cs.primaryContainer,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '×${formatAmount(factor, null, digits: digits)}',
+        textDirection: TextDirection.ltr,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: cs.onPrimaryContainer,
+        ),
+      ),
+    );
+  }
+}
+
+/// LOOK-14's step rail: one segment per step — done ones in the accent at
+/// 45%, the current one solid and taller, the rest `sunk` — or, past
+/// [CookModeScreen.maxRailSegments] steps, one progress bar. The step
+/// counter under it says the same in words, so the rail itself is silent.
+class _StepRail extends StatelessWidget {
+  const _StepRail({required this.current, required this.total});
+  final int current;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final sunk = Decor.of(context).sunk;
+    if (total == 0) return const SizedBox.shrink();
+    if (total > CookModeScreen.maxRailSegments) {
+      return ExcludeSemantics(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(3),
+          child: SizedBox(
+            height: 6,
+            child: LinearProgressIndicator(
+              key: const Key('rail-progress'),
+              value: (current + 1).clamp(0, total) / total,
+              backgroundColor: sunk,
+              color: cs.primary,
             ),
+          ),
+        ),
+      );
+    }
+    return ExcludeSemantics(
+      child: SizedBox(
+        height: 6,
+        child: Row(
+          children: [
+            for (var i = 0; i < total; i++) ...[
+              if (i > 0) const SizedBox(width: 4),
+              Expanded(
+                child: Center(
+                  child: Container(
+                    key: Key('rail-$i'),
+                    height: i == current ? 6 : 4,
+                    decoration: BoxDecoration(
+                      color: i < current
+                          ? cs.primary.withValues(alpha: 0.45)
+                          : i == current
+                          ? cs.primary
+                          : sunk,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -341,10 +549,10 @@ class _StepPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final s = context.watch<SettingsState>();
-    final timers = context.watch<TimersState>();
     final theme = Theme.of(context);
+    final gutter = Decor.of(context).gutter;
     return SingleChildScrollView(
-      padding: const EdgeInsetsDirectional.fromSTEB(24, 16, 24, 24),
+      padding: EdgeInsetsDirectional.fromSTEB(gutter, 20, gutter, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -358,35 +566,24 @@ class _StepPage extends StatelessWidget {
           ),
           if (group != null)
             ContentText(group!, style: theme.textTheme.titleSmall),
-          const SizedBox(height: 16),
-          // should-fix, platform review: was a bespoke 1.5x/height-1.5
-          // inline style instead of `cookStep` (COOK-2, LOOK-6) — besides
-          // leaving `cookStep` unreferenced outside its own test, its
-          // height:1.5 undercut LOOK-5's own 1.75 floor for text that can
-          // wrap to a second line, which a recipe step routinely does.
-          ContentText(step.text, style: cookStep(theme.textTheme)),
-          const SizedBox(height: 24),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final d in findDurations(step.text))
-                ActionChip(
-                  avatar: const Icon(Icons.timer_outlined),
-                  tooltip: l10n.timerStart(_clock(s, d)),
-                  label: Text(_clock(s, d), textDirection: TextDirection.ltr),
-                  onPressed:
-                      timers.running.any(
-                        (t) =>
-                            t.recipeId == recipeId &&
-                            t.step == index + 1 &&
-                            t.total == d,
-                      )
-                      ? null
-                      : () => onTimer(d),
-                ),
-            ],
-          ),
+          const SizedBox(height: 14),
+          // COOK-2: at least 1.5x the body size (`cookStep`), its timers
+          // marked in the accent as plain text (Cook.dc.html): the timer
+          // card below is the button.
+          StepText(step.text, style: cookStep(theme.textTheme), pill: false),
+          for (final d in findDurations(step.text)) ...[
+            const SizedBox(height: 20),
+            _TimerCard(
+              duration: d,
+              running: context.watch<TimersState>().running.any(
+                (t) =>
+                    t.recipeId == recipeId &&
+                    t.step == index + 1 &&
+                    t.total == d,
+              ),
+              onStart: () => onTimer(d),
+            ),
+          ],
         ],
       ),
     );
@@ -398,9 +595,104 @@ String _clock(SettingsState s, Duration d) {
   return s.digits == DigitStyle.arabic ? easternDigits(t) : t;
 }
 
-/// Running timers, from any recipe, and the ones that just ended (COOK-4).
-class _TimersBar extends StatelessWidget {
-  const _TimersBar();
+/// COOK-4, LOOK-14: one duration in the step as a large timer — a ring,
+/// the time at 40/700 laid out left to right, and "ابدأ مؤقت …" as the
+/// primary pill (disabled while that same timer runs).
+class _TimerCard extends StatelessWidget {
+  const _TimerCard({
+    required this.duration,
+    required this.running,
+    required this.onStart,
+  });
+
+  final Duration duration;
+  final bool running;
+  final VoidCallback onStart;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final s = context.watch<SettingsState>();
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final clock = _clock(s, duration);
+    return SufraCard(
+      radius: 28,
+      padding: const EdgeInsetsDirectional.all(20),
+      child: Column(
+        children: [
+          SizedBox.square(
+            dimension: 150,
+            child: CustomPaint(
+              painter: _RingPainter(
+                track: Decor.of(context).sunk,
+                arc: cs.primary,
+              ),
+              child: Center(
+                child: SizedBox(
+                  width: 118,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      clock,
+                      textDirection: TextDirection.ltr,
+                      style: theme.textTheme.displaySmall?.copyWith(
+                        fontSize: 40,
+                        fontWeight: FontWeight.w700,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(minimumSize: const Size(0, 52)),
+              onPressed: running ? null : onStart,
+              icon: const Icon(Icons.timer_outlined),
+              label: Text(l10n.timerStart(clock)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The timer card's ring: a `sunk` track with the accent's starting mark.
+class _RingPainter extends CustomPainter {
+  const _RingPainter({required this.track, required this.arc});
+  final Color track;
+  final Color arc;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const stroke = 10.0;
+    final rect = (Offset.zero & size).deflate(stroke / 2);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(rect, 0, 2 * math.pi, false, paint..color = track);
+    canvas.drawArc(rect, -math.pi / 2, 0.08, false, paint..color = arc);
+  }
+
+  @override
+  bool shouldRepaint(_RingPainter old) => old.track != track || old.arc != arc;
+}
+
+/// Running timers, from any recipe, as bands, and the ones that just ended,
+/// each with its dismiss button (COOK-4, COOK-5). Every running timer has
+/// its band, with its step, its countdown and its stop button: this
+/// recipe's newest first, so the one just started is always in view, then
+/// the others'. Past [CookModeScreen.maxBandsHeight] they scroll.
+class _TimerBands extends StatelessWidget {
+  const _TimerBands({required this.recipeId});
+  final String recipeId;
 
   @override
   Widget build(BuildContext context) {
@@ -409,49 +701,189 @@ class _TimersBar extends StatelessWidget {
     final timers = context.watch<TimersState>();
     final now = timers.now();
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final decor = Decor.of(context);
     if (timers.running.isEmpty && timers.finished.isEmpty) {
       return const SizedBox.shrink();
     }
+    // `running` is in start order: newest first, this recipe's before the
+    // others'.
+    final newest = timers.running.reversed;
+    final running = [
+      ...newest.where((t) => t.recipeId == recipeId),
+      ...newest.where((t) => t.recipeId != recipeId),
+    ];
+
+    Widget band(CookTimer t) => Padding(
+      padding: const EdgeInsetsDirectional.only(bottom: 8),
+      child: Container(
+        key: ValueKey('timer-band-${t.id}'),
+        // Cook.dc.html's 68 dp slab: 10 dp around the 48 dp stop target.
+        padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 10, 10),
+        decoration: BoxDecoration(
+          color: decor.sunk,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            // The step and its countdown read as one stop; the stop button
+            // stays its own.
+            Expanded(
+              child: MergeSemantics(
+                child: Row(
+                  children: [
+                    Icon(Icons.timer_outlined, size: 20, color: cs.secondary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.stepN(s.number(t.step)),
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                          // Another recipe's timer names its recipe.
+                          if (t.recipeId != recipeId)
+                            ContentText(
+                              t.recipeTitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: cs.onSurfaceVariant,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    // LOOK-5: the countdown ticks every second; boxed digits
+                    // keep the band from twitching as it does.
+                    DigitBox(
+                      _clock(s, t.remaining(now)),
+                      textDirection: TextDirection.ltr,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontSize: 22,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            RoundIconButton(
+              size: 40,
+              icon: Icons.close,
+              tooltip: l10n.timerStop,
+              onPressed: () => timers.cancel(t),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final gutter = decor.gutter;
     return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(12, 4, 12, 0),
+      padding: EdgeInsetsDirectional.fromSTEB(gutter, 16, gutter, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (final t in timers.finished)
-            Card(
-              color: theme.colorScheme.errorContainer,
-              child: ListTile(
-                leading: const Icon(Icons.alarm_on),
-                title: Text(l10n.timerDone(s.number(t.step))),
-                subtitle: ContentText(t.recipeTitle),
-                trailing: TextButton(
-                  onPressed: timers.dismissFinished,
-                  child: Text(l10n.dismiss),
+            Padding(
+              padding: const EdgeInsetsDirectional.only(bottom: 8),
+              child: Container(
+                padding: const EdgeInsetsDirectional.fromSTEB(14, 8, 8, 8),
+                decoration: BoxDecoration(
+                  color: cs.errorContainer,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.alarm_on, color: cs.onErrorContainer),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.timerDone(s.number(t.step)),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: cs.onErrorContainer,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          ContentText(
+                            t.recipeTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: cs.onErrorContainer,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: cs.onErrorContainer,
+                      ),
+                      onPressed: timers.dismissFinished,
+                      child: Text(l10n.dismiss),
+                    ),
+                  ],
                 ),
               ),
             ),
-          Wrap(
-            spacing: 8,
-            children: [
-              for (final t in timers.running)
-                InputChip(
-                  avatar: const Icon(Icons.timer_outlined),
-                  // LOOK-5: the countdown ticks every second; boxed
-                  // digits keep the chip from twitching as it does.
-                  label: DigitBox(
-                    '${_clock(s, t.remaining(now))} · ${l10n.stepN(s.number(t.step))}',
-                  ),
-                  deleteButtonTooltipMessage: l10n.timerStop,
-                  onDeleted: () => timers.cancel(t),
-                ),
-            ],
-          ),
+          if (running.isNotEmpty)
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: CookModeScreen.maxBandsHeight,
+              ),
+              child: _BandList(children: [for (final t in running) band(t)]),
+            ),
         ],
       ),
     );
   }
 }
 
+/// The running-timer bands, scrolling once they pass their height, with a
+/// scrollbar that shows whenever some are out of view.
+class _BandList extends StatefulWidget {
+  const _BandList({required this.children});
+  final List<Widget> children;
+
+  @override
+  State<_BandList> createState() => _BandListState();
+}
+
+class _BandListState extends State<_BandList> {
+  final _scroll = ScrollController();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scrollbar(
+      controller: _scroll,
+      thumbVisibility: widget.children.length > 2,
+      child: ListView(
+        key: const Key('timer-bands'),
+        controller: _scroll,
+        shrinkWrap: true,
+        padding: EdgeInsets.zero,
+        children: widget.children,
+      ),
+    );
+  }
+}
+
+/// COOK-6's last page: a drawn eight-point star, the closing line, then
+/// "تم طبخها" (REC-9) and "تم".
 class _DonePage extends StatelessWidget {
   const _DonePage({required this.onCooked, required this.onDone});
   final VoidCallback onCooked;
@@ -460,14 +892,26 @@ class _DonePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsetsDirectional.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Icon(Icons.restaurant, size: 64),
-            const SizedBox(height: 16),
+            Center(
+              child: SizedBox.square(
+                dimension: 112,
+                child: CustomPaint(
+                  painter: StarPainter(
+                    fill: cs.primaryContainer,
+                    stroke: cs.primary,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
             Text(
               l10n.finishTitle,
               style: Theme.of(context).textTheme.headlineSmall,
@@ -479,11 +923,58 @@ class _DonePage extends StatelessWidget {
               icon: const Icon(Icons.check),
               label: Text(l10n.markCooked),
             ),
-            const SizedBox(height: 8),
-            OutlinedButton(onPressed: onDone, child: Text(l10n.done)),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 56)),
+              onPressed: onDone,
+              child: Text(l10n.done),
+            ),
           ],
         ),
       ),
     );
   }
+}
+
+/// LOOK-10's eight-point khatam star, drawn large: a soft fill with an
+/// accent outline. Decoration, so it has no semantics of its own.
+class StarPainter extends CustomPainter {
+  const StarPainter({required this.fill, required this.stroke});
+  final Color fill;
+  final Color stroke;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final outer = size.shortestSide / 2 - 2;
+    final inner = outer * 0.72;
+    final path = Path();
+    for (var k = 0; k < 16; k++) {
+      final r = k.isEven ? outer : inner;
+      final p = center + Offset.fromDirection(k * math.pi / 8 - math.pi / 2, r);
+      k == 0 ? path.moveTo(p.dx, p.dy) : path.lineTo(p.dx, p.dy);
+    }
+    path.close();
+    canvas.drawPath(path, Paint()..color = fill);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = stroke
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..strokeJoin = StrokeJoin.round,
+    );
+    canvas.drawCircle(
+      center,
+      inner * 0.45,
+      Paint()
+        ..color = stroke
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
+  }
+
+  @override
+  bool shouldRepaint(StarPainter old) =>
+      old.fill != fill || old.stroke != stroke;
 }

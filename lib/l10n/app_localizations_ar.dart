@@ -182,6 +182,21 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareTooltip => 'مشاركة';
 
   @override
+  String get moreActions => 'المزيد';
+
+  @override
+  String get factPrep => 'التحضير';
+
+  @override
+  String get factCook => 'الطبخ';
+
+  @override
+  String get factServings => 'الحصص';
+
+  @override
+  String get linkOpenFailed => 'تعذّر فتح الرابط.';
+
+  @override
   String get shareAsText => 'كنص';
 
   @override

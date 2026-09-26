@@ -193,8 +193,7 @@ Future<ui.Image?> _decodePhoto(String path) async {
 double measureShareBlock(ShareBlock block, double width) {
   if (block.kind == ShareBlockKind.photo) return width * 3 / 4;
   final painter = _layOutBlock(
-    block.text,
-    _styleFor(block.kind, block.fontSize),
+    shareBlockSpan(block),
     width,
     direction: shareBlockDirection(block, TextDirection.ltr),
     align: TextAlign.left,
@@ -229,16 +228,13 @@ TextDirection shareBlockDirection(
 /// margin, since `layout(maxWidth:)` alone reports the text's own width,
 /// leaving `TextAlign` nothing to align within).
 TextPainter _layOutBlock(
-  String text,
-  TextStyle style,
+  InlineSpan span,
   double width, {
   required TextDirection direction,
   required TextAlign align,
-}) => TextPainter(
-  text: TextSpan(text: text, style: style),
-  textDirection: direction,
-  textAlign: align,
-)..layout(minWidth: width, maxWidth: width);
+}) =>
+    TextPainter(text: span, textDirection: direction, textAlign: align)
+      ..layout(minWidth: width, maxWidth: width);
 
 /// A short, natural-width label (the footer's brand and page counter): laid
 /// out only as wide as its own text, so the caller places it at either edge
@@ -266,6 +262,31 @@ TextStyle _styleFor(ShareBlockKind kind, double fontSize, [Color? color]) =>
         ShareBlockKind.photo => FontWeight.w400,
       },
     );
+
+/// A block's text as drawn (SHARE-3, LOOK-4): an ingredient's amount — the
+/// left-to-right isolate `formatLine` wraps it in, up to its closing PDI —
+/// in [accent] at 700, the rest of the line in [color], exactly as the
+/// recipe page's `AmountLine` splits it (never re-parsed, so the amount and
+/// the unit word that agrees with it stay one phrase, QTY-6). Every other
+/// block is one run in [color]. The weights don't depend on the colours, so
+/// measuring (no colours) and drawing wrap the same way.
+TextSpan shareBlockSpan(ShareBlock block, {Color? color, Color? accent}) {
+  final style = _styleFor(block.kind, block.fontSize, color);
+  final cut = block.kind == ShareBlockKind.ingredient
+      ? block.text.indexOf(String.fromCharCode(0x2069))
+      : -1;
+  if (cut == -1) return TextSpan(text: block.text, style: style);
+  return TextSpan(
+    style: style,
+    children: [
+      TextSpan(
+        text: block.text.substring(0, cut + 1),
+        style: TextStyle(color: accent, fontWeight: FontWeight.w700),
+      ),
+      TextSpan(text: block.text.substring(cut + 1)),
+    ],
+  );
+}
 
 Color _colorFor(ShareBlockKind kind, ColorScheme colors) => switch (kind) {
   ShareBlockKind.heading => colors.primary,
@@ -308,8 +329,11 @@ Future<Uint8List> _renderPage(
       continue;
     }
     final painter = _layOutBlock(
-      block.text,
-      _styleFor(block.kind, block.fontSize, _colorFor(block.kind, colors)),
+      shareBlockSpan(
+        block,
+        color: _colorFor(block.kind, colors),
+        accent: colors.primary,
+      ),
       _contentWidth,
       direction: shareBlockDirection(block, uiDirection),
       align: align,
