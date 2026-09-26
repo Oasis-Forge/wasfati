@@ -5,27 +5,19 @@ import 'package:wasfati/models/plan.dart';
 import 'package:wasfati/models/quantity/format.dart';
 import 'package:wasfati/models/ramadan.dart';
 import 'package:wasfati/models/settings.dart';
-import 'package:wasfati/providers/settings_state.dart';
 
 import 'app_test.dart' show clock, plan, pumpApp, settle, shown;
 
-/// Whether the day formatted as [day] shows "عيد الفطر" in its own card
-/// (RAM-2): finds the card by its date label, then looks for the Hijri
-/// label alongside it, since a plain text search can't tell which day's
-/// card a match belongs to.
-bool eidShownFor(WidgetTester tester, SettingsState settings, DateTime day) {
-  final ctx = tester.element(find.byType(Scaffold).first);
-  final label = settings.inDigits(
-    MaterialLocalizations.of(ctx).formatMediumDate(day),
-  );
-  final dayLabel = find.text(label);
-  if (dayLabel.evaluate().isEmpty) return false;
-  final card = find.ancestor(of: dayLabel, matching: find.byType(Column)).first;
-  return find
-      .descendant(of: card, matching: find.text('عيد الفطر'))
-      .evaluate()
-      .isNotEmpty;
-}
+/// One day's pill on the plan's week strip or month grid (PLAN-1, RAM-4).
+Finder dayPill(DateTime day) =>
+    find.byKey(ValueKey('plan-day-${dateKey(day)}'));
+
+/// Whether [day]'s own pill on the strip shows "عيد الفطر" (RAM-2), since
+/// a plain text search can't tell which day a match belongs to.
+bool eidShownFor(WidgetTester tester, DateTime day) => find
+    .descendant(of: dayPill(day), matching: find.text('عيد الفطر'))
+    .evaluate()
+    .isNotEmpty;
 
 /// Starts 3 days after the FakeClock's "today" (2026-09-19). Not a real
 /// table entry: Ramadan mode's tests don't depend on the built-in
@@ -136,7 +128,15 @@ void main() {
         ramadanMonths: [ramadanDay5],
       );
       await goToPlan(tester);
-      expect(shown('٥ رمضان'), findsOneWidget); // today is day 5 (RAM-2)
+      // Today is day 5 (RAM-2): on its pill, and under the day's heading.
+      expect(
+        find.descendant(
+          of: dayPill(plan.today),
+          matching: find.text('٥ رمضان'),
+        ),
+        findsOneWidget,
+      );
+      expect(shown('٥ رمضان'), findsNWidgets(2));
 
       await tester.runAsync(
         () => plan.add(
@@ -187,6 +187,58 @@ void main() {
     await tester.tap(find.text('الأسبوع'));
     await settle(tester);
     expect(shown('30 رمضان'), findsNothing); // back to the 7-day week
+  });
+
+  testWidgets('RAM-4: the month view is a grid of its days, with the chosen '
+      "day's Ramadan meals under it and عيد الفطر after the last day", (
+    tester,
+  ) async {
+    await pumpApp(
+      tester,
+      withRecipe: true,
+      ramadanMode: true,
+      ramadanMonths: [ramadanNow], // today is day 1 of 30
+    );
+    await tester.runAsync(
+      () => plan.add(
+        date: DateTime(2026, 10, 8), // day 20
+        slot: MealSlot.iftar,
+        note: 'عزومة',
+      ),
+    );
+    await goToPlan(tester);
+    await tester.tap(find.text('رمضان'));
+    await settle(tester);
+
+    // All 30 days as pills, today chosen, and Eid after the last one.
+    final pills = find.byWidgetPredicate(
+      (w) =>
+          w.key is ValueKey<String> &&
+          (w.key! as ValueKey<String>).value.startsWith('plan-day-'),
+    );
+    expect(pills, findsNWidgets(30));
+    expect(
+      tester.widget<Semantics>(dayPill(plan.today)).properties.selected,
+      isTrue,
+    );
+    expect(find.textContaining('عيد الفطر · '), findsOneWidget);
+    // Today's meals are Ramadan's (RAM-1).
+    expect(find.text('السحور'), findsOneWidget);
+    expect(find.text('الإفطار'), findsOneWidget);
+    expect(find.text('وجبة خفيفة'), findsOneWidget);
+    expect(find.text('غداء'), findsNothing);
+    expect(find.text('عزومة'), findsNothing);
+
+    // Day 20: its own meals under the grid, its Hijri day on its heading.
+    // No manual ensureVisible: day 20's pill is already on screen, so the
+    // hitTestable check below only passes if choosing it scrolls the app.
+    await tester.tap(dayPill(DateTime(2026, 10, 8)));
+    await settle(tester);
+    // should-fix: choosing a day scrolls its meals into view, rather than
+    // leaving them below the grid where nothing seems to happen.
+    expect(find.text('عزومة').hitTestable(), findsOneWidget);
+    expect(shown('20 رمضان'), findsNWidgets(2)); // its pill and its heading
+    expect(find.text('وجبة واحدة'), findsOneWidget);
   });
 
   testWidgets(
@@ -250,13 +302,13 @@ void main() {
     await settle(tester);
 
     // Before the fix: the toggle vanished (today is outside the window)
-    // but _monthView stayed true, so the app bar lost its week arrows
-    // and "this week"/"clear week" too, with no way back but turning
-    // the mode off in Settings.
+    // but _monthView stayed true, so the screen lost its week arrows and
+    // "clear week" too, with no way back but turning the mode off in
+    // Settings.
     expect(plan.days.length, 7);
     expect(find.text('رمضان'), findsNothing); // the toggle itself is gone
-    expect(find.byTooltip('هذا الأسبوع'), findsOneWidget);
-    expect(find.byType(PopupMenuButton<String>), findsOneWidget); // clear
+    expect(find.byTooltip('الأسبوع التالي'), findsOneWidget);
+    expect(find.byTooltip('المزيد'), findsOneWidget); // "مسح الأسبوع"
   });
 
   testWidgets(
@@ -416,8 +468,8 @@ void main() {
         ),
       );
       await goToPlan(tester);
-      expect(eidShownFor(tester, settings, DateTime(2026, 9, 21)), isTrue);
-      expect(eidShownFor(tester, settings, DateTime(2026, 9, 22)), isFalse);
+      expect(eidShownFor(tester, DateTime(2026, 9, 21)), isTrue);
+      expect(eidShownFor(tester, DateTime(2026, 9, 22)), isFalse);
 
       await tester.runAsync(
         () => settings.update(
@@ -425,8 +477,8 @@ void main() {
         ),
       );
       await settle(tester);
-      expect(eidShownFor(tester, settings, DateTime(2026, 9, 21)), isFalse);
-      expect(eidShownFor(tester, settings, DateTime(2026, 9, 22)), isTrue);
+      expect(eidShownFor(tester, DateTime(2026, 9, 21)), isFalse);
+      expect(eidShownFor(tester, DateTime(2026, 9, 22)), isTrue);
     },
   );
 
@@ -451,6 +503,9 @@ void main() {
       await tester.tap(find.text('رمضان'));
       await settle(tester);
 
+      // Under the month's grid, so scrolled to first.
+      await tester.ensureVisible(shown('حفل رمضاني'));
+      await tester.pump();
       await tester.longPress(shown('حفل رمضاني'));
       await settle(tester);
       await tester.tap(find.text('نقل'));

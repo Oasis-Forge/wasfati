@@ -930,6 +930,40 @@ class AppLocalizationsAr extends AppLocalizations {
   String get planToday => 'اليوم';
 
   @override
+  String planMealCount(int count, String shown) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$shown وجبة',
+      many: '$shown وجبة',
+      few: '$shown وجبات',
+      two: 'وجبتان',
+      one: 'وجبة واحدة',
+      zero: 'لا وجبات',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String planDayHeadingToday(String date) {
+    return 'اليوم · $date';
+  }
+
+  @override
+  String planWeekdayShort(String day) {
+    String _temp0 = intl.Intl.selectLogic(day, {
+      'mon': 'اثنين',
+      'tue': 'ثلاثاء',
+      'wed': 'أربعاء',
+      'thu': 'خميس',
+      'fri': 'جمعة',
+      'sat': 'سبت',
+      'other': 'أحد',
+    });
+    return '$_temp0';
+  }
+
+  @override
   String get mealBreakfast => 'فطور';
 
   @override
@@ -1085,6 +1119,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get groceriesDoneSection => 'تم';
 
   @override
+  String groceriesDoneOf(String done, String total) {
+    return '$done من $total';
+  }
+
+  @override
+  String get groceriesBought => 'تم شراؤها';
+
+  @override
   String get groceriesClearDone => 'مسح ما تم شراؤه';
 
   @override
@@ -1204,6 +1246,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get ramadanEidLabel => 'عيد الفطر';
+
+  @override
+  String ramadanEidOn(String date) {
+    return 'عيد الفطر · $date';
+  }
 
   @override
   String get backupSaveAction => 'احفظ نسخة احتياطية';

@@ -1189,6 +1189,36 @@
   "@planToday": {
     "description": "Marks today's day in the plan"
   },
+  "planMealCount": "{count, plural, =0{No meals} =1{{shown} meal} other{{shown} meals}}",
+  "@planMealCount": {
+    "description": "How many entries the chosen day holds, beside its heading (PLAN-1)",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "shown": {
+        "type": "String"
+      }
+    }
+  },
+  "planDayHeadingToday": "Today · {date}",
+  "@planDayHeadingToday": {
+    "description": "The chosen day's heading when it is today (PLAN-1); date is the weekday and date",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "planWeekdayShort": "{day, select, mon{Mon} tue{Tue} wed{Wed} thu{Thu} fri{Fri} sat{Sat} other{Sun}}",
+  "@planWeekdayShort": {
+    "description": "A weekday's short name on the plan's week strip (PLAN-1)",
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
   "mealBreakfast": "Breakfast",
   "@mealBreakfast": {
     "description": "Meal slot (PLAN-1)"
@@ -1395,6 +1425,22 @@
   "@groceriesDoneSection": {
     "description": "GRO-5. Heading of the collapsed section a ticked item moves into."
   },
+  "groceriesDoneOf": "{done} of {total}",
+  "@groceriesDoneOf": {
+    "description": "How many items are bought out of all of them, on the progress card and each aisle (GRO-5)",
+    "placeholders": {
+      "done": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "groceriesBought": "bought",
+  "@groceriesBought": {
+    "description": "Under the progress card's count (GRO-5)"
+  },
   "groceriesClearDone": "Clear done",
   "@groceriesClearDone": {
     "description": "GRO-5. Menu action."
@@ -1529,6 +1575,15 @@
   "ramadanEidLabel": "Eid al-Fitr",
   "@ramadanEidLabel": {
     "description": "RAM-2. Shown on the day after Ramadan's last one."
+  },
+  "ramadanEidOn": "Eid al-Fitr · {date}",
+  "@ramadanEidOn": {
+    "description": "RAM-4: the chip after the Ramadan month's grid, with Eid's date.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   },
   "backupSaveAction": "Save a backup",
   "backupSaveDone": "Backup saved",

@@ -271,7 +271,8 @@ void main() {
       );
       await tester.tap(_navTab(Icons.calendar_month_outlined));
       await settle(tester);
-      await tester.tap(find.byTooltip(l.planAdd).hitTestable().first);
+      // An empty meal's "+ Add" (PLAN-1, PLAN-3).
+      await tester.tap(find.text(l.planAdd).hitTestable().first);
       await settle(tester);
       await tester.tap(find.widgetWithText(ListTile, l.planAddNote));
       await settle(tester);

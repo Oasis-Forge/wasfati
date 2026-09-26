@@ -1622,6 +1622,24 @@ abstract class AppLocalizations {
   /// **'Today'**
   String get planToday;
 
+  /// How many entries the chosen day holds, beside its heading (PLAN-1)
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No meals} =1{{shown} meal} other{{shown} meals}}'**
+  String planMealCount(int count, String shown);
+
+  /// The chosen day's heading when it is today (PLAN-1); date is the weekday and date
+  ///
+  /// In en, this message translates to:
+  /// **'Today · {date}'**
+  String planDayHeadingToday(String date);
+
+  /// A weekday's short name on the plan's week strip (PLAN-1)
+  ///
+  /// In en, this message translates to:
+  /// **'{day, select, mon{Mon} tue{Tue} wed{Wed} thu{Thu} fri{Fri} sat{Sat} other{Sun}}'**
+  String planWeekdayShort(String day);
+
   /// Meal slot (PLAN-1)
   ///
   /// In en, this message translates to:
@@ -1892,6 +1910,18 @@ abstract class AppLocalizations {
   /// **'Done'**
   String get groceriesDoneSection;
 
+  /// How many items are bought out of all of them, on the progress card and each aisle (GRO-5)
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total}'**
+  String groceriesDoneOf(String done, String total);
+
+  /// Under the progress card's count (GRO-5)
+  ///
+  /// In en, this message translates to:
+  /// **'bought'**
+  String get groceriesBought;
+
   /// GRO-5. Menu action.
   ///
   /// In en, this message translates to:
@@ -2029,6 +2059,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Eid al-Fitr'**
   String get ramadanEidLabel;
+
+  /// RAM-4: the chip after the Ramadan month's grid, with Eid's date.
+  ///
+  /// In en, this message translates to:
+  /// **'Eid al-Fitr · {date}'**
+  String ramadanEidOn(String date);
 
   /// No description provided for @backupSaveAction.
   ///

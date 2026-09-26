@@ -26,10 +26,12 @@ Set<String> _used(String text) => {
 };
 
 /// [text] without its placeholders and ICU keywords: the words a reader
-/// sees whatever the numbers are.
+/// sees whatever the numbers are. A select's case keys (`sat{...}`) are
+/// keywords too, never shown.
 String _words(String text) => text
     .replaceAll(RegExp(r'\{\s*\w+\s*,\s*(plural|select)\s*,'), '{')
     .replaceAll(RegExp(r'(=\d+|zero|one|two|few|many|other)\{'), '{')
+    .replaceAll(RegExp(r'\b[a-z]\w*\{'), '{')
     .replaceAll(RegExp(r'\{\s*\w+\s*\}'), '');
 
 /// Brand names that stay in Latin letters inside Arabic text.

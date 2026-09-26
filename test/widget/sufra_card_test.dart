@@ -43,4 +43,42 @@ void main() {
       expect(decoration.border, Border.all(color: decor.cardHairline!));
     },
   );
+
+  testWidgets(
+    'a card without onTap still gives a child InkWell an ink layer above '
+    "its fill, so a grocery row's long press shows (GRO-4)",
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: wasfatiTheme(AppStyle.saffron, Brightness.light),
+          home: Scaffold(
+            body: SufraCard(
+              child: InkWell(onLongPress: () {}, child: const Text('بصل')),
+            ),
+          ),
+        ),
+      );
+      // The InkWell's Material is the card's own transparent layer, drawn
+      // inside the card's fill, not the Scaffold's under it.
+      final ink = Material.of(tester.element(find.text('بصل')));
+      final inner = find.descendant(
+        of: find.byType(SufraCard),
+        matching: find.byType(Material),
+      );
+      expect(inner, findsOneWidget);
+      expect(tester.widget<Material>(inner).type, MaterialType.transparency);
+      expect(
+        ink,
+        same(
+          Material.of(
+            tester.element(
+              find.descendant(of: inner, matching: find.byType(InkWell)),
+            ),
+          ),
+        ),
+      );
+      final cardContext = tester.element(find.byType(SufraCard));
+      expect(ink, isNot(same(Material.of(cardContext))));
+    },
+  );
 }

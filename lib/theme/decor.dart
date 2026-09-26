@@ -48,7 +48,7 @@ class Decor extends ThemeExtension<Decor> {
 
   /// An inset surface, darker/lighter than [ColorScheme.surface]: the
   /// segmented-control track, the stepper pill, a chip at rest, the banner
-  /// placeholder, the plan/settings grouped-row fill.
+  /// placeholder, a plan entry's amount pill and the "هذا الأسبوع" chip.
   final Color sunk;
 
   /// Dark mode's 1dp card edge, replacing the light shadow (LOOK-6): null
@@ -75,9 +75,9 @@ class Decor extends ThemeExtension<Decor> {
   /// The screen gutter (design spec §1: 20dp).
   final double gutter;
 
-  /// The plan's own "today" highlight bar (unrelated to `RailHeading`,
-  /// which no longer draws one, LOOK-6/Decision 23): width in dp and
-  /// colour, read directly by `plan_screen.dart`.
+  /// Unused by any widget now: the plan's day cards and their "today" bar
+  /// went with the Sufra plan (PR 4). Kept only for `Decor.copyWith`/
+  /// `Decor.lerp`'s own tests, until PR 5 sweeps the retired pieces.
   final double railWidth;
   final Color railColor;
 
@@ -105,7 +105,8 @@ class Decor extends ThemeExtension<Decor> {
   /// control or container edge — that's `outline`, at least 3:1, LOOK-3).
   final Color? rowHairline;
 
-  /// The fill behind a grouped set of rows (a settings group, a day card):
+  /// The fill behind a grouped set of rows (a settings group, the
+  /// walkthrough's):
   /// `card`, so a group reads as one white card on the linen page.
   final Color groupedRowFill;
 
