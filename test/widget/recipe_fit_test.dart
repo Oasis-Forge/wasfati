@@ -165,19 +165,8 @@ void main() {
       );
     }
     final pill = tester.getCenter(find.text('كما كُتبت'));
-    // Shown means painted and tappable; at ×1 its line is only reserved.
-    bool resetShown() =>
-        tester
-            .widget<Visibility>(
-              find
-                  .ancestor(
-                    of: find.text('إعادة'),
-                    matching: find.byType(Visibility),
-                  )
-                  .first,
-            )
-            .visible &&
-        find.text('إعادة').hitTestable().evaluate().isNotEmpty;
+    // At ×1 there is no "إعادة" at all, not even a reserved blank line.
+    bool resetShown() => find.text('إعادة').hitTestable().evaluate().isNotEmpty;
     expect(resetShown(), isFalse);
 
     final x2 = tester.getCenter(find.text('×2'));

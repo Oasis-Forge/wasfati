@@ -1910,6 +1910,12 @@ abstract class AppLocalizations {
   /// **', '**
   String get groceriesNameSeparator;
 
+  /// LANG-6. Joins the parts of one spoken label (a library row's title, details and source) for screen readers: the language's own comma and a space.
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get labelSeparator;
+
   /// GRO-2. Snackbar after adding a recipe's ticked lines to groceries.
   ///
   /// In en, this message translates to:

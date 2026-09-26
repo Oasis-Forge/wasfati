@@ -2,6 +2,7 @@
 // tiles, the two tabs, the action bar and its banner, the source link; the
 // step rail, the timer cards and bands, the bottom controls in both
 // directions, and the ingredients sheet.
+import 'dart:math' as math;
 import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/rendering.dart'
     show DebugSemanticsDumpOrder, SemanticsNode;
 import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wasfati/models/quantity/convert.dart' show UnitView;
 import 'package:wasfati/models/recipe.dart';
 import 'package:wasfati/models/settings.dart';
 import 'package:wasfati/providers/recipes_state.dart';
@@ -17,9 +19,20 @@ import 'package:wasfati/theme/decor.dart';
 import 'package:wasfati/widgets/ad_slot.dart';
 import 'package:wasfati/widgets/amount_line.dart';
 import 'package:wasfati/widgets/digit_box.dart';
+import 'package:wasfati/widgets/segmented_pill.dart';
+import 'package:wasfati/widgets/sufra_card.dart';
 
 import 'app_test.dart'
-    show links, openStepsTab, pumpApp, reveal, settle, shown, tapOnPage, timers;
+    show
+        alerts,
+        links,
+        openStepsTab,
+        pumpApp,
+        reveal,
+        settle,
+        shown,
+        tapOnPage,
+        timers;
 
 /// Saves [build]'s recipe and opens its page.
 Future<Recipe> _open(
@@ -299,6 +312,12 @@ void main() {
           lessThanOrEqualTo(tester.getRect(banner).top),
         );
       }
+      // LOOK-8: exactly the slot's 8 dp between the bar's buttons and the
+      // ad, with nothing between them.
+      expect(
+        tester.getRect(find.byTooltip('أضف إلى الخطة')).bottom + AdSlot.gap,
+        moreOrLessEquals(tester.getRect(banner).top),
+      );
       // Scrolled to the end, the page's last line still clears the bar.
       await tester.drag(find.byType(Scrollable).first, const Offset(0, -3000));
       await settle(tester);
@@ -382,42 +401,201 @@ void main() {
       final ring = find.text('15:00');
       expect(ring, findsOneWidget);
       expect(tester.widget<Text>(ring).textDirection, TextDirection.ltr);
+      // The ring's arc is only its starting mark.
+      final painter = find
+          .ancestor(
+            of: find.byKey(const Key('timer-card-clock')),
+            matching: find.byType(CustomPaint),
+          )
+          .first;
+      expect(
+        tester.renderObject(painter),
+        paints
+          ..arc(sweepAngle: 2 * math.pi)
+          ..arc(sweepAngle: 0.08),
+      );
       await tester.tap(find.text('ابدأ مؤقت 15:00'));
       await settle(tester);
       expect(timers.running.single.total, const Duration(minutes: 15));
-      // Started once: the same timer can't be started twice.
-      final start = tester.widget<FilledButton>(
-        find.ancestor(
-          of: find.text('ابدأ مؤقت 15:00'),
-          matching: find.byWidgetPredicate((w) => w is FilledButton),
-        ),
+      // Started once: the start pill is gone, and the card counts the
+      // timer down with a stop pill in its place.
+      expect(find.text('ابدأ مؤقت 15:00'), findsNothing);
+      final cardClock = find.descendant(
+        of: find.byKey(const Key('timer-card-clock')),
+        matching: find.byType(DigitBox),
       );
-      expect(start.onPressed, isNull);
-
-      // The band: its step and a countdown that ticks.
+      final band = find.byKey(
+        ValueKey('timer-band-${timers.running.single.id}'),
+      );
       final countdown = find.descendant(
-        of: find.byType(DigitBox),
-        matching: find.textContaining(RegExp(r'^1[45]:\d\d$')),
+        of: band,
+        matching: find.byType(DigitBox),
       );
-      expect(countdown, findsOneWidget);
       expect(find.text('الخطوة 2'), findsOneWidget);
-      String shownClock() {
-        final w = tester.widget<Text>(countdown);
-        return w.data ?? w.textSpan!.toPlainText();
+      String clockOf(Finder f) {
+        final w = tester.widget<Text>(
+          find.descendant(of: f, matching: find.byType(Text)).first,
+        );
+        return (w.data ?? w.textSpan!.toPlainText()).replaceAll(
+          RegExp('[\u2066-\u2069\u202A-\u202E]'),
+          '',
+        );
       }
 
-      final before = shownClock();
+      // The card and the band show the same live countdown.
+      expect(clockOf(cardClock), matches(RegExp(r'^1[45]:\d\d$')));
+      expect(clockOf(cardClock), clockOf(countdown));
+      // The ring's arc is the time left: nearly the whole ring.
+      expect(
+        tester.renderObject(painter),
+        paints
+          ..arc(sweepAngle: 2 * math.pi)
+          ..something((method, args) {
+            if (method != #drawArc) return false;
+            final sweep = args[2] as double;
+            return sweep > 6 && sweep <= 2 * math.pi;
+          }),
+      );
+
+      final before = clockOf(countdown);
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 1100)),
       );
       await tester.runAsync(timers.tick);
       await tester.pump();
-      expect(shownClock(), isNot(before));
+      expect(clockOf(countdown), isNot(before));
+      expect(clockOf(cardClock), clockOf(countdown));
 
-      await tester.tap(find.byTooltip('إيقاف المؤقت'));
+      // The card's own stop pill stops it, and the card is back to its
+      // start state.
+      final cardStop = find.ancestor(
+        of: find.text('إيقاف المؤقت'),
+        matching: find.byWidgetPredicate((w) => w is FilledButton),
+      );
+      expect(cardStop, findsOneWidget);
+      expect(
+        find.descendant(
+          of: cardStop,
+          matching: find.byIcon(Icons.stop_rounded),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(cardStop);
       await settle(tester);
       expect(timers.running, isEmpty);
-      expect(countdown, findsNothing);
+      expect(band, findsNothing);
+      expect(find.text('ابدأ مؤقت 15:00'), findsOneWidget);
+      expect(clockOf(cardClock), '15:00');
+
+      // Started again, the band's own button stops it too.
+      await tester.tap(find.text('ابدأ مؤقت 15:00'));
+      await settle(tester);
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(ValueKey('timer-band-${timers.running.single.id}')),
+          matching: find.byTooltip('إيقاف المؤقت'),
+        ),
+      );
+      await settle(tester);
+      expect(timers.running, isEmpty);
+      expect(find.text('ابدأ مؤقت 15:00'), findsOneWidget);
+    });
+
+    testWidgets('a step\'s timer card goes back to its start state when its '
+        'timer ends (COOK-4, COOK-5)', (tester) async {
+      final (recipes, _) = await pumpApp(tester);
+      await _open(tester, recipes, (r) => _plain(r, steps: ['Rest 1 sec.']));
+      await _startCooking(tester);
+      await tester.tap(find.text('ابدأ مؤقت 00:01'));
+      await settle(tester);
+      expect(find.text('ابدأ مؤقت 00:01'), findsNothing);
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 1100)),
+      );
+      await tester.runAsync(timers.tick);
+      await settle(tester);
+      expect(timers.running, isEmpty);
+      expect(find.text('انتهى المؤقت: الخطوة 1'), findsOneWidget);
+      expect(find.text('ابدأ مؤقت 00:01'), findsOneWidget);
+      expect(find.text('إيقاف المؤقت'), findsNothing);
+    });
+
+    testWidgets('COOK-5: the "alerts are off" notice never covers the '
+        'bottom controls', (tester) async {
+      await pumpApp(tester, withRecipe: true);
+      alerts.allowed = false;
+      await _openKabsa(tester);
+      await _startCooking(tester);
+      await tester.tap(find.text('التالي'));
+      await settle(tester);
+      await tester.tap(find.text('ابدأ مؤقت 15:00'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      final notice = find.byType(SnackBar);
+      expect(notice, findsOneWidget);
+      expect(
+        find.descendant(of: notice, matching: find.textContaining('متوقفة')),
+        findsOneWidget,
+      );
+      final next = find.ancestor(
+        of: find.text('التالي'),
+        matching: find.byWidgetPredicate((w) => w is FilledButton),
+      );
+      final previous = find.ancestor(
+        of: find.text('السابق'),
+        matching: find.byWidgetPredicate((w) => w is OutlinedButton),
+      );
+      for (final control in [next, previous, find.byTooltip('المكونات').last]) {
+        expect(
+          tester.getRect(notice).overlaps(tester.getRect(control)),
+          isFalse,
+        );
+      }
+      // "Next" takes the tap while the notice shows.
+      final hit = tester.hitTestOnBinding(tester.getCenter(next));
+      final target = tester.renderObject(next);
+      expect(hit.path.any((e) => identical(e.target, target)), isTrue);
+      await tester.tap(next);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(notice, findsOneWidget);
+      expect(find.text('تم طبخها'), findsOneWidget);
+    });
+
+    testWidgets('LOOK-8: at 1.3x text, a long "1:30:00" fits inside the '
+        'timer card\'s ring', (tester) async {
+      final (recipes, _) = await pumpApp(tester, textScale: 1.3);
+      await _open(
+        tester,
+        recipes,
+        (r) => _plain(r, steps: ['يطهى على نار هادئة ساعة ونصف.']),
+      );
+      await _startCooking(tester);
+      final clock = find.descendant(
+        of: find.byKey(const Key('timer-card-clock')),
+        matching: find.byType(DigitBox),
+      );
+      expect(shown('1:30:00'), findsWidgets);
+      final ring = tester.getRect(
+        find
+            .ancestor(
+              of: find.byKey(const Key('timer-card-clock')),
+              matching: find.byType(CustomPaint),
+            )
+            .first,
+      );
+      // The ring's inner edge: its radius less the 10 dp stroke.
+      final inner = ring.width / 2 - 10;
+      final text = tester.getRect(clock);
+      for (final corner in [
+        text.topLeft,
+        text.topRight,
+        text.bottomLeft,
+        text.bottomRight,
+      ]) {
+        expect((corner - ring.center).distance, lessThan(inner));
+      }
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('every running timer has its band, the newest first, each '
@@ -674,6 +852,12 @@ void main() {
       ]) {
         expect(tester.getRect(f).bottom, lessThanOrEqualTo(screen - 48));
       }
+      // LOOK-8: an empty slot takes no space; the bar keeps only its own
+      // 12 dp margin over the system bar.
+      expect(
+        tester.getRect(find.byTooltip('أضف إلى الخطة')).bottom,
+        moreOrLessEquals(screen - 48 - 12),
+      );
     });
 
     testWidgets('screen readers reach the floating buttons first, then the '
@@ -799,6 +983,249 @@ void main() {
         ),
         findsWidgets,
       );
+    });
+  });
+
+  group('PR 3 fixes', () {
+    testWidgets('LOOK-13: once the cover has scrolled past, a page-coloured '
+        'bar with the title sits behind the round buttons', (tester) async {
+      await pumpApp(tester, withRecipe: true);
+      await _openKabsa(tester);
+      final bar = find.byKey(const Key('recipe-bar'));
+      Color? barColour() =>
+          (tester.widget<DecoratedBox>(bar).decoration as BoxDecoration).color;
+      final cs = Theme.of(tester.element(bar)).colorScheme;
+      // Over the cover: only the buttons float, with no bar and no title.
+      expect(barColour()!.a, 0);
+      expect(find.byKey(const Key('recipe-bar-title')), findsNothing);
+
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
+      await settle(tester);
+      expect(barColour(), cs.surface);
+      final title = find.byKey(const Key('recipe-bar-title'));
+      expect(
+        find.descendant(of: title, matching: find.text('كبسة لحم')),
+        findsOneWidget,
+      );
+      final text = tester.widget<Text>(
+        find.descendant(of: title, matching: find.byType(Text)),
+      );
+      expect(text.maxLines, 1);
+      expect(text.overflow, TextOverflow.ellipsis);
+      // The bar reaches under every button, and every button keeps its
+      // tooltip.
+      final barRect = tester.getRect(bar);
+      for (final tip in ['رجوع', 'مشاركة', 'تعديل', 'المزيد']) {
+        final button = tester.getRect(find.byTooltip(tip));
+        expect(barRect.top, lessThanOrEqualTo(button.top));
+        expect(barRect.bottom, greaterThanOrEqualTo(button.bottom));
+      }
+      // The title sits between the buttons, never under one.
+      final titleRect = tester.getRect(title);
+      expect(
+        titleRect.overlaps(tester.getRect(find.byTooltip('رجوع'))),
+        isFalse,
+      );
+      expect(
+        titleRect.overlaps(tester.getRect(find.byTooltip('المزيد'))),
+        isFalse,
+      );
+    });
+
+    testWidgets('changing the unit view or the scale never reloads the page '
+        'or moves its scroll', (tester) async {
+      await pumpApp(tester, withRecipe: true);
+      await _openKabsa(tester);
+      final views = find.byWidgetPredicate((w) => w is SegmentedPill<UnitView>);
+      final metric = find.descendant(of: views, matching: find.text('غ / مل'));
+      await reveal(tester, metric);
+      final scrollable = find.byType(Scrollable).first;
+      double offset() =>
+          tester.state<ScrollableState>(scrollable).position.pixels;
+      final before = offset();
+      expect(before, greaterThan(0));
+
+      await tester.tap(find.text('×2'));
+      await settle(tester);
+      expect(shown('2 كيلو'), findsWidgets);
+      expect(offset(), before);
+
+      await tester.tap(metric);
+      await settle(tester);
+      expect(
+        tester.widget<SegmentedPill<UnitView>>(views).value,
+        UnitView.metric,
+      );
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(offset(), before);
+    });
+
+    testWidgets('DEL-2: the Undo notice after a delete goes away by itself '
+        'after 5 s', (tester) async {
+      await pumpApp(tester, withRecipe: true);
+      await _openKabsa(tester);
+      await tester.tap(find.byTooltip('المزيد'));
+      await settle(tester);
+      await tester.tap(find.text('حذف'));
+      await settle(tester);
+      expect(find.text('حُذفت الوصفة'), findsOneWidget);
+      expect(find.text('تراجع'), findsOneWidget);
+      final notice = tester.widget<SnackBar>(find.byType(SnackBar));
+      expect(notice.duration, const Duration(seconds: 5));
+      expect(notice.persist, isFalse);
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('حُذفت الوصفة'), findsNothing);
+      expect(find.text('تراجع'), findsNothing);
+    });
+
+    testWidgets('the editor asks before leaving only when a value changed, '
+        'never after a tap or a selection', (tester) async {
+      await pumpApp(tester, withRecipe: true);
+      await _openKabsa(tester);
+      final title = find.widgetWithText(TextFormField, 'اسم الوصفة');
+      Future<void> openEditor() async {
+        await tester.tap(find.byTooltip('تعديل'));
+        await settle(tester);
+        expect(title, findsOneWidget);
+      }
+
+      Future<void> leave() async {
+        await tester.binding.handlePopRoute();
+        await settle(tester);
+      }
+
+      // Tapped into and a word selected: nothing changed, so no question.
+      await openEditor();
+      await tester.tap(title);
+      await tester.pump();
+      final field = tester.widget<EditableText>(
+        find.descendant(of: title, matching: find.byType(EditableText)),
+      );
+      field.controller.selection = const TextSelection(
+        baseOffset: 0,
+        extentOffset: 4,
+      );
+      await tester.pump();
+      await leave();
+      expect(find.text('تجاهل التعديلات؟'), findsNothing);
+      expect(title, findsNothing);
+
+      // A letter changed: it asks.
+      await openEditor();
+      await tester.enterText(title, 'كبسة لحمة');
+      await tester.pump();
+      await leave();
+      expect(find.text('تجاهل التعديلات؟'), findsOneWidget);
+
+      // Changed back to what it was: it no longer asks.
+      await tester.tap(find.text('متابعة التعديل'));
+      await settle(tester);
+      await tester.enterText(title, 'كبسة لحم');
+      await tester.pump();
+      await leave();
+      expect(find.text('تجاهل التعديلات؟'), findsNothing);
+      expect(title, findsNothing);
+    });
+
+    for (final language in [LanguagePref.en, LanguagePref.ar]) {
+      testWidgets('${language.name}: a cookbook tile reads its name and count '
+          'with the language\'s own comma (LANG-6)', (tester) async {
+        final handle = tester.ensureSemantics();
+        final (recipes, _) = await pumpApp(
+          tester,
+          language: language,
+          withRecipe: true,
+        );
+        await tester.runAsync(() => recipes.saveCookbook('حلويات'));
+        await settle(tester);
+        final en = language == LanguagePref.en;
+        await tester.tap(find.text(en ? 'Cookbooks' : 'كتب الطبخ'));
+        await settle(tester);
+        expect(
+          find.bySemanticsLabel(RegExp(en ? '^حلويات, ' : '^حلويات، ')),
+          findsOneWidget,
+        );
+        if (en) expect(find.bySemanticsLabel(RegExp('،')), findsNothing);
+        handle.dispose();
+      });
+
+      testWidgets('${language.name}: a library row reads its parts with the '
+          'language\'s own comma (LANG-6)', (tester) async {
+        final handle = tester.ensureSemantics();
+        final (_, settings) = await pumpApp(
+          tester,
+          language: language,
+          withRecipe: true,
+        );
+        await tester.runAsync(
+          () => settings.update(settings.settings.copyWith(grid: false)),
+        );
+        await settle(tester);
+        final en = language == LanguagePref.en;
+        expect(
+          find.bySemanticsLabel(RegExp(en ? r'^كبسة لحم, ' : r'^كبسة لحم، ')),
+          findsOneWidget,
+        );
+        if (en) expect(find.bySemanticsLabel(RegExp('،')), findsNothing);
+        handle.dispose();
+      });
+    }
+  });
+
+  group('SCALE-2: the scaler card', () {
+    /// The card holding the unit views, and the unit views themselves.
+    Finder unitViews() =>
+        find.byWidgetPredicate((w) => w is SegmentedPill<UnitView>);
+    Finder scaleCard() =>
+        find.ancestor(of: unitViews(), matching: find.byType(SufraCard)).first;
+
+    testWidgets('with no servings, the ×1 pill is only as wide as its factor '
+        'and shares a row with the multipliers', (tester) async {
+      final (recipes, _) = await pumpApp(tester);
+      await _open(tester, recipes, (r) => _plain(r));
+      final pill = find.byWidgetPredicate(
+        (w) => w is DigitBox && w.text.startsWith('×'),
+      );
+      expect(pill, findsOneWidget);
+      final readout = tester.getCenter(pill);
+      for (final chip in ['×½', '×2', '×3']) {
+        expect(
+          (tester.getCenter(find.text(chip)).dy - readout.dy).abs(),
+          lessThan(2),
+          reason: chip,
+        );
+      }
+      // Its sunk pill hugs the factor: far narrower than the card.
+      final box = find
+          .ancestor(of: pill, matching: find.byType(Container))
+          .first;
+      expect(
+        tester.getSize(box).width,
+        lessThan(tester.getSize(scaleCard()).width / 3),
+      );
+    });
+
+    testWidgets('at ×1 the card ends right after the unit views; «إعادة» '
+        'shows only while scaled', (tester) async {
+      await pumpApp(tester, withRecipe: true);
+      await _openKabsa(tester);
+      double gap() =>
+          tester.getBottomLeft(scaleCard()).dy -
+          tester.getBottomLeft(unitViews()).dy;
+      // The card's 12 dp padding, plus a hairline border in some looks.
+      expect(gap(), inInclusiveRange(12, 13.5));
+      expect(find.text('إعادة'), findsNothing);
+
+      await tester.tap(find.text('×2'));
+      await settle(tester);
+      expect(find.text('إعادة'), findsOneWidget);
+      expect(gap(), greaterThan(40));
+
+      await tester.tap(find.text('إعادة'));
+      await settle(tester);
+      expect(find.text('إعادة'), findsNothing);
+      expect(gap(), inInclusiveRange(12, 13.5));
     });
   });
 }

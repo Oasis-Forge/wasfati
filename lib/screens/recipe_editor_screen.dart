@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -63,6 +64,12 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
   late Set<String> _cookbooks;
   String? _photo;
   bool _dirty = false;
+
+  /// What the form loaded with: leaving asks first only when something
+  /// differs from it, never after a tap, a selection or a focus change.
+  late final List<String> _loadedTexts;
+  late final Set<String> _loadedCookbooks;
+  late final String? _loadedPhoto;
   bool _saving = false;
 
   @override
@@ -90,8 +97,11 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
         widget.initialCookbookId!,
     };
     _photo = r?.photoPath;
+    _loadedTexts = [for (final c in _controllers) c.text];
+    _loadedCookbooks = {..._cookbooks};
+    _loadedPhoto = _photo;
     for (final c in _controllers) {
-      c.addListener(_markDirty);
+      c.addListener(_refreshDirty);
     }
     _dirty = widget.imported;
   }
@@ -107,8 +117,24 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     _tags,
   ];
 
-  void _markDirty() {
-    if (!_dirty) setState(() => _dirty = true);
+  /// An unsaved import always asks (IMP-5); anything else only when a
+  /// field's text, the photo or the cookbooks differ from what it loaded.
+  bool get _changed {
+    if (widget.imported) return true;
+    if (_photo != _loadedPhoto) return true;
+    if (!setEquals(_cookbooks, _loadedCookbooks)) return true;
+    final controllers = _controllers;
+    for (var i = 0; i < controllers.length; i++) {
+      if (controllers[i].text != _loadedTexts[i]) return true;
+    }
+    return false;
+  }
+
+  /// A controller also notifies on a selection or composing change, so
+  /// this compares values rather than marking the form changed.
+  void _refreshDirty() {
+    final changed = _changed;
+    if (changed != _dirty) setState(() => _dirty = changed);
   }
 
   @override
@@ -130,7 +156,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
     if (path != null) {
       setState(() {
         _photo = path;
-        _dirty = true;
+        _dirty = _changed;
       });
     }
   }
@@ -357,7 +383,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                       onPick: _pickPhoto,
                       onRemove: () => setState(() {
                         _photo = null;
-                        _dirty = true;
+                        _dirty = _changed;
                       }),
                     ),
                     // IMP-14: an import written mostly in another language.
@@ -502,7 +528,7 @@ class _RecipeEditorScreenState extends State<RecipeEditorScreen> {
                       selected: _cookbooks,
                       onChanged: (id, on) => setState(() {
                         on ? _cookbooks.add(id) : _cookbooks.remove(id);
-                        _dirty = true;
+                        _dirty = _changed;
                       }),
                     ),
                   ],

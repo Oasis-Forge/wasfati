@@ -302,6 +302,7 @@
   "groceriesShareTitle": "قائمة المشتريات",
   "groceriesFrom": "من: {names}",
   "groceriesNameSeparator": "، ",
+  "labelSeparator": "، ",
   "groceriesAddedCount": "{count, plural, =1{أُضيف مكوّن واحد} =2{أُضيف مكوّنان} few{أُضيفت {shown} مكوّنات} many{أُضيف {shown} مكوّنًا} other{أُضيف {shown} مكوّن}}",
   "planGroceriesAlreadyAdded": "أُضيفت",
   "planGroceriesEmpty": "لا وجبات من اليوم في هذه الأيام",

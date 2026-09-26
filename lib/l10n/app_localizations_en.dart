@@ -1085,6 +1085,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groceriesNameSeparator => ', ';
 
   @override
+  String get labelSeparator => ', ';
+
+  @override
   String groceriesAddedCount(int count, String shown) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

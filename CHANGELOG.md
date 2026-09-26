@@ -12,6 +12,11 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 - Cook mode shows how far you've got on a step rail, gives each timer a bigger start button, shows running timers in a band under the rail, and puts "السابق", the ingredients and "التالي" at the bottom edge, where your thumb reaches them.
 - Recipes shared as pictures follow the new سُفرة colours, with the amounts in bold.
 
+### Fixed
+- The Undo bar now disappears after five seconds instead of staying on screen until you close it.
+- The recipe editor no longer asks to discard your changes when nothing changed.
+- The recipe page keeps its place when you change the units or the servings.
+
 ## [0.19.0] - 2026-09-26
 
 ### Added

@@ -805,7 +805,11 @@ class _RecipeTile extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: [r.title, if (meta.isNotEmpty) meta, source].join('، '),
+      label: [
+        r.title,
+        if (meta.isNotEmpty) meta,
+        source,
+      ].join(l10n.labelSeparator),
       onTap: () => openRecipe(context, r.id),
       child: ExcludeSemantics(
         child: SufraCard(
@@ -906,7 +910,11 @@ class _RecipeCard extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: [r.title, if (meta.isNotEmpty) meta, source].join('، '),
+      label: [
+        r.title,
+        if (meta.isNotEmpty) meta,
+        source,
+      ].join(l10n.labelSeparator),
       onTap: () => openRecipe(context, r.id),
       child: ExcludeSemantics(
         child: SufraCard(

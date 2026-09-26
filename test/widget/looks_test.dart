@@ -626,14 +626,15 @@ void main() {
     await settle(tester);
     await tester.tap(find.text('ابدأ مؤقت 15:00'));
     await settle(tester);
-    // The running band's countdown (LOOK-14), beside its step. The
-    // countdown may already have ticked: this clock is real.
+    // The running band's countdown (LOOK-14), beside its step, and the
+    // timer card's own. The countdown may already have ticked: this clock
+    // is real.
     expect(
       find.descendant(
         of: find.byType(DigitBox),
         matching: find.textContaining(RegExp(r'^1[45]:\d\d$')),
       ),
-      findsOneWidget,
+      findsNWidgets(2),
     );
     expect(find.text('الخطوة 2'), findsOneWidget);
     await tester.tap(find.byTooltip('إغلاق وضع الطبخ'));

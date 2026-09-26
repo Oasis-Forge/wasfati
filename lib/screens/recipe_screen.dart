@@ -137,11 +137,16 @@ class _RecipeScreenState extends State<RecipeScreen> {
     return FutureBuilder<Recipe?>(
       future: _current(context.watch<RecipesState>()),
       builder: (context, snap) {
+        // A reload after a write (a unit view, a rename, an undo) keeps
+        // showing the recipe already on screen until the new copy
+        // arrives: FutureBuilder keeps the last data while it waits, and
+        // the same page stays in the tree, so its scroll never moves.
         final r = snap.data;
-        if (snap.connectionState != ConnectionState.done || r == null) {
+        final waiting = snap.connectionState != ConnectionState.done;
+        if (r == null) {
           return Scaffold(
             appBar: AppBar(),
-            body: snap.connectionState != ConnectionState.done
+            body: waiting
                 ? const Center(child: CircularProgressIndicator())
                 : Center(child: Text(l10n.recipeMissing)),
           );
@@ -167,16 +172,25 @@ class _RecipeScreenState extends State<RecipeScreen> {
             color: Theme.of(context).colorScheme.surface,
             child: SafeArea(
               top: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _ActionBar(r, factor: _factor),
-                  // ADS-3, ADS-9: the recipe page's slot, under its action
-                  // bar, never in the scrolling content, with the slot's
-                  // own 8 dp between them. Cook mode itself has none
-                  // (COOK-1).
-                  const AdSlot(),
-                ],
+              child: LayoutBuilder(
+                builder: (context, box) {
+                  final banner = AdSlot.shows(context, box.maxWidth);
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // LOOK-8: with a banner, the bar's buttons sit the
+                      // slot's own 8 dp above it; without one, the bar
+                      // keeps its margin and nothing is reserved.
+                      _ActionBar(r, factor: _factor, bottom: banner ? 0 : 12),
+                      // ADS-3, ADS-9: the recipe page's slot, under its
+                      // action bar, never in the scrolling content, 8 dp
+                      // from it; PAY-5's small target goes under the ad
+                      // here, so no button sits between the bar and the
+                      // ad. Cook mode itself has none (COOK-1).
+                      const AdSlot(targetBelow: true),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -215,17 +229,28 @@ class _RecipePage extends StatefulWidget {
   /// How far the content sheet overlaps the photo.
   static const overlap = 30.0;
 
+  /// The pinned bar under the status bar: 12 dp, the 48 dp buttons, 8 dp.
+  static const toolbar = 68.0;
+
+  /// How far the page scrolls while the bar, then its title, fade in.
+  static const fade = 24.0;
+
+  /// The bar's title sits between the back button (16 + 48 + 8) and the
+  /// three buttons at the end (16 + 3 × 48 + 2 × 4 + 8).
+  static const titleStart = 72.0;
+  static const titleEnd = 176.0;
+
   @override
   State<_RecipePage> createState() => _RecipePageState();
 }
 
 class _RecipePageState extends State<_RecipePage> {
-  /// Whether the content sheet has scrolled up under the status bar.
-  final _covered = ValueNotifier(false);
+  /// The page's scroll offset, for the pinned bar behind the buttons.
+  final _offset = ValueNotifier(0.0);
 
   @override
   void dispose() {
-    _covered.dispose();
+    _offset.dispose();
     super.dispose();
   }
 
@@ -248,6 +273,16 @@ class _RecipePageState extends State<_RecipePage> {
         ? _RecipePage.photoHeight
         : _RecipePage.coverHeight;
     const overlap = _RecipePage.overlap;
+    const toolbar = _RecipePage.toolbar;
+    const fade = _RecipePage.fade;
+    // The scroll offset at which the sheet's top edge meets the bar's
+    // bottom: from there on, content would pass under the buttons, so the
+    // bar is solid by then. It fades in over the last stretch of photo.
+    final pinAt = heroHeight - overlap - toolbar;
+    double barOpacity(double offset) =>
+        ((offset - pinAt + fade) / fade).clamp(0.0, 1.0);
+    double titleOpacity(double offset) =>
+        ((offset - pinAt) / fade).clamp(0.0, 1.0);
     final hero = photo != null
         ? Image.file(
             photo,
@@ -258,7 +293,7 @@ class _RecipePageState extends State<_RecipePage> {
         : RecipeCover(recipeId: r.id, title: r.title);
 
     // The status bar's icons: light over a photo (under its scrim), and the
-    // theme's own over a drawn cover or once the page covers the bar.
+    // theme's own over a drawn cover or once the pinned bar is solid.
     final themed = theme.brightness == Brightness.dark
         ? Brightness.light
         : Brightness.dark;
@@ -284,9 +319,7 @@ class _RecipePageState extends State<_RecipePage> {
           sortKey: const OrdinalSortKey(2),
           child: NotificationListener<ScrollNotification>(
             onNotification: (n) {
-              if (n.depth == 0) {
-                _covered.value = n.metrics.pixels > heroHeight - overlap;
-              }
+              if (n.depth == 0) _offset.value = n.metrics.pixels;
               return false;
             },
             child: CustomScrollView(
@@ -361,24 +394,71 @@ class _RecipePageState extends State<_RecipePage> {
             ),
           ),
         ),
-        // The page colour behind the status bar once the sheet scrolls under
-        // it, and the status bar's icon style.
+        // LOOK-13: a pinned bar, as a SliverAppBar's. While the photo
+        // shows, only the round buttons float over it; once the page
+        // reaches them, the page colour (and the title, on one line) sits
+        // behind the same buttons, so nothing ever scrolls under a bare
+        // button. It covers the status bar too, and sets its icon style.
         PositionedDirectional(
           top: 0,
           start: 0,
           end: 0,
-          height: top,
-          child: IgnorePointer(
-            child: ValueListenableBuilder<bool>(
-              valueListenable: _covered,
-              builder: (context, covered, _) =>
-                  AnnotatedRegion<SystemUiOverlayStyle>(
-                    value: statusBar(covered),
-                    child: ColoredBox(
-                      color: covered ? cs.surface : Colors.transparent,
+          height: top + toolbar,
+          child: ValueListenableBuilder<double>(
+            valueListenable: _offset,
+            builder: (context, offset, _) {
+              final opacity = barOpacity(offset);
+              final titleShown = titleOpacity(offset);
+              return AnnotatedRegion<SystemUiOverlayStyle>(
+                value: statusBar(opacity >= 0.5),
+                // A solid bar takes the taps aimed at it, never the content
+                // hidden under it; a clear one lets them through.
+                child: IgnorePointer(
+                  ignoring: opacity < 1,
+                  child: DecoratedBox(
+                    key: const Key('recipe-bar'),
+                    decoration: BoxDecoration(
+                      color: cs.surface.withValues(alpha: opacity),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: cs.outlineVariant.withValues(
+                            alpha: titleShown,
+                          ),
+                          width: 0.5,
+                        ),
+                      ),
                     ),
+                    child: titleShown == 0
+                        ? const SizedBox.expand()
+                        : Padding(
+                            padding: EdgeInsetsDirectional.fromSTEB(
+                              _RecipePage.titleStart,
+                              top + 12,
+                              _RecipePage.titleEnd,
+                              toolbar - 12 - 48,
+                            ),
+                            // The page's own heading names it for screen
+                            // readers; this is only its echo.
+                            child: ExcludeSemantics(
+                              child: Opacity(
+                                opacity: titleShown,
+                                child: Align(
+                                  alignment: AlignmentDirectional.centerStart,
+                                  child: ContentText(
+                                    r.title,
+                                    key: const Key('recipe-bar-title'),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.titleMedium,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                   ),
-            ),
+                ),
+              );
+            },
           ),
         ),
         // LOOK-13: round floating buttons, back at the start, share, edit
@@ -1066,9 +1146,13 @@ class _NotesCard extends StatelessWidget {
 /// الطبخ" (COOK-1: only with a step), add to plan (PLAN-3) and add to
 /// groceries (GRO-2, only with an ingredient).
 class _ActionBar extends StatelessWidget {
-  const _ActionBar(this.r, {required this.factor});
+  const _ActionBar(this.r, {required this.factor, required this.bottom});
   final Recipe r;
   final Rational factor;
+
+  /// The margin under the buttons: none over a banner, whose slot keeps
+  /// its own 8 dp above the ad (LOOK-8, ADS-9).
+  final double bottom;
 
   @override
   Widget build(BuildContext context) {
@@ -1080,7 +1164,7 @@ class _ActionBar extends StatelessWidget {
     return ColoredBox(
       color: cs.surface,
       child: Padding(
-        padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 12),
+        padding: EdgeInsetsDirectional.fromSTEB(16, 8, 16, bottom),
         child: Row(
           children: [
             if (hasSteps)
@@ -1415,6 +1499,7 @@ Future<void> openShareRecipe(
       ..showSnackBar(
         SnackBar(
           content: Text(l10n.shareTooLong),
+          persist: false,
           action: SnackBarAction(
             label: l10n.shareAsText,
             onPressed: () => unawaited(shareAsText()),

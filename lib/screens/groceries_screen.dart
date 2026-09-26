@@ -65,6 +65,7 @@ class GroceriesScreen extends StatelessWidget {
               ),
             ),
             duration: const Duration(seconds: 5),
+            persist: false,
             action: ids.isEmpty
                 ? null
                 : SnackBarAction(
@@ -588,6 +589,7 @@ Future<void> _removeRecipe(
       SnackBar(
         content: Text(l10n.groceriesRecipeRemoved(title)),
         duration: const Duration(seconds: 5),
+        persist: false,
         action: SnackBarAction(
           label: l10n.undo,
           onPressed: () =>

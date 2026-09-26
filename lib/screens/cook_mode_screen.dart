@@ -266,6 +266,76 @@ class _CookModeScreenState extends State<CookModeScreen>
             : Brightness.light,
       ),
       child: Scaffold(
+        // LOOK-14: three large controls where a wet thumb reaches them.
+        // In right-to-left, "التالي" is on the left and points left.
+        // "Next" stays the widest; the split is a little less lopsided
+        // than the mockup's 1:1.6, which is 390 dp wide, so "Previous"
+        // keeps its room on a 360 dp phone, and both labels shrink to
+        // fit rather than clip (LOOK-7's rule, LOOK-8). They're the
+        // Scaffold's bottom bar, so a notice (COOK-5's "alerts are off",
+        // "marked as cooked") floats above them and never covers them.
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsetsDirectional.fromSTEB(gutter, 12, gutter, 16),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 10,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 56),
+                      padding: const EdgeInsetsDirectional.symmetric(
+                        horizontal: 8,
+                      ),
+                    ),
+                    onPressed: _page > 0 ? () => _go(-1) : null,
+                    icon: const Icon(Icons.chevron_left),
+                    label: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(l10n.previousStep, maxLines: 1),
+                    ),
+                  ),
+                ),
+                if (hasIngredients) ...[
+                  const SizedBox(width: 12),
+                  RoundIconButton(
+                    size: 56,
+                    icon: ingredientsIcon,
+                    tooltip: l10n.ingredients,
+                    onPressed: _showIngredients,
+                  ),
+                ],
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 14,
+                  child: DecoratedBox(
+                    decoration: ShapeDecoration(
+                      shape: const StadiumBorder(),
+                      shadows: _page < _last
+                          ? Decor.of(context).floatShadow
+                          : const [],
+                    ),
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsetsDirectional.symmetric(
+                          horizontal: 8,
+                        ),
+                      ),
+                      onPressed: _page < _last ? () => _go(1) : null,
+                      iconAlignment: IconAlignment.end,
+                      icon: const Icon(Icons.chevron_right),
+                      label: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(l10n.nextStep, maxLines: 1),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
         body: SafeArea(
           child: Column(
             children: [
@@ -364,71 +434,6 @@ class _CookModeScreenState extends State<CookModeScreen>
                             ),
                     ),
                   ),
-                ),
-              ),
-              // LOOK-14: three large controls where a wet thumb reaches them.
-              // In right-to-left, "التالي" is on the left and points left.
-              // "Next" stays the widest; the split is a little less lopsided
-              // than the mockup's 1:1.6, which is 390 dp wide, so "Previous"
-              // keeps its room on a 360 dp phone, and both labels shrink to
-              // fit rather than clip (LOOK-7's rule, LOOK-8).
-              Padding(
-                padding: EdgeInsetsDirectional.fromSTEB(gutter, 12, gutter, 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 10,
-                      child: OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(0, 56),
-                          padding: const EdgeInsetsDirectional.symmetric(
-                            horizontal: 8,
-                          ),
-                        ),
-                        onPressed: _page > 0 ? () => _go(-1) : null,
-                        icon: const Icon(Icons.chevron_left),
-                        label: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(l10n.previousStep, maxLines: 1),
-                        ),
-                      ),
-                    ),
-                    if (hasIngredients) ...[
-                      const SizedBox(width: 12),
-                      RoundIconButton(
-                        size: 56,
-                        icon: ingredientsIcon,
-                        tooltip: l10n.ingredients,
-                        onPressed: _showIngredients,
-                      ),
-                    ],
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 14,
-                      child: DecoratedBox(
-                        decoration: ShapeDecoration(
-                          shape: const StadiumBorder(),
-                          shadows: _page < _last
-                              ? Decor.of(context).floatShadow
-                              : const [],
-                        ),
-                        child: FilledButton.icon(
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsetsDirectional.symmetric(
-                              horizontal: 8,
-                            ),
-                          ),
-                          onPressed: _page < _last ? () => _go(1) : null,
-                          iconAlignment: IconAlignment.end,
-                          icon: const Icon(Icons.chevron_right),
-                          label: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(l10n.nextStep, maxLines: 1),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ],
@@ -551,6 +556,7 @@ class _StepPage extends StatelessWidget {
     final s = context.watch<SettingsState>();
     final theme = Theme.of(context);
     final gutter = Decor.of(context).gutter;
+    final timers = context.watch<TimersState>();
     return SingleChildScrollView(
       padding: EdgeInsetsDirectional.fromSTEB(gutter, 20, gutter, 16),
       child: Column(
@@ -575,13 +581,17 @@ class _StepPage extends StatelessWidget {
             const SizedBox(height: 20),
             _TimerCard(
               duration: d,
-              running: context.watch<TimersState>().running.any(
-                (t) =>
-                    t.recipeId == recipeId &&
-                    t.step == index + 1 &&
-                    t.total == d,
-              ),
+              timer: timers.running
+                  .where(
+                    (t) =>
+                        t.recipeId == recipeId &&
+                        t.step == index + 1 &&
+                        t.total == d,
+                  )
+                  .lastOrNull,
+              now: timers.now(),
               onStart: () => onTimer(d),
+              onStop: timers.cancel,
             ),
           ],
         ],
@@ -597,17 +607,35 @@ String _clock(SettingsState s, Duration d) {
 
 /// COOK-4, LOOK-14: one duration in the step as a large timer — a ring,
 /// the time at 40/700 laid out left to right, and "ابدأ مؤقت …" as the
-/// primary pill (disabled while that same timer runs).
+/// primary pill. While that same timer runs, the card counts it down —
+/// the ring's arc is the time left — and its pill stops it; when it ends,
+/// the card is back to its start state.
 class _TimerCard extends StatelessWidget {
   const _TimerCard({
     required this.duration,
-    required this.running,
+    required this.timer,
+    required this.now,
     required this.onStart,
+    required this.onStop,
   });
 
   final Duration duration;
-  final bool running;
+
+  /// This card's own timer while it runs; null otherwise.
+  final CookTimer? timer;
+  final DateTime now;
   final VoidCallback onStart;
+  final ValueChanged<CookTimer> onStop;
+
+  /// The ring's box, and the stroke drawn inside its edge.
+  static const ring = 150.0;
+  static const stroke = 10.0;
+
+  /// The clock's box: 106 × 48 keeps its corners about 7 dp inside the
+  /// ring's inner edge (radius 65), and the text scales down to fit it at
+  /// any text size (LOOK-8), so a long "1:30:00" never touches the ring.
+  static const clockWidth = 106.0;
+  static const clockHeight = 48.0;
 
   @override
   Widget build(BuildContext context) {
@@ -615,31 +643,43 @@ class _TimerCard extends StatelessWidget {
     final s = context.watch<SettingsState>();
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final clock = _clock(s, duration);
+    final t = timer;
+    final remaining = t?.remaining(now) ?? duration;
+    final left = remaining.isNegative ? Duration.zero : remaining;
+    // The same clock as its band's, so the two never disagree.
+    final clock = _clock(s, left);
+    final total = t?.total.inMilliseconds ?? 0;
     return SufraCard(
       radius: 28,
       padding: const EdgeInsetsDirectional.all(20),
       child: Column(
         children: [
           SizedBox.square(
-            dimension: 150,
+            dimension: ring,
             child: CustomPaint(
               painter: _RingPainter(
                 track: Decor.of(context).sunk,
                 arc: cs.primary,
+                left: t == null || total == 0
+                    ? null
+                    : (left.inMilliseconds / total).clamp(0.0, 1.0),
               ),
               child: Center(
                 child: SizedBox(
-                  width: 118,
+                  key: const Key('timer-card-clock'),
+                  width: clockWidth,
+                  height: clockHeight,
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: Text(
+                    // LOOK-5: the countdown ticks every second; boxed digits
+                    // keep it from twitching as it does.
+                    child: DigitBox(
                       clock,
                       textDirection: TextDirection.ltr,
                       style: theme.textTheme.displaySmall?.copyWith(
                         fontSize: 40,
                         fontWeight: FontWeight.w700,
-                        height: 1.5,
+                        height: 1.2,
                       ),
                     ),
                   ),
@@ -650,12 +690,27 @@ class _TimerCard extends StatelessWidget {
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
-            child: FilledButton.icon(
-              style: FilledButton.styleFrom(minimumSize: const Size(0, 52)),
-              onPressed: running ? null : onStart,
-              icon: const Icon(Icons.timer_outlined),
-              label: Text(l10n.timerStart(clock)),
-            ),
+            child: t == null
+                ? FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(0, 52),
+                    ),
+                    onPressed: onStart,
+                    icon: const Icon(Icons.timer_outlined),
+                    label: Text(l10n.timerStart(clock)),
+                  )
+                : Tooltip(
+                    message: l10n.timerStop,
+                    excludeFromSemantics: true,
+                    child: FilledButton.tonalIcon(
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(0, 52),
+                      ),
+                      onPressed: () => onStop(t),
+                      icon: const Icon(Icons.stop_rounded),
+                      label: Text(l10n.timerStop),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -663,26 +718,33 @@ class _TimerCard extends StatelessWidget {
   }
 }
 
-/// The timer card's ring: a `sunk` track with the accent's starting mark.
+/// The timer card's ring: a `sunk` track and, in the accent, the starting
+/// mark — or, while its timer runs, an arc for the time [left] (a fraction
+/// of the whole), from the top.
 class _RingPainter extends CustomPainter {
-  const _RingPainter({required this.track, required this.arc});
+  const _RingPainter({required this.track, required this.arc, this.left});
   final Color track;
   final Color arc;
+  final double? left;
 
   @override
   void paint(Canvas canvas, Size size) {
-    const stroke = 10.0;
+    const stroke = _TimerCard.stroke;
     final rect = (Offset.zero & size).deflate(stroke / 2);
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = stroke
       ..strokeCap = StrokeCap.round;
     canvas.drawArc(rect, 0, 2 * math.pi, false, paint..color = track);
-    canvas.drawArc(rect, -math.pi / 2, 0.08, false, paint..color = arc);
+    final sweep = left == null ? 0.08 : 2 * math.pi * left!;
+    if (sweep > 0) {
+      canvas.drawArc(rect, -math.pi / 2, sweep, false, paint..color = arc);
+    }
   }
 
   @override
-  bool shouldRepaint(_RingPainter old) => old.track != track || old.arc != arc;
+  bool shouldRepaint(_RingPainter old) =>
+      old.track != track || old.arc != arc || old.left != left;
 }
 
 /// Running timers, from any recipe, as bands, and the ones that just ended,

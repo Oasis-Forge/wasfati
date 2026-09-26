@@ -140,11 +140,16 @@ class _ScaleCard extends StatelessWidget {
               color: decor.sunk,
               borderRadius: BorderRadius.circular(999),
             ),
-            alignment: Alignment.center,
-            child: DigitBox(
-              times,
-              textDirection: TextDirection.ltr,
-              style: theme.textTheme.titleSmall,
+            // Centred in its 48 dp, but only as wide as the factor: a plain
+            // `alignment` would stretch the pill across the Wrap's width and
+            // push the chips onto a second row (SCALE-2).
+            child: Align(
+              widthFactor: 1,
+              child: DigitBox(
+                times,
+                textDirection: TextDirection.ltr,
+                style: theme.textTheme.titleSmall,
+              ),
             ),
           );
 
@@ -191,22 +196,18 @@ class _ScaleCard extends StatelessWidget {
             value: r.unitView,
             onChanged: (v) => context.read<RecipesState>().setUnitView(r.id, v),
           ),
-          // SCALE-2's "إعادة" back to ×1, under the unit views. Its line is
-          // kept at ×1 too (hidden, not tappable, not read out), so showing
-          // it never changes the card's height or the row above.
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: Visibility(
-              visible: factor != Rational.one,
-              maintainSize: true,
-              maintainAnimation: true,
-              maintainState: true,
+          // SCALE-2's "إعادة" back to ×1, under the unit views, only while
+          // scaled: at ×1 the card ends at the unit views, with no blank
+          // band. It sits below the row above, so showing it never moves
+          // the chip just tapped.
+          if (factor != Rational.one)
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
               child: TextButton(
                 onPressed: () => onFactor(Rational.one),
                 child: Text(l10n.scaleReset),
               ),
             ),
-          ),
           if (unscaled > 0) ...[
             const SizedBox(height: 10),
             // SCALE-4: never silently skips a line — the header says how

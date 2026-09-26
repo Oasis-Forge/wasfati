@@ -156,6 +156,7 @@ class _PlanScreenState extends State<PlanScreen> {
             l10n.planClearedCount(ids.length, settings.number(ids.length)),
           ),
           duration: const Duration(seconds: 5),
+          persist: false,
           action: ids.isEmpty
               ? null
               : SnackBarAction(
@@ -782,6 +783,7 @@ Future<void> _entryMenu(BuildContext context, PlanEntry entry) async {
             SnackBar(
               content: Text(l10n.planRemoved),
               duration: const Duration(seconds: 5),
+              persist: false,
               action: SnackBarAction(
                 label: l10n.undo,
                 onPressed: () => plan.restore([entry.id]),
