@@ -197,6 +197,40 @@ void main() {
     });
   });
 
+  group('ORG-6: LibraryQuery.hasFilters / clearFilters', () {
+    test('hasFilters is false only with none of the five filters set', () {
+      expect(const LibraryQuery().hasFilters, isFalse);
+      expect(const LibraryQuery(text: 'كبسة').hasFilters, isFalse);
+      expect(const LibraryQuery(cookbookId: 'b1').hasFilters, isTrue);
+      expect(const LibraryQuery(tag: 'رمضان').hasFilters, isTrue);
+      expect(const LibraryQuery(source: SourceType.website).hasFilters, isTrue);
+      expect(const LibraryQuery(time: TimeBucket.under30).hasFilters, isTrue);
+      expect(const LibraryQuery(photoOnly: true).hasFilters, isTrue);
+    });
+
+    test('clearFilters drops every filter, including cookbookId, but keeps '
+        'the search text and sort', () {
+      const q = LibraryQuery(
+        text: 'كبسة',
+        sort: LibrarySort.az,
+        cookbookId: 'b1',
+        tag: 'رمضان',
+        source: SourceType.website,
+        time: TimeBucket.under30,
+        photoOnly: true,
+      );
+      final cleared = q.clearFilters();
+      expect(cleared.text, 'كبسة');
+      expect(cleared.sort, LibrarySort.az);
+      expect(cleared.hasFilters, isFalse);
+      expect(cleared.cookbookId, isNull);
+      expect(cleared.tag, isNull);
+      expect(cleared.source, isNull);
+      expect(cleared.time, isNull);
+      expect(cleared.photoOnly, isFalse);
+    });
+  });
+
   test('ORG-2 tags box: commas of both kinds, duplicates dropped', () {
     expect(parseTags('حار، رمضان, سريع ،  حار ,,'), ['حار', 'رمضان', 'سريع']);
   });

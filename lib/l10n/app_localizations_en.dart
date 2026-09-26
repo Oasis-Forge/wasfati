@@ -331,6 +331,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tabAllRecipes => 'All recipes';
 
   @override
+  String get libraryFilteredHeading => 'Filtered results';
+
+  @override
+  String get greetingMorning => 'Good morning';
+
+  @override
+  String get greetingEvening => 'Good evening';
+
+  @override
+  String get libraryQuestion => 'What shall we cook today?';
+
+  @override
   String get tabCookbooks => 'Cookbooks';
 
   @override
@@ -381,6 +393,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get filterPhoto => 'Has photo';
 
   @override
+  String get filterPhotoHeading => 'Photo';
+
+  @override
+  String get filterAction => 'Filter';
+
+  @override
+  String get filterActiveHint => 'Filter active';
+
+  @override
   String get sourceWritten => 'Written by me';
 
   @override
@@ -388,6 +409,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sourceSocial => 'Social media';
+
+  @override
+  String get sourceTiktok => 'TikTok';
+
+  @override
+  String get sourceInstagram => 'Instagram';
+
+  @override
+  String get sourceYoutube => 'YouTube';
 
   @override
   String get sourcePhoto => 'Photo';
@@ -508,6 +538,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get startCooking => 'Start cooking';
+
+  @override
+  String get continueCooking => 'Continue cooking';
+
+  @override
+  String get continueCookingAction => 'Continue';
 
   @override
   String stepOf(String n, String total) {

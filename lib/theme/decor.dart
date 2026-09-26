@@ -42,6 +42,8 @@ class Decor extends ThemeExtension<Decor> {
     required this.rowHairline,
     required this.groupedRowFill,
     required this.ornament,
+    required this.photoCardRadius,
+    required this.photoScrim,
   });
 
   /// An inset surface, darker/lighter than [ColorScheme.surface]: the
@@ -111,6 +113,16 @@ class Decor extends ThemeExtension<Decor> {
   /// kept only for `Decor.copyWith`/`Decor.lerp`'s own tests.
   final EmptyOrnament ornament;
 
+  /// LOOK-3/LOOK-12: the library's photo-forward grid card and a cookbook
+  /// tile's collage share this radius (design spec §1: 24dp) — read here
+  /// rather than each screen repeating the literal.
+  final double photoCardRadius;
+
+  /// LOOK-3: the photo card's bottom scrim over its title — a gradient to
+  /// this near-black at 78% alpha (design spec §1) — shared by the same two
+  /// cards.
+  final Color photoScrim;
+
   static Decor of(BuildContext context) =>
       Theme.of(context).extension<Decor>()!;
 
@@ -143,6 +155,8 @@ class Decor extends ThemeExtension<Decor> {
     bool clearRowHairline = false,
     Color? groupedRowFill,
     EmptyOrnament? ornament,
+    double? photoCardRadius,
+    Color? photoScrim,
   }) => Decor(
     sunk: sunk ?? this.sunk,
     cardHairline: clearCardHairline
@@ -170,6 +184,8 @@ class Decor extends ThemeExtension<Decor> {
     rowHairline: clearRowHairline ? null : (rowHairline ?? this.rowHairline),
     groupedRowFill: groupedRowFill ?? this.groupedRowFill,
     ornament: ornament ?? this.ornament,
+    photoCardRadius: photoCardRadius ?? this.photoCardRadius,
+    photoScrim: photoScrim ?? this.photoScrim,
   );
 
   @override
@@ -216,6 +232,10 @@ class Decor extends ThemeExtension<Decor> {
       groupedRowFill:
           Color.lerp(groupedRowFill, other.groupedRowFill, t) ?? groupedRowFill,
       ornament: t < 0.5 ? ornament : other.ornament,
+      photoCardRadius:
+          lerpDouble(photoCardRadius, other.photoCardRadius, t) ??
+          photoCardRadius,
+      photoScrim: Color.lerp(photoScrim, other.photoScrim, t) ?? photoScrim,
     );
   }
 }

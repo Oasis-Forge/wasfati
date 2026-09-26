@@ -638,6 +638,30 @@ abstract class AppLocalizations {
   /// **'All recipes'**
   String get tabAllRecipes;
 
+  /// The library home's section heading when a sheet-only filter (source, time or cookbook) narrows the results but no single cookbook name applies.
+  ///
+  /// In en, this message translates to:
+  /// **'Filtered results'**
+  String get libraryFilteredHeading;
+
+  /// No description provided for @greetingMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning'**
+  String get greetingMorning;
+
+  /// No description provided for @greetingEvening.
+  ///
+  /// In en, this message translates to:
+  /// **'Good evening'**
+  String get greetingEvening;
+
+  /// No description provided for @libraryQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'What shall we cook today?'**
+  String get libraryQuestion;
+
   /// ORG-1. Library tab.
   ///
   /// In en, this message translates to:
@@ -734,6 +758,24 @@ abstract class AppLocalizations {
   /// **'Has photo'**
   String get filterPhoto;
 
+  /// A section heading in the library filter sheet, above the standalone "has photo" FilterChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get filterPhotoHeading;
+
+  /// No description provided for @filterAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get filterAction;
+
+  /// An accessibility label on the small dot shown on the search row's filter circle when a filter picked in the sheet has no quick chip of its own.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter active'**
+  String get filterActiveHint;
+
   /// REC-3 source type.
   ///
   /// In en, this message translates to:
@@ -751,6 +793,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Social media'**
   String get sourceSocial;
+
+  /// No description provided for @sourceTiktok.
+  ///
+  /// In en, this message translates to:
+  /// **'TikTok'**
+  String get sourceTiktok;
+
+  /// No description provided for @sourceInstagram.
+  ///
+  /// In en, this message translates to:
+  /// **'Instagram'**
+  String get sourceInstagram;
+
+  /// No description provided for @sourceYoutube.
+  ///
+  /// In en, this message translates to:
+  /// **'YouTube'**
+  String get sourceYoutube;
 
   /// REC-3 source type.
   ///
@@ -937,6 +997,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start cooking'**
   String get startCooking;
+
+  /// No description provided for @continueCooking.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue cooking'**
+  String get continueCooking;
+
+  /// No description provided for @continueCookingAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continueCookingAction;
 
   /// COOK-2. Cook mode progress; numbers already in the chosen digit style.
   ///

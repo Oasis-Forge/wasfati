@@ -250,9 +250,10 @@ class _CookModeScreenState extends State<CookModeScreen>
                     itemCount: _steps.length + 1,
                     onPageChanged: (p) {
                       setState(() => _page = p);
-                      context.read<RecipesState>().repository.setCookPage(
+                      context.read<RecipesState>().setCookPage(
                         widget.recipe.id,
                         p,
+                        _steps.length,
                       );
                     },
                     itemBuilder: (context, i) => i == _last

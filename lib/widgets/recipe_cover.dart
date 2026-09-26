@@ -64,14 +64,21 @@ class RecipeCover extends StatelessWidget {
                     color: dark.withValues(alpha: 0.18),
                   ),
                 ),
-                Center(
-                  child: Text(
-                    letter,
-                    style: TextStyle(
-                      fontFamily: 'IBMPlexSansArabic',
-                      fontWeight: FontWeight.w700,
-                      color: dark,
-                      fontSize: (side * 0.4).clamp(14, 72),
+                // The letter is decoration, the same as the star tile
+                // behind it — never a screen reader's first word for a
+                // recipe card or row (should-fix: it was reading before
+                // the title, the source and even the card's own button
+                // role).
+                ExcludeSemantics(
+                  child: Center(
+                    child: Text(
+                      letter,
+                      style: TextStyle(
+                        fontFamily: 'IBMPlexSansArabic',
+                        fontWeight: FontWeight.w700,
+                        color: dark,
+                        fontSize: (side * 0.4).clamp(14, 72),
+                      ),
                     ),
                   ),
                 ),

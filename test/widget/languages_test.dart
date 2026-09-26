@@ -27,6 +27,12 @@ AppLocalizations _l10n(LanguagePref language) =>
 Finder _navTab(IconData icon) =>
     find.descendant(of: find.byType(NavPill), matching: find.byIcon(icon));
 
+/// Scopes a text lookup to an open modal sheet, since the library's own
+/// quick-chip row underneath (the same labels: بصورة، أقل من ٣٠ دقيقة،
+/// مواقع التواصل) stays in the tree while the sheet is open.
+Finder _inSheet(String text) =>
+    find.descendant(of: find.byType(BottomSheet), matching: find.text(text));
+
 /// Which way the icon inside [button] is drawn: an icon that matches the
 /// text direction is flipped in right-to-left text.
 bool _pointsRight(WidgetTester tester, Finder button) {
@@ -167,21 +173,16 @@ void main() {
     ) async {
       final l = _l10n(LanguagePref.ar);
       await pumpApp(tester, digits: DigitStyle.arabic, withRecipe: true);
-      // The filter chips scroll sideways; "الوقت" is past the first few.
-      await tester.scrollUntilVisible(
-        find.text(l.filterTime),
-        150,
-        scrollable: find
-            .ancestor(
-              of: find.byType(FilterChip).first,
-              matching: find.byType(Scrollable),
-            )
-            .first,
-      );
+      // LOOK-12: every ORG-6 filter, including total time, lives in one
+      // sheet behind the search row's accent circle now.
+      await tester.tap(find.byTooltip(l.filterAction));
       await settle(tester);
-      await tester.tap(find.text(l.filterTime));
-      await settle(tester);
-      expect(find.text('أقل من ٣٠ دقيقة'), findsOneWidget);
+      // The quick-chip row keeps its own "أقل من ٣٠ دقيقة" chip beneath the
+      // sheet (both scroll in the same tree), so it's scoped to the sheet
+      // itself here (should-fix: `findsWidgets` let the quick chip alone
+      // satisfy this without the sheet's own Arabic-digit chip rendering
+      // at all).
+      expect(_inSheet('أقل من ٣٠ دقيقة'), findsOneWidget);
       expect(find.text('$_lri٣٠–٦٠$_pdi دقيقة'), findsOneWidget);
       expect(find.text('أكثر من ساعة'), findsOneWidget);
     });

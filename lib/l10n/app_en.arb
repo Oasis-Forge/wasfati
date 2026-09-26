@@ -438,6 +438,13 @@
   "@tabAllRecipes": {
     "description": "ORG-1. Library tab."
   },
+  "libraryFilteredHeading": "Filtered results",
+  "@libraryFilteredHeading": {
+    "description": "The library home's section heading when a sheet-only filter (source, time or cookbook) narrows the results but no single cookbook name applies."
+  },
+  "greetingMorning": "Good morning",
+  "greetingEvening": "Good evening",
+  "libraryQuestion": "What shall we cook today?",
   "tabCookbooks": "Cookbooks",
   "@tabCookbooks": {
     "description": "ORG-1. Library tab."
@@ -507,6 +514,15 @@
   "@filterPhoto": {
     "description": "ORG-6. Filter chip."
   },
+  "filterPhotoHeading": "Photo",
+  "@filterPhotoHeading": {
+    "description": "A section heading in the library filter sheet, above the standalone \"has photo\" FilterChip."
+  },
+  "filterAction": "Filter",
+  "filterActiveHint": "Filter active",
+  "@filterActiveHint": {
+    "description": "An accessibility label on the small dot shown on the search row's filter circle when a filter picked in the sheet has no quick chip of its own."
+  },
   "sourceWritten": "Written by me",
   "@sourceWritten": {
     "description": "REC-3 source type."
@@ -519,6 +535,9 @@
   "@sourceSocial": {
     "description": "REC-3 source type."
   },
+  "sourceTiktok": "TikTok",
+  "sourceInstagram": "Instagram",
+  "sourceYoutube": "YouTube",
   "sourcePhoto": "Photo",
   "@sourcePhoto": {
     "description": "REC-3 source type."
@@ -685,6 +704,8 @@
   "@startCooking": {
     "description": "COOK-1. Button on the recipe page."
   },
+  "continueCooking": "Continue cooking",
+  "continueCookingAction": "Continue",
   "stepOf": "Step {n} of {total}",
   "@stepOf": {
     "description": "COOK-2. Cook mode progress; numbers already in the chosen digit style.",

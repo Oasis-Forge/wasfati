@@ -269,12 +269,17 @@ void main() {
       // The library grid.
       await tester.tap(find.byTooltip('عرض شبكي'));
       await settle(tester);
-      expect(find.byType(GridView), findsOneWidget);
+      expect(find.byType(SliverGrid), findsOneWidget);
       expect(find.byIcon(Icons.broken_image), findsNothing);
       expect(tester.takeException(), isNull);
 
-      // The recipe page.
-      await tester.tap(shown('كبسة لحم'));
+      // The recipe page. should-fix: the grid card's own ripple/focus
+      // layer now sits on top of the whole card (a `Positioned.fill`
+      // `InkWell` above the photo, so the ripple is visible instead of
+      // hidden underneath it) — the same tap, at the title's own
+      // coordinates, now lands on that layer rather than the title's
+      // `RenderParagraph` itself, which is harmless but otherwise warns.
+      await tester.tap(shown('كبسة لحم'), warnIfMissed: false);
       await settle(tester);
       expect(find.byIcon(Icons.broken_image), findsNothing);
       expect(tester.takeException(), isNull);

@@ -60,6 +60,7 @@ class WasfatiApp extends StatelessWidget {
     required this.purchases,
     required this.ads,
     required this.reviewPrompt,
+    this.libraryClock,
   });
 
   final RecipesState recipes;
@@ -125,6 +126,11 @@ class WasfatiApp extends StatelessWidget {
   /// one only in `main.dart`, a counting fake in tests).
   final ReviewPrompt reviewPrompt;
 
+  /// LOOK-12: the library home's time-of-day greeting reads this instead of
+  /// the device's wall clock directly, so a test can fix the time of day.
+  /// Null (the default, real installs) means the real `DateTime.now`.
+  final DateTime Function()? libraryClock;
+
   static final navigatorKey = GlobalKey<NavigatorState>();
 
   @override
@@ -164,7 +170,7 @@ class WasfatiApp extends StatelessWidget {
           // next launch. A Settings change already rebuilds it through
           // Consumer<SettingsState>; this covers the other half — the device
           // language changing underneath a running app on "حسب الجهاز".
-          child: const _LocaleObserver(),
+          child: _LocaleObserver(libraryClock: libraryClock),
         ),
       ),
     );
@@ -297,7 +303,8 @@ class _PayingSyncState extends State<_PayingSync> with WidgetsBindingObserver {
 /// running, not by anything that stops at the Settings screen's own
 /// language change).
 class _LocaleObserver extends StatefulWidget {
-  const _LocaleObserver();
+  const _LocaleObserver({this.libraryClock});
+  final DateTime Function()? libraryClock;
 
   @override
   State<_LocaleObserver> createState() => _LocaleObserverState();
@@ -354,7 +361,7 @@ class _LocaleObserverState extends State<_LocaleObserver>
       navigatorKey: WasfatiApp.navigatorKey,
       builder: (context, child) =>
           ShareRouter(navigator: WasfatiApp.navigatorKey, child: child!),
-      home: const _FirstRunGate(),
+      home: _FirstRunGate(clock: widget.libraryClock),
     ),
   );
 }
@@ -364,13 +371,14 @@ class _LocaleObserverState extends State<_LocaleObserver>
 /// An upgraded install is already complete (schema step 7), so it goes
 /// straight to the library.
 class _FirstRunGate extends StatelessWidget {
-  const _FirstRunGate();
+  const _FirstRunGate({this.clock});
+  final DateTime Function()? clock;
 
   @override
   Widget build(BuildContext context) {
     final done = context.select<SettingsState, bool>(
       (s) => s.settings.firstRunComplete,
     );
-    return done ? const HomeScreen() : const FirstRunFlow();
+    return done ? HomeScreen(clock: clock) : const FirstRunFlow();
   }
 }

@@ -76,6 +76,22 @@ void main() {
     expect(entries.single.tags, ['عزايم']);
   });
 
+  test(
+    'the library index carries sourceUrl and servings (REC-3, REC-7)',
+    () async {
+      final (repo, _, _) = await testRepo();
+      final saved = await repo.save(
+        kabsa(
+          repo,
+          title: 'مصدر',
+        ).copyWith(sourceUrl: 'https://www.fatafeat.com/recipe/9', servings: 8),
+      );
+      final entry = (await repo.library()).firstWhere((e) => e.id == saved.id);
+      expect(entry.sourceUrl, 'https://www.fatafeat.com/recipe/9');
+      expect(entry.servings, 8);
+    },
+  );
+
   test('mark as cooked counts and dates it (REC-9, COOK-6)', () async {
     final (repo, clock, _) = await testRepo();
     final r = await repo.save(kabsa(repo));
@@ -89,10 +105,32 @@ void main() {
 
   test('cook mode resumes on its page within 12 hours (COOK-6)', () async {
     final (repo, clock, _) = await testRepo();
-    await repo.setCookPage('a', 3);
+    await repo.setCookPage('a', 3, 8);
     clock.advance(const Duration(hours: 11));
     expect(await repo.cookPage('a'), 3);
     clock.advance(const Duration(hours: 2));
     expect(await repo.cookPage('a'), isNull);
+  });
+
+  test('the latest resumable session is the most recently left one, never a '
+      'finished or expired one (LOOK-12, COOK-6)', () async {
+    final (repo, clock, _) = await testRepo();
+    expect(await repo.latestCookProgress(), isNull); // nothing yet
+
+    await repo.setCookPage('a', 2, 8);
+    clock.advance(const Duration(hours: 1));
+    await repo.setCookPage('b', 5, 6);
+    var latest = await repo.latestCookProgress();
+    expect(latest?.recipeId, 'b'); // left more recently than 'a'
+    expect(latest?.page, 5);
+    expect(latest?.total, 6);
+
+    // 'b' finishes its last step (the "done" page): no longer resumable.
+    await repo.setCookPage('b', 6, 6);
+    latest = await repo.latestCookProgress();
+    expect(latest?.recipeId, 'a');
+
+    clock.advance(const Duration(hours: 12));
+    expect(await repo.latestCookProgress(), isNull); // both expired
   });
 }
