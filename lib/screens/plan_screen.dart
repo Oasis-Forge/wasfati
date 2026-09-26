@@ -42,7 +42,7 @@ MealSlot _lastMeal = MealSlot.lunch;
 /// its whole column of the strip, at least 48dp on a 360dp phone.
 const double _pillWidth = 46;
 
-class _PlanScreenState extends State<PlanScreen> {
+class _PlanScreenState extends State<PlanScreen> with WidgetsBindingObserver {
   int? _firstWeekday;
 
   /// RAM-4: "الأسبوع" or "رمضان" — only meaningful while the toggle shows.
@@ -61,6 +61,18 @@ class _PlanScreenState extends State<PlanScreen> {
   /// The chosen day's heading, scrolled to when a day is chosen in the
   /// month view (RAM-4), where the grid pushes it below the fold.
   final _dayHeadingKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -114,12 +126,30 @@ class _PlanScreenState extends State<PlanScreen> {
     plan.showWeek(weekStartFor(_selected ?? plan.today, first));
   }
 
-  /// The week's first day: the setting, else the phone's region (PLAN-1).
+  /// The week's first day: the setting, else the phone's region (PLAN-1) —
+  /// from the device's own language list, never the app's chosen language
+  /// (`Localizations.localeOf`), which only picks the no-region fallback.
   int _weekStartDay(BuildContext context, AppSettings settings) => firstWeekday(
     settings.weekStart,
-    region: View.of(context).platformDispatcher.locale.countryCode,
+    region: deviceRegion(View.of(context).platformDispatcher.locales),
     arabic: Localizations.localeOf(context).languageCode == 'ar',
   );
+
+  /// PLAN-1: the phone's region changed while the app runs. Nothing the
+  /// screen depends on changes with it when the app's language is fixed,
+  /// so re-read the week start here.
+  @override
+  void didChangeLocales(List<Locale>? locales) {
+    if (!mounted || _monthView) return;
+    final first = _weekStartDay(
+      context,
+      context.read<SettingsState>().settings,
+    );
+    if (first == _firstWeekday) return;
+    _firstWeekday = first;
+    final plan = context.read<PlanState>();
+    plan.showWeek(weekStartFor(_selected ?? plan.today, first));
+  }
 
   /// The day whose meals show (PLAN-1): the chosen one when it's in the
   /// range shown; else the same weekday, so the arrows keep it even for the
@@ -667,8 +697,10 @@ class _MonthGrid extends StatelessWidget {
 }
 
 /// One day of the strip (PLAN-1): its short name and date; the chosen day
-/// ink-filled with an accent dot, today ringed in the accent even when not
-/// chosen, and a herb dot on a day with entries. A screen reader hears the
+/// ink-filled, today ringed in the accent even when not chosen, and a dot
+/// only on a day with entries — herb on an ordinary pill, and the pill's
+/// own text colour on the chosen (ink) one, where the accent and herb fall
+/// below 3:1 in dark. A screen reader hears the
 /// whole date, "اليوم", its Hijri day and how many meals it has, as one
 /// selectable button.
 class _DayPill extends StatelessWidget {
@@ -707,11 +739,12 @@ class _DayPill extends StatelessWidget {
         : isToday
         ? cs.primary
         : cs.onSurfaceVariant;
-    final dot = chosen
-        ? cs.primary
-        : count > 0
-        ? cs.secondary
-        : Colors.transparent;
+    // PLAN-1: a dot means "has entries", chosen or not.
+    final dot = count == 0
+        ? Colors.transparent
+        : chosen
+        ? cs.surfaceContainerLowest
+        : cs.secondary;
     final label = [
       _longDate(context, settings, day),
       if (isToday) l10n.planToday,
@@ -1081,7 +1114,8 @@ class _DashedBorderPainter extends CustomPainter {
 
 /// A planned recipe (its photo or drawn cover, its title, its servings or
 /// multiplier, and a more button) or a note (a pencil). A tap opens the
-/// recipe, or a note's menu; a long press opens PLAN-4's menu.
+/// recipe, or the note itself to change its text (PLAN-2); a long press
+/// opens PLAN-4's menu.
 class _EntryCard extends StatelessWidget {
   const _EntryCard({required this.entry});
 
@@ -1113,10 +1147,10 @@ class _EntryCard extends StatelessWidget {
       child: SufraCard(
         radius: 20,
         padding: entry.isNote
-            ? const EdgeInsetsDirectional.fromSTEB(14, 12, 14, 12)
+            ? const EdgeInsetsDirectional.fromSTEB(14, 12, 4, 12)
             : const EdgeInsetsDirectional.fromSTEB(10, 10, 4, 10),
         onTap: entry.isNote
-            ? () => _entryMenu(context, entry)
+            ? () => _editNote(context, entry)
             : () => openRecipe(context, entry.recipeId!),
         onLongPress: () => _entryMenu(context, entry),
         child: Row(
@@ -1178,13 +1212,14 @@ class _EntryCard extends StatelessWidget {
                 ],
               ),
             ),
-            if (!entry.isNote)
-              IconButton(
-                tooltip: l10n.moreActions,
-                icon: const Icon(Icons.more_horiz),
-                color: cs.onSurfaceVariant,
-                onPressed: () => _entryMenu(context, entry),
-              ),
+            // PLAN-4: a note's move, copy and remove sit behind the same
+            // visible button as a recipe's; tapping a note edits it.
+            IconButton(
+              tooltip: l10n.moreActions,
+              icon: const Icon(Icons.more_horiz),
+              color: cs.onSurfaceVariant,
+              onPressed: () => _entryMenu(context, entry),
+            ),
           ],
         ),
       ),
@@ -1564,6 +1599,20 @@ Future<void> _entryMenu(BuildContext context, PlanEntry entry) async {
   }
 }
 
+/// A tapped note (PLAN-2): the note dialog, titled as an edit and filled
+/// with its text, saved back over it. Cancelling, or saving it unchanged,
+/// writes nothing.
+Future<void> _editNote(BuildContext context, PlanEntry entry) async {
+  final plan = context.read<PlanState>();
+  final note = await askPlanNote(
+    context,
+    initial: entry.note ?? '',
+    title: AppLocalizations.of(context).planEditNote,
+  );
+  if (note == null || note == entry.note) return;
+  await plan.setNote(entry, note);
+}
+
 /// Servings for a recipe entry, or the multiplier when it has none
 /// (PLAN-2, SCALE-2).
 Future<void> _askAmount(BuildContext context, PlanEntry entry) async {
@@ -1634,26 +1683,58 @@ Future<void> _askAmount(BuildContext context, PlanEntry entry) async {
   if (chosen != null) await plan.setAmount(entry, servings: chosen);
 }
 
-/// The note text of a written entry (PLAN-2): 1–60 characters.
-Future<String?> askPlanNote(BuildContext context, {String initial = ''}) {
-  final l10n = AppLocalizations.of(context);
-  final settings = context.read<SettingsState>();
-  final controller = TextEditingController(text: initial);
-  final form = GlobalKey<FormState>();
-  void submit(BuildContext ctx) {
-    if (form.currentState!.validate()) {
-      Navigator.pop(ctx, controller.text.trim());
+/// The note text of a written entry (PLAN-2): 1–60 characters. [title]
+/// defaults to adding a note; editing one passes its own.
+Future<String?> askPlanNote(
+  BuildContext context, {
+  String initial = '',
+  String? title,
+}) => showDialog<String>(
+  context: context,
+  builder: (ctx) => _NoteDialog(
+    initial: initial,
+    title: title ?? AppLocalizations.of(context).planAddNote,
+  ),
+);
+
+/// [askPlanNote]'s dialog. A widget of its own so its text controller is
+/// disposed with it, after the closing transition, not at the pop.
+class _NoteDialog extends StatefulWidget {
+  const _NoteDialog({required this.initial, required this.title});
+
+  final String initial;
+  final String title;
+
+  @override
+  State<_NoteDialog> createState() => _NoteDialogState();
+}
+
+class _NoteDialogState extends State<_NoteDialog> {
+  late final _controller = TextEditingController(text: widget.initial);
+  final _form = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_form.currentState!.validate()) {
+      Navigator.pop(context, _controller.text.trim());
     }
   }
 
-  return showDialog<String>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(l10n.planAddNote),
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final settings = context.read<SettingsState>();
+    return AlertDialog(
+      title: Text(widget.title),
       content: Form(
-        key: form,
+        key: _form,
         child: TextFormField(
-          controller: controller,
+          controller: _controller,
           autofocus: true,
           maxLength: PlanEntry.maxNote,
           buildCounter: digitCounter,
@@ -1667,18 +1748,18 @@ Future<String?> askPlanNote(BuildContext context, {String initial = ''}) {
                   settings.number(PlanEntry.maxNote),
                 )
               : null,
-          onFieldSubmitted: (_) => submit(ctx),
+          onFieldSubmitted: (_) => _submit(),
         ),
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(ctx),
+          onPressed: () => Navigator.pop(context),
           child: Text(l10n.cancel),
         ),
-        FilledButton(onPressed: () => submit(ctx), child: Text(l10n.save)),
+        FilledButton(onPressed: _submit, child: Text(l10n.save)),
       ],
-    ),
-  );
+    );
+  }
 }
 
 /// Day and meal chips, for "Add to plan" and for moving an entry (PLAN-3).

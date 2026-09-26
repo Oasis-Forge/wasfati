@@ -152,6 +152,12 @@ abstract class AppLocalizations {
   /// **'Go to my recipes'**
   String get walkthroughStart;
 
+  /// RUN-4. The last walkthrough page's button when it was replayed from Settings; returns to Settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get walkthroughDone;
+
   /// RUN-4. Screen-reader label of the walkthrough's page dots.
   ///
   /// In en, this message translates to:
@@ -625,6 +631,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Numbers'**
   String get settingsDigits;
+
+  /// QTY-5. What a screen reader says for the 123 digit option, so it differs from the Arabic one. {sample} is the option's own digits, 123.
+  ///
+  /// In en, this message translates to:
+  /// **'Western digits ({sample})'**
+  String digitsWesternName(String sample);
+
+  /// QTY-5. What a screen reader says for the ١٢٣ digit option, so it differs from the Western one. {sample} is the option's own digits, ١٢٣.
+  ///
+  /// In en, this message translates to:
+  /// **'Arabic digits ({sample})'**
+  String digitsArabicName(String sample);
 
   /// SCALE-5. Unit system setting.
   ///
@@ -1693,6 +1711,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Write a note'**
   String get planAddNote;
+
+  /// PLAN-2. Title of the dialog that changes a planned note's text.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit note'**
+  String get planEditNote;
 
   /// Label of the note field (PLAN-2)
   ///

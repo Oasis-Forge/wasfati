@@ -4,6 +4,23 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-09-26
+
+### Added
+- Tap a note in the plan to change its text. Its "المزيد" button moves, copies or removes it, the same as a recipe's.
+
+### Changed
+- الإعدادات gathers its options into cards, with an icon on each row, and each option opens its own choices: الطراز, المظهر, اللغة, the units, the week start and the rest.
+- The welcome and the tour are redrawn in the new سُفرة look. Replayed from Settings, the tour ends on "تم" and takes you back there.
+- The "برو وبريميوم" screen is clearer about what each one includes. Prices still come from Google Play, and cancelling still takes two taps from Settings.
+
+### Fixed
+- The plan's week starts on the day your phone's region uses, even when Wasfati is set to another language.
+- Tapping a grocery item's name ticks it, not only its circle.
+- In the plan's week strip, a day shows a dot only when it has meals, including the day you've picked.
+- The selected tab of a two-way switch, such as "كل الوصفات | كتب الطبخ", stands out clearly in dark.
+- Screen readers now tell the 123 and ١٢٣ digit choices apart.
+
 ## [0.21.0] - 2026-09-26
 
 ### Changed

@@ -39,6 +39,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get walkthroughStart => 'Go to my recipes';
 
   @override
+  String get walkthroughDone => 'Done';
+
+  @override
   String walkthroughPageOf(String n, String total) {
     return 'Page $n of $total';
   }
@@ -323,6 +326,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsDigits => 'Numbers';
+
+  @override
+  String digitsWesternName(String sample) {
+    return 'Western digits ($sample)';
+  }
+
+  @override
+  String digitsArabicName(String sample) {
+    return 'Arabic digits ($sample)';
+  }
 
   @override
   String get settingsUnits => 'Units';
@@ -967,6 +980,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get planAddNote => 'Write a note';
+
+  @override
+  String get planEditNote => 'Edit note';
 
   @override
   String get planNoteLabel => 'Note';

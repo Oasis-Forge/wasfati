@@ -388,7 +388,7 @@ void main() {
           expect(find.text(title), findsOneWidget);
           _fits(tester, 'walkthrough $i');
           await tester.tap(
-            find.text(i < 3 ? l.walkthroughNext : l.walkthroughStart),
+            find.text(i < 3 ? l.walkthroughNext : l.walkthroughDone),
           );
           await settle(tester);
         }
@@ -536,8 +536,8 @@ void main() {
     // LOOK-2: the accent changes colour only — the strip marks the chosen
     // day, today and a day with entries the same way in both (PLAN-1).
     testWidgets('${style.name}: the plan\'s week strip fills the chosen day '
-        'with ink and its accent dot, and marks a day with entries with the '
-        'herb dot (LOOK-2, PLAN-1)', (tester) async {
+        'with ink, dotted only when it has entries, and marks a day with '
+        'entries with the herb dot (LOOK-2, PLAN-1)', (tester) async {
       final (_, settings) = await pumpApp(tester, withRecipe: true);
       await tester.runAsync(() async {
         await settings.update(
@@ -583,9 +583,15 @@ void main() {
             .first,
       );
       expect((today.decoration! as ShapeDecoration).color, cs.onSurface);
-      expect(dot('2026-09-19'), cs.primary);
+      expect(dot('2026-09-19'), Colors.transparent); // chosen, no entries
       expect(dot('2026-09-21'), cs.secondary);
       expect(dot('2026-09-20'), Colors.transparent);
+
+      // Chosen with entries: its dot in the pill's own text colour, which
+      // reads on ink in both accents and both brightnesses.
+      await tester.tap(pill('2026-09-21'));
+      await tester.pump();
+      expect(dot('2026-09-21'), cs.surfaceContainerLowest);
     });
 
     // must-fix, look-pass review (carried over from the day cards): a

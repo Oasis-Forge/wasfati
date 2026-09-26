@@ -66,7 +66,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 - **RUN-1** An empty screen explains itself with one clear first action.
 - **RUN-2** The release build declares no permission a shipped feature doesn't need, so the store's data-safety answers stay true. The release workflow checks it.
 - **RUN-3** The first launch asks only what the device can't tell (for example the language and currency) on one page, preselected from the locale. Permissions are requested when the feature that needs them is first used, and everything else works if they're refused.
-- **RUN-4** A walkthrough of up to four pages follows setup. Every page has Skip, it respects reduce motion, it can be replayed from Settings, and it shows once. An update on a device that already has data skips setup and the walkthrough.
+- **RUN-4** A walkthrough of up to four pages follows setup. Every page has Skip, except the last, whose own button already ends it; it respects reduce motion, it can be replayed from Settings, and it shows once. An update on a device that already has data skips setup and the walkthrough.
 - **RUN-5** The store's review prompt (added 20 September 2026) is asked for only after the user has saved an import and marked a recipe as cooked (REC-9), right after cook mode closes with "Done", and at most once every 120 days. A saved import is a page or an AI import saved from its preview, and stays saved if that recipe is deleted; a recipe typed by hand after a failed import isn't one, whatever source it shows. A Replace restore (BAK-7) keeps this phone's later ask and its saved import, so a restore never brings the prompt sooner (25 September 2026). Never during setup, the walkthrough or a purchase. The app never asks "Do you like Wasfati?" first: the store's prompt isn't filtered by mood.
 - **RUN-6** On a phone with no recipes at all, the first launch adds one built-in sample recipe, "شوربة عدس" ("Red lentil soup" when the app starts in English), so the first screen shows what a saved recipe looks like: amounts that scale (Eastern and Western digits and a word amount), a timer inside a step, and a note that says it's a sample. It has fixed IDs (REC-2) and behaves like any recipe. It's offered once: deleting it never brings it back, and a phone that already has recipes, in the library or the trash, never gets it. A merge that brings recipes in from a backup (BAK-3) moves a sample nobody has edited to the trash, so moving to a new phone doesn't leave it among the restored recipes. (Added 22 September 2026.)
 
@@ -430,6 +430,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 - **PLAN-2** An entry is a recipe or a short note (1–60 characters, like "مطعم" or "بقايا الأمس"). A slot holds up to 10 entries, in the order added.
   - A recipe entry has its own servings, 1–100, starting at the recipe's (REC-7). A recipe without servings takes a multiplier instead: ×½, ×1, ×2 or ×3 (SCALE-2).
   - The entry's servings scale what goes to groceries (PLAN-5); the recipe itself doesn't change.
+  - Tapping a note opens it with its text filled in, under "Edit note"; saving changes it in place (same day and meal, still 1–60 characters). Cancelling, or saving it unchanged, writes nothing (26 September 2026).
 - **PLAN-3** Adding:
   - On a recipe page, "أضف إلى الخطة" opens a sheet with today and the last meal used (lunch at first) already picked. Adding takes three taps: the button, a day, Save.
   - In the plan, a slot's "+" opens a picker with the library's search (ORG-3) and "Write a note".
@@ -507,7 +508,7 @@ The sections below are starter rules that held up in an earlier app. Keep, chang
 - **GRO-5** The list:
   - Aisles in GRO-4's order; items by name within an aisle (Arabic alphabetical order, ORG-5).
   - Amounts in the user's digits, with units agreeing with the number (QTY-5, QTY-6), and the recipes an item came from on a second line.
-  - Ticking an item moves it into a collapsed "تم" section at the end; unticking moves it back.
+  - Ticking an item moves it into a collapsed "تم" section at the end; unticking moves it back. A tap anywhere on an item's row ticks or unticks it, the same as its circle (26 September 2026).
   - "Clear done" and "Clear all" remove with Undo (DEL-2).
   - A "By recipe" view groups the amounts under each recipe, with hand-added items under "أضفتها بنفسك". Each recipe there has "Remove", which takes out only its own amounts. The view choice is remembered.
 - **GRO-6** "Share" sends the items not yet done as plain text through the share sheet (WhatsApp first): a title line, the aisle headings, and one line per item ("• 2 كغ طماطم"), in the user's digits, with QTY-5's isolates so amounts read the right way. No link, no app name and no ad (ADS-9). An empty list can't be shared.

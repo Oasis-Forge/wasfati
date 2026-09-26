@@ -119,8 +119,12 @@ class PurchaseScreen extends StatelessWidget {
                     // PAY-6: a store with nothing configured is a real state.
                     Padding(
                       padding: const EdgeInsetsDirectional.only(bottom: 16),
-                      child: SufraCard(
-                        color: decor.sunk,
+                      // A recessed surface: a sunk fill, no lift shadow.
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: decor.sunk,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
                         padding: const EdgeInsetsDirectional.all(16),
                         child: Row(
                           children: [

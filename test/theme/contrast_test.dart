@@ -27,6 +27,8 @@ import 'package:wasfati/screens/groceries_screen.dart'
 import 'package:wasfati/theme/app_theme.dart';
 import 'package:wasfati/theme/colors.dart';
 import 'package:wasfati/theme/decor.dart';
+import 'package:wasfati/widgets/segmented_pill.dart'
+    show segmentedRaisedThumbFill, segmentedThumbEdge;
 
 void main() {
   const bodyMin = 4.5;
@@ -211,6 +213,55 @@ void main() {
           expect(
             contrastRatio(cs.outline, cs.surface),
             greaterThanOrEqualTo(boundaryMin),
+          );
+        });
+
+        // PLAN-1: the chosen (ink-filled) day of the plan's strip dots a
+        // day with entries in the pill's own text colour, since the accent
+        // and herb fall below 3:1 on ink in dark.
+        test('chosen day dot (card) on its ink pill >= $boundaryMin:1', () {
+          expect(
+            contrastRatio(cs.surfaceContainerLowest, cs.onSurface),
+            greaterThanOrEqualTo(boundaryMin),
+          );
+        });
+
+        // LOOK-3: the segmented control's selected thumb (SegmentedPill) is
+        // set apart from its sunk track by the lift shadow in light and, in
+        // dark, where no shadow shows, by its 1dp edge.
+        test('segmented thumb edge on its sunk track >= $boundaryMin:1', () {
+          final theme = wasfatiTheme(style, brightness);
+          final edge = segmentedThumbEdge(theme);
+          if (brightness == Brightness.light) {
+            expect(edge, BorderSide.none);
+            expect(decor.liftShadow, isNotEmpty);
+            return;
+          }
+          expect(edge.width, 1);
+          expect(
+            contrastRatio(edge.color, decor.sunk),
+            greaterThanOrEqualTo(boundaryMin),
+          );
+        });
+
+        // LOOK-6: the raised thumb's fill — `card` in light, `line` in dark
+        // (lighter than the sunk track, so it reads as raised, not sunk) —
+        // carries its selected `ink` label at body contrast.
+        test('ink on the raised segmented thumb >= $bodyMin:1', () {
+          final theme = wasfatiTheme(style, brightness);
+          final fill = segmentedRaisedThumbFill(theme);
+          if (brightness == Brightness.light) {
+            expect(fill, cs.surfaceContainerLowest);
+          } else {
+            expect(fill, n.line);
+            expect(
+              fill.computeLuminance(),
+              greaterThan(decor.sunk.computeLuminance()),
+            );
+          }
+          expect(
+            contrastRatio(cs.onSurface, fill),
+            greaterThanOrEqualTo(bodyMin),
           );
         });
 

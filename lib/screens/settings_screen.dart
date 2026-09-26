@@ -171,6 +171,10 @@ class SettingsScreen extends StatelessWidget {
                       DigitStyle.western: '123',
                       DigitStyle.arabic: '١٢٣',
                     },
+                    semanticLabels: {
+                      DigitStyle.western: l10n.digitsWesternName('123'),
+                      DigitStyle.arabic: l10n.digitsArabicName('١٢٣'),
+                    },
                     value: s.digits,
                     onChanged: (v) => set(s.copyWith(digits: v)),
                   ),

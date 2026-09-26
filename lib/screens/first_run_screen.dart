@@ -7,6 +7,7 @@ import '../models/settings.dart' show appLanguage;
 import '../providers/recipes_state.dart';
 import '../providers/settings_state.dart';
 import '../theme/decor.dart';
+import '../widgets/sufra_card.dart';
 import 'walkthrough_screen.dart';
 
 /// The first launch (RUN-3, RUN-4): setup, then the walkthrough, then the
@@ -121,6 +122,10 @@ class SetupScreen extends StatelessWidget {
                       DigitStyle.western: '123',
                       DigitStyle.arabic: '١٢٣',
                     },
+                    semanticLabels: {
+                      DigitStyle.western: l10n.digitsWesternName('123'),
+                      DigitStyle.arabic: l10n.digitsArabicName('١٢٣'),
+                    },
                     onChanged: state.chooseDigits,
                   ),
                 ],
@@ -161,12 +166,17 @@ class _SetupQuestion<T> extends StatelessWidget {
     required this.value,
     required this.options,
     required this.onChanged,
+    this.semanticLabels,
   });
 
   final String title;
   final T value;
   final Map<T, String> options;
   final ValueChanged<T> onChanged;
+
+  /// What a screen reader says for an answer, where its label alone would
+  /// sound like another's.
+  final Map<T, String>? semanticLabels;
 
   @override
   Widget build(BuildContext context) {
@@ -196,6 +206,7 @@ class _SetupQuestion<T> extends StatelessWidget {
                 Expanded(
                   child: SetupChoiceCard(
                     label: e.value,
+                    semanticLabel: semanticLabels?[e.key],
                     selected: e.key == value,
                     onTap: () => onChanged(e.key),
                   ),
@@ -211,98 +222,76 @@ class _SetupQuestion<T> extends StatelessWidget {
 
 /// RUN-3: one answer, a large card on the page colour. The chosen one is
 /// marked by an accent edge **and** a filled check, never colour alone
-/// (LOOK-3), and says so to a screen reader.
-///
-/// SufraCard's surface with a 2dp edge it has no option for yet, and the
-/// same 0.97 press scale every tappable card has (design-styles.md, Motion
-/// #1). It can move onto SufraCard once that takes a border colour.
-class SetupChoiceCard extends StatefulWidget {
+/// (LOOK-3), and says so to a screen reader. A [SufraCard] with a 2dp edge
+/// (the accent when chosen), so it takes the same 0.97 press scale every
+/// tappable card has (design-styles.md, Motion #1).
+class SetupChoiceCard extends StatelessWidget {
   const SetupChoiceCard({
     super.key,
     required this.label,
     required this.selected,
     required this.onTap,
+    this.semanticLabel,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
 
-  @override
-  State<SetupChoiceCard> createState() => _SetupChoiceCardState();
-}
-
-class _SetupChoiceCardState extends State<SetupChoiceCard> {
-  bool _pressed = false;
+  /// What a screen reader says in place of [label], where the label alone
+  /// would sound like the other answer's ("123" and "١٢٣").
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final decor = Decor.of(context);
-    final label = widget.label;
-    final selected = widget.selected;
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    final duration = reduceMotion
+    final duration = MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
         : const Duration(milliseconds: 160);
-    final card = AnimatedContainer(
-      duration: duration,
-      constraints: const BoxConstraints(minHeight: 72),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: decor.liftShadow,
-        border: Border.all(
-          color: selected ? cs.primary : (decor.cardHairline ?? cs.surface),
-          width: 2,
-        ),
-      ),
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: widget.onTap,
-          onHighlightChanged: (v) => setState(() => _pressed = v),
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 12, 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(label, style: theme.textTheme.titleMedium),
-                ),
-                const SizedBox(width: 8),
-                AnimatedContainer(
-                  duration: duration,
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: selected ? cs.primary : Colors.transparent,
-                    border: selected
-                        ? null
-                        : Border.all(color: cs.outline, width: 1.5),
-                  ),
-                  child: selected
-                      ? Icon(Icons.check, size: 16, color: cs.onPrimary)
-                      : null,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
     return Semantics(
       selected: selected,
       button: true,
       inMutuallyExclusiveGroup: true,
-      child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1,
-        duration: reduceMotion
-            ? Duration.zero
-            : const Duration(milliseconds: 120),
-        child: card,
+      child: SufraCard(
+        onTap: onTap,
+        side: BorderSide(
+          color: selected ? cs.primary : (decor.cardHairline ?? cs.surface),
+          width: 2,
+        ),
+        padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 12, 12),
+        child: ConstrainedBox(
+          // 72dp less the padding and the 2dp edges.
+          constraints: const BoxConstraints(minHeight: 72 - 24 - 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  semanticsLabel: semanticLabel,
+                  style: theme.textTheme.titleMedium,
+                ),
+              ),
+              const SizedBox(width: 8),
+              AnimatedContainer(
+                duration: duration,
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: selected ? cs.primary : Colors.transparent,
+                  border: selected
+                      ? null
+                      : Border.all(color: cs.outline, width: 1.5),
+                ),
+                child: selected
+                    ? Icon(Icons.check, size: 16, color: cs.onPrimary)
+                    : null,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

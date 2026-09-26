@@ -183,6 +183,19 @@ void main() {
     );
     // The Pro card's number is in the digits the user reads.
     expect(find.textContaining('100'), findsOneWidget);
+    // Each option is named by its kind: "123" and "١٢٣" alone read aloud as
+    // the same number.
+    final semantics = tester.ensureSemantics();
+    for (final (digits, name) in [
+      ('123', 'أرقام لاتينية (123)'),
+      ('١٢٣', 'أرقام عربية (١٢٣)'),
+    ]) {
+      final node = tester.getSemantics(
+        find.descendant(of: pill, matching: find.text(digits)),
+      );
+      expect(node.label, name);
+    }
+    semantics.dispose();
 
     await tester.tap(find.descendant(of: pill, matching: find.text('١٢٣')));
     await settle(tester);

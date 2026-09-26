@@ -14,6 +14,7 @@ import 'package:wasfati/models/settings.dart';
 import 'package:wasfati/providers/settings_state.dart';
 import 'package:wasfati/screens/first_run_screen.dart';
 import 'package:wasfati/screens/walkthrough_screen.dart';
+import 'package:wasfati/widgets/recipe_cover.dart';
 
 import '../helpers.dart';
 import 'app_test.dart'
@@ -103,7 +104,7 @@ void main() {
     await tester.tap(find.text('متابعة'));
     await settle(tester);
 
-    // The walkthrough: four pages, Skip on each. Page 1 draws three saved
+    // The walkthrough: four pages, Skip on each but the last. Page 1 draws three saved
     // recipes as tiles, each with where it came from.
     expect(find.text(_arPages[0]), findsOneWidget);
     expect(find.text('أهلًا بك في وصفاتي'), findsNothing);
@@ -135,7 +136,8 @@ void main() {
     await settle(tester);
     expect(find.text(_arPages[3]), findsOneWidget);
     expect(find.text('التالي'), findsNothing);
-    expect(find.text('تخطَّ'), findsOneWidget);
+    // Skip would do what the main button does, so the last page has none.
+    expect(find.text('تخطَّ'), findsNothing);
 
     await tester.tap(find.text('إلى وصفاتي'));
     await settle(tester);
@@ -148,7 +150,8 @@ void main() {
     expect(storeReview.requests, 0); // RUN-5: never during the first run
   });
 
-  for (var page = 0; page < _arPages.length; page++) {
+  // Every page but the last, which has no Skip (its button already ends it).
+  for (var page = 0; page < _arPages.length - 1; page++) {
     testWidgets('Skip on page ${page + 1} ends the walkthrough in the library '
         '(RUN-4)', (tester) async {
       _device(tester, const [Locale('ar')]);
@@ -202,6 +205,35 @@ void main() {
     expect(find.text('Red lentil soup'), findsOneWidget);
     expect(find.text('شوربة عدس'), findsNothing);
   });
+
+  for (final (locale, next) in [
+    (const Locale('en', 'US'), 'Continue'),
+    (const Locale('ar', 'SA'), 'متابعة'),
+  ]) {
+    testWidgets('${locale.languageCode}: page 1 shows all three source '
+        'badges, none hidden under the middle card (RUN-4)', (tester) async {
+      _device(tester, [locale]);
+      await _freshInstall(tester);
+      await tester.tap(find.text(next));
+      await settle(tester);
+      // The middle card: its cover plus the card's 8dp padding.
+      final middle = tester
+          .getRect(
+            find.byWidgetPredicate(
+              (w) => w is RecipeCover && w.recipeId == 'walkthrough-fattoush',
+            ),
+          )
+          .inflate(8);
+      for (final icon in [Icons.music_note, Icons.public]) {
+        final badge = tester.getRect(find.byIcon(icon));
+        expect(
+          badge.overlaps(middle),
+          isFalse,
+          reason: '$icon badge at $badge is under the middle card $middle',
+        );
+      }
+    });
+  }
 
   testWidgets('back from the walkthrough reopens setup; another language '
       'chosen there is the sample\'s, since it comes only as the walkthrough '
@@ -293,7 +325,13 @@ void main() {
       await tester.tap(find.text('التالي'));
       await settle(tester);
     }
-    await tester.tap(find.text('إلى وصفاتي'));
+    // It returns to Settings, so it says Done, never "Go to my recipes",
+    // and no Skip beside it.
+    expect(find.text('إلى وصفاتي'), findsNothing);
+    expect(find.text('تخطَّ'), findsNothing);
+    final done = find.widgetWithText(FilledButton, 'تم');
+    expect(done, findsOneWidget);
+    await tester.tap(done);
     await settle(tester);
     expect(find.text(_arPages[3]), findsNothing);
     expect(replay, findsOneWidget); // back in Settings
@@ -395,6 +433,16 @@ void main() {
         isFocusable: true,
         label: 'English',
       ),
+    );
+    // "123" and "١٢٣" read aloud as the same number, so each digit answer
+    // is named by its kind as well.
+    expect(
+      tester.getSemantics(find.widgetWithText(SetupChoiceCard, '123')).label,
+      'Western digits (123)',
+    );
+    expect(
+      tester.getSemantics(find.widgetWithText(SetupChoiceCard, '١٢٣')).label,
+      'Arabic digits (١٢٣)',
     );
     semantics.dispose();
     expect(find.text('Continue'), findsOneWidget);

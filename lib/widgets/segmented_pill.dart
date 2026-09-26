@@ -2,8 +2,29 @@ import 'package:flutter/material.dart';
 
 import '../theme/decor.dart';
 
+/// LOOK-3: the selected thumb's edge against its track. In light the lift
+/// shadow sets the thumb apart; in dark no shadow shows, and the card and
+/// accentSoft fills sit within about 1.1:1 of the sunk track, so the thumb
+/// takes a 1dp `outline` edge instead — at least 3:1 against the track
+/// (`test/theme/contrast_test.dart`). None in light.
+BorderSide segmentedThumbEdge(ThemeData theme) =>
+    theme.brightness == Brightness.dark
+    ? BorderSide(color: theme.colorScheme.outline)
+    : BorderSide.none;
+
+/// LOOK-6: the raised (primary) thumb's fill. Light: `card`, white and
+/// lifted by the shadow. Dark: `line`, a tone lighter than the `sunk` track,
+/// so the selected option reads as raised rather than as a hole cut into the
+/// track (`card` is darker than `sunk` in dark). Its `ink` label is checked
+/// in `test/theme/contrast_test.dart`.
+Color segmentedRaisedThumbFill(ThemeData theme) =>
+    theme.brightness == Brightness.dark
+    ? theme.colorScheme.outlineVariant
+    : theme.colorScheme.surfaceContainerLowest;
+
 /// LOOK-6: a segmented control drawn as a sunk pill track with a
-/// card-coloured, lifted thumb on the selected option — "كل الوصفات |
+/// card-coloured, lifted thumb (edged in dark, [segmentedThumbEdge]) on the
+/// selected option — "كل الوصفات |
 /// كتب الطبخ", the ingredients/steps tabs, unit views. The track itself is
 /// 48dp tall (design spec §1); each option's tap target fills that full
 /// height, with its selected state carried in semantics (never colour
@@ -17,9 +38,15 @@ class SegmentedPill<T> extends StatelessWidget {
     this.height = 48,
     this.raised = true,
     this.dense = false,
+    this.semanticLabels,
   });
 
   final Map<T, String> options;
+
+  /// What a screen reader says for an option, where its visible label
+  /// alone would sound like another's ("123" and "١٢٣" read as the same
+  /// number). Options missing from it are read by their label.
+  final Map<T, String>? semanticLabels;
   final T value;
   final ValueChanged<T> onChanged;
 
@@ -67,6 +94,7 @@ class SegmentedPill<T> extends StatelessWidget {
                   _DenseOption(
                     selected: e.key == value,
                     label: e.value,
+                    semanticLabel: semanticLabels?[e.key],
                     raised: raised,
                     onTap: () => onChanged(e.key),
                   ),
@@ -90,6 +118,7 @@ class SegmentedPill<T> extends StatelessWidget {
               child: _SegmentedOption(
                 selected: e.key == value,
                 label: e.value,
+                semanticLabel: semanticLabels?[e.key],
                 raised: raised,
                 onTap: () => onChanged(e.key),
               ),
@@ -106,10 +135,12 @@ class _SegmentedOption extends StatelessWidget {
     required this.label,
     required this.raised,
     required this.onTap,
+    this.semanticLabel,
   });
 
   final bool selected;
   final String label;
+  final String? semanticLabel;
   final bool raised;
   final VoidCallback onTap;
 
@@ -118,7 +149,9 @@ class _SegmentedOption extends StatelessWidget {
     final decor = Decor.of(context);
     final cs = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
-    final thumbColor = raised ? cs.surfaceContainerLowest : cs.primaryContainer;
+    final thumbColor = raised
+        ? segmentedRaisedThumbFill(theme)
+        : cs.primaryContainer;
     return Semantics(
       selected: selected,
       button: true,
@@ -139,7 +172,9 @@ class _SegmentedOption extends StatelessWidget {
               // clips it away — so it isn't lost and doesn't paint back
               // over (and grey) the thumb fill.
               decoration: ShapeDecoration(
-                shape: const StadiumBorder(),
+                shape: StadiumBorder(
+                  side: selected ? segmentedThumbEdge(theme) : BorderSide.none,
+                ),
                 color: selected ? thumbColor : Colors.transparent,
                 shadows: selected && raised ? decor.liftShadow : const [],
               ),
@@ -152,6 +187,7 @@ class _SegmentedOption extends StatelessWidget {
                     fit: BoxFit.scaleDown,
                     child: Text(
                       label,
+                      semanticsLabel: semanticLabel,
                       maxLines: 1,
                       style: theme.textTheme.labelLarge?.copyWith(
                         color: selected
@@ -178,10 +214,12 @@ class _DenseOption extends StatelessWidget {
     required this.label,
     required this.raised,
     required this.onTap,
+    this.semanticLabel,
   });
 
   final bool selected;
   final String label;
+  final String? semanticLabel;
   final bool raised;
   final VoidCallback onTap;
 
@@ -190,7 +228,9 @@ class _DenseOption extends StatelessWidget {
     final decor = Decor.of(context);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final thumbColor = raised ? cs.surfaceContainerLowest : cs.primaryContainer;
+    final thumbColor = raised
+        ? segmentedRaisedThumbFill(theme)
+        : cs.primaryContainer;
     return Semantics(
       selected: selected,
       button: true,
@@ -215,7 +255,11 @@ class _DenseOption extends StatelessWidget {
                 widthFactor: 1,
                 child: DecoratedBox(
                   decoration: ShapeDecoration(
-                    shape: const StadiumBorder(),
+                    shape: StadiumBorder(
+                      side: selected
+                          ? segmentedThumbEdge(theme)
+                          : BorderSide.none,
+                    ),
                     color: selected ? thumbColor : Colors.transparent,
                     shadows: selected && raised ? decor.liftShadow : const [],
                   ),
@@ -231,6 +275,7 @@ class _DenseOption extends StatelessWidget {
                         heightFactor: 1,
                         child: Text(
                           label,
+                          semanticsLabel: semanticLabel,
                           maxLines: 1,
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: selected

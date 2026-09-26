@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemUiOverlayStyle;
 import 'package:provider/provider.dart';
@@ -21,6 +19,7 @@ import '../theme/type.dart' show cookStep;
 import '../widgets/amount_line.dart';
 import '../widgets/content_direction.dart';
 import '../widgets/digit_box.dart';
+import '../widgets/khatam_star.dart';
 import '../widgets/round_icon_button.dart';
 import '../widgets/step_rail.dart';
 import '../widgets/sufra_card.dart';
@@ -871,14 +870,10 @@ class _DonePage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Center(
-              child: SizedBox.square(
-                dimension: 112,
-                child: CustomPaint(
-                  painter: StarPainter(
-                    fill: cs.primaryContainer,
-                    stroke: cs.primary,
-                  ),
-                ),
+              child: KhatamStar(
+                size: 112,
+                fill: cs.primaryContainer,
+                stroke: cs.primary,
               ),
             ),
             const SizedBox(height: 20),
@@ -904,47 +899,4 @@ class _DonePage extends StatelessWidget {
       ),
     );
   }
-}
-
-/// LOOK-10's eight-point khatam star, drawn large: a soft fill with an
-/// accent outline. Decoration, so it has no semantics of its own.
-class StarPainter extends CustomPainter {
-  const StarPainter({required this.fill, required this.stroke});
-  final Color fill;
-  final Color stroke;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final outer = size.shortestSide / 2 - 2;
-    final inner = outer * 0.72;
-    final path = Path();
-    for (var k = 0; k < 16; k++) {
-      final r = k.isEven ? outer : inner;
-      final p = center + Offset.fromDirection(k * math.pi / 8 - math.pi / 2, r);
-      k == 0 ? path.moveTo(p.dx, p.dy) : path.lineTo(p.dx, p.dy);
-    }
-    path.close();
-    canvas.drawPath(path, Paint()..color = fill);
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = stroke
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..strokeJoin = StrokeJoin.round,
-    );
-    canvas.drawCircle(
-      center,
-      inner * 0.45,
-      Paint()
-        ..color = stroke
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3,
-    );
-  }
-
-  @override
-  bool shouldRepaint(StarPainter old) =>
-      old.fill != fill || old.stroke != stroke;
 }

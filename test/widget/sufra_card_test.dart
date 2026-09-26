@@ -44,6 +44,25 @@ void main() {
     },
   );
 
+  testWidgets('a side replaces the dark hairline, in either theme (RUN-3)', (
+    tester,
+  ) async {
+    const side = BorderSide(color: Color(0xFF123456), width: 2);
+    for (final brightness in Brightness.values) {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: wasfatiTheme(AppStyle.saffron, brightness),
+          home: const Scaffold(
+            body: SufraCard(side: side, child: Text('محتوى')),
+          ),
+        ),
+      );
+      final decoration =
+          tester.widget<Container>(cardBox()).decoration! as BoxDecoration;
+      expect(decoration.border, const Border.fromBorderSide(side));
+    }
+  });
+
   testWidgets(
     'a card without onTap still gives a child InkWell an ink layer above '
     "its fill, so a grocery row's long press shows (GRO-4)",

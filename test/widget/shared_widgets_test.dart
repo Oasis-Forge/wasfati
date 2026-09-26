@@ -11,7 +11,7 @@ import 'package:wasfati/models/settings.dart' show AppStyle;
 import 'package:wasfati/theme/app_theme.dart';
 import 'package:wasfati/theme/decor.dart';
 import 'package:wasfati/widgets/empty_state.dart';
-import 'package:wasfati/widgets/ornament.dart';
+import 'package:wasfati/widgets/khatam_star.dart';
 import 'package:wasfati/widgets/round_icon_button.dart';
 import 'package:wasfati/widgets/segmented_pill.dart';
 import 'package:wasfati/widgets/servings_stepper.dart';
@@ -228,6 +228,49 @@ void main() {
       expect(unselected.flagsCollection.isSelected, Tristate.isFalse);
     });
 
+    testWidgets('in dark, the selected thumb is filled lighter than the '
+        'track (raised, not sunk), with a 1dp outline edge and ink text at '
+        'full strength', (tester) async {
+      await tester.pumpWidget(
+        _themed(
+          SegmentedPill<int>(
+            options: const {0: 'كل الوصفات', 1: 'كتب الطبخ'},
+            value: 0,
+            onChanged: (_) {},
+          ),
+          brightness: Brightness.dark,
+        ),
+      );
+      final cs = Theme.of(tester.element(find.text('كل الوصفات'))).colorScheme;
+      ShapeDecoration thumb(String label) =>
+          tester
+                  .widget<DecoratedBox>(
+                    find
+                        .ancestor(
+                          of: find.text(label),
+                          matching: find.byType(DecoratedBox),
+                        )
+                        .first,
+                  )
+                  .decoration
+              as ShapeDecoration;
+      final selected = thumb('كل الوصفات');
+      // `line`, not `card`: dark's card is darker than the sunk track.
+      expect(selected.color, cs.outlineVariant);
+      final decor = Decor.of(tester.element(find.text('كل الوصفات')));
+      expect(
+        selected.color!.computeLuminance(),
+        greaterThan(decor.sunk.computeLuminance()),
+      );
+      expect((selected.shape as StadiumBorder).side.color, cs.outline);
+      expect((selected.shape as StadiumBorder).side.width, 1);
+      expect((thumb('كتب الطبخ').shape as StadiumBorder).side, BorderSide.none);
+      expect(
+        tester.widget<Text>(find.text('كل الوصفات')).style?.color,
+        cs.onSurface,
+      );
+    });
+
     testWidgets('tapping an option calls onChanged with its value', (
       tester,
     ) async {
@@ -331,7 +374,7 @@ void main() {
     ) async {
       await tester.pumpWidget(_themed(const EmptyState(title: 'فارغة')));
       expect(find.byType(Icon), findsNothing);
-      expect(find.byType(Ornament), findsOneWidget);
+      expect(find.byType(KhatamStar), findsOneWidget);
     });
   });
 }

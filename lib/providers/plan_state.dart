@@ -206,6 +206,15 @@ class PlanState extends ChangeNotifier {
       }) ??
       false;
 
+  /// Changes a note's text (PLAN-2: 1-60 characters, checked on save).
+  Future<bool> setNote(PlanEntry entry, String note) async =>
+      await _write(() async {
+        await _repo.save(entry.copyWith(note: note));
+        await _reload();
+        return true;
+      }) ??
+      false;
+
   /// Moves an entry to another day or meal, or copies it there (PLAN-4).
   Future<bool> moveTo(
     PlanEntry entry,

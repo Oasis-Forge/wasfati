@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import 'ornament.dart';
+import 'khatam_star.dart';
 
 /// One composition for every empty state (the library, cookbooks, no
 /// results, an empty cookbook, an empty plan, an empty grocery list), in
 /// Sufra's own terms (design-styles.md, Decision 23): a soft accent disc
-/// with the drawn khatam [Ornament] in it, and the caller's [icon] on top
+/// with the drawn [KhatamStar] outlined in it, and the caller's [icon] on top
 /// when it has one; the caller's heading at `title` (19/700) and body in
 /// `ink2`; and the caller's own action(s) — this widget invents or changes
 /// no string of its own (RUN-1: one clear first action).
@@ -62,10 +62,12 @@ class EmptyState extends StatelessWidget {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                Ornament(
+                KhatamStar(
                   size: 84,
-                  opacity: icon == null ? 0.5 : 0.18,
-                  color: cs.onPrimaryContainer,
+                  strokeWidth: 2,
+                  stroke: cs.onPrimaryContainer.withValues(
+                    alpha: icon == null ? 0.5 : 0.18,
+                  ),
                 ),
                 if (icon != null)
                   Icon(icon, size: 40, color: cs.onPrimaryContainer),

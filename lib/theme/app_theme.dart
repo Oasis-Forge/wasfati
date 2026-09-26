@@ -470,26 +470,11 @@ ThemeData wasfatiTheme(AppStyle style, Brightness brightness) {
         navActive: isLight ? Colors.white : n.ink,
         coverTints: sufraCoverTints(brightness),
         gutter: 20,
-        // Unused since the Sufra plan (PR 4); kept for Decor's own
-        // copyWith/lerp tests until PR 5's sweep.
-        railWidth: 4,
-        railColor: cs.primary,
-        cardShape: cardShape,
-        // "full-bleed", never rounded — the recipe hero photo.
-        photoShape: const RoundedRectangleBorder(),
-        chipShape: pill,
-        buttonShape: pill,
         thumbnailShape: rounded(24),
         // LOOK-4: the amount in the accent at w700, for both accents.
         amountColor: cs.primary,
         amountWeight: FontWeight.w700,
-        // Decision 23 drops Saffron's one press ledge; nothing reads these
-        // since PressableSlab was retired (they go once PR 4 is in).
-        ledgeDepth: 0,
-        ledgeColor: Colors.transparent,
         rowHairline: n.line,
-        groupedRowFill: n.card,
-        ornament: EmptyOrnament.khatam,
         // LOOK-12: the library's photo-forward grid card and a cookbook
         // tile's collage (design spec §1: 24dp).
         photoCardRadius: 24,

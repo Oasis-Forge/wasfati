@@ -22,8 +22,8 @@ import '../widgets/timer_ring.dart';
 
 /// RUN-4: what makes Wasfati different, in four pages — importing a post,
 /// amounts that scale in proper Arabic, cook mode, and planning and
-/// shopping. Every page has Skip; with reduce motion on, Next jumps instead
-/// of sliding. Each page's picture is drawn in Flutter on a large soft
+/// shopping. Every page but the last has Skip; with reduce motion on, Next
+/// jumps instead of sliding. Each page's picture is drawn in Flutter on a large soft
 /// accent shape — recipe tiles with drawn covers (LOOK-10), cards and
 /// simple painters, never a bitmap (LOOK-6) — in the chosen accent and
 /// digits, and the amounts in it go through the real parser and formatter,
@@ -86,6 +86,7 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
     final theme = Theme.of(context);
     final decor = Decor.of(context);
     final last = _page == WalkthroughScreen.pageCount - 1;
+    final replay = widget.onDone == null;
     final pages = <(String, String, Widget)>[
       (
         l10n.walkthroughImportTitle,
@@ -123,17 +124,20 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
                         _Page(title: title, body: body, drawing: drawing),
                     ],
                   ),
-                  PositionedDirectional(
-                    top: 4,
-                    end: 8,
-                    child: TextButton(
-                      style: TextButton.styleFrom(
-                        foregroundColor: theme.colorScheme.onSurfaceVariant,
+                  // On the last page Skip would do what the main button
+                  // does, so it only shows before it.
+                  if (!last)
+                    PositionedDirectional(
+                      top: 4,
+                      end: 8,
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          foregroundColor: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        onPressed: _finish,
+                        child: Text(l10n.walkthroughSkip),
                       ),
-                      onPressed: _finish,
-                      child: Text(l10n.walkthroughSkip),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -169,15 +173,22 @@ class _WalkthroughScreenState extends State<WalkthroughScreen> {
                           children: [
                             Flexible(
                               child: Text(
-                                last
-                                    ? l10n.walkthroughStart
-                                    : l10n.walkthroughNext,
+                                // RUN-4: replayed from Settings, the last
+                                // button returns there, so it says Done
+                                // rather than promising the library.
+                                !last
+                                    ? l10n.walkthroughNext
+                                    : replay
+                                    ? l10n.walkthroughDone
+                                    : l10n.walkthroughStart,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            const Icon(Icons.chevron_right, size: 20),
+                            if (!(last && replay)) ...[
+                              const SizedBox(width: 8),
+                              const Icon(Icons.chevron_right, size: 20),
+                            ],
                           ],
                         ),
                       ),
@@ -389,8 +400,10 @@ class _ImportDrawing extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Positioned(
-          left: 30,
+        // The fan mirrors with the language, so each tile's badge stays on
+        // an outer corner and none hides under the middle card.
+        PositionedDirectional(
+          end: 30,
           top: 164,
           child: _Tile(
             id: 'walkthrough-soup',
@@ -399,8 +412,8 @@ class _ImportDrawing extends StatelessWidget {
             degrees: -6,
           ),
         ),
-        Positioned(
-          left: 210,
+        PositionedDirectional(
+          start: 30,
           top: 164,
           child: _Tile(
             id: 'walkthrough-kabsa',
@@ -410,8 +423,8 @@ class _ImportDrawing extends StatelessWidget {
             badgeAtStart: true,
           ),
         ),
-        Positioned(
-          left: 120,
+        PositionedDirectional(
+          start: 120,
           top: 104,
           child: _Tile(
             id: 'walkthrough-fattoush',
@@ -575,6 +588,7 @@ class _ScaleDrawing extends StatelessWidget {
                       source: text,
                       style: faded?.copyWith(
                         decoration: TextDecoration.lineThrough,
+                        decorationColor: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                     AmountLine(
@@ -717,19 +731,27 @@ class _PlanDrawing extends StatelessWidget {
                 : null,
           ),
           const SizedBox(width: 10),
+          // A ticked item greys whole, amount included, and is struck in
+          // the same grey, as the real list's ticked rows are (GRO-5).
           Expanded(
-            child: AmountLine(
-              _demoLine(text, s.digits),
-              source: text,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: done
-                  ? TextStyle(
-                      decoration: TextDecoration.lineThrough,
+            child: done
+                ? ContentText(
+                    _demoLine(text, s.digits),
+                    source: text,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
                       color: cs.onSurfaceVariant,
-                    )
-                  : null,
-            ),
+                      decoration: TextDecoration.lineThrough,
+                      decorationColor: cs.onSurfaceVariant,
+                    ),
+                  )
+                : AmountLine(
+                    _demoLine(text, s.digits),
+                    source: text,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
           ),
         ],
       ),

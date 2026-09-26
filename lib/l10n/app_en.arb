@@ -36,6 +36,10 @@
   "@walkthroughStart": {
     "description": "RUN-4. The last walkthrough page's button; opens the library."
   },
+  "walkthroughDone": "Done",
+  "@walkthroughDone": {
+    "description": "RUN-4. The last walkthrough page's button when it was replayed from Settings; returns to Settings."
+  },
   "walkthroughPageOf": "Page {n} of {total}",
   "@walkthroughPageOf": {
     "description": "RUN-4. Screen-reader label of the walkthrough's page dots.",
@@ -429,6 +433,24 @@
   "settingsDigits": "Numbers",
   "@settingsDigits": {
     "description": "QTY-5, Decision 5. Digit style setting."
+  },
+  "digitsWesternName": "Western digits ({sample})",
+  "@digitsWesternName": {
+    "description": "QTY-5. What a screen reader says for the 123 digit option, so it differs from the Arabic one. {sample} is the option's own digits, 123.",
+    "placeholders": {
+      "sample": {
+        "type": "String"
+      }
+    }
+  },
+  "digitsArabicName": "Arabic digits ({sample})",
+  "@digitsArabicName": {
+    "description": "QTY-5. What a screen reader says for the ١٢٣ digit option, so it differs from the Western one. {sample} is the option's own digits, ١٢٣.",
+    "placeholders": {
+      "sample": {
+        "type": "String"
+      }
+    }
   },
   "settingsUnits": "Units",
   "@settingsUnits": {
@@ -1254,6 +1276,10 @@
   "planAddNote": "Write a note",
   "@planAddNote": {
     "description": "Plans a meal without a recipe (PLAN-2)"
+  },
+  "planEditNote": "Edit note",
+  "@planEditNote": {
+    "description": "PLAN-2. Title of the dialog that changes a planned note's text."
   },
   "planNoteLabel": "Note",
   "@planNoteLabel": {
