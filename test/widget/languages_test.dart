@@ -4,6 +4,7 @@
 // point the way the language reads.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wasfati/widgets/nav_pill.dart';
 import 'package:wasfati/l10n/app_localizations.dart';
 import 'package:wasfati/models/plan.dart';
 import 'package:wasfati/models/quantity/arabic_text.dart'
@@ -21,12 +22,10 @@ final _pdi = String.fromCharCode(0x2069);
 AppLocalizations _l10n(LanguagePref language) =>
     lookupAppLocalizations(Locale(language.name));
 
-/// The shell's own tabs, scoped to the NavigationBar (the recipe and plan
+/// The shell's own tabs, scoped to the NavPill (the recipe and plan
 /// pages carry the same icons in their app bars).
-Finder _navTab(IconData icon) => find.descendant(
-  of: find.byType(NavigationBar),
-  matching: find.byIcon(icon),
-);
+Finder _navTab(IconData icon) =>
+    find.descendant(of: find.byType(NavPill), matching: find.byIcon(icon));
 
 /// Which way the icon inside [button] is drawn: an icon that matches the
 /// text direction is flipped in right-to-left text.

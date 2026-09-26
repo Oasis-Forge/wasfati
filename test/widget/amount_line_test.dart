@@ -117,7 +117,8 @@ void main() {
   });
 
   testWidgets(
-    'Saffron colours the amount in the body colour, not primary (LOOK-4)',
+    'Decision 23: both accents colour the amount in the accent colour, '
+    'weight 700 (LOOK-4)',
     (tester) async {
       final line = ParsedLine(
         original: '1 كوب أرز',
@@ -143,11 +144,10 @@ void main() {
       ).extension<Decor>()!;
       final spans = (_richTextOf(tester).textSpan! as TextSpan).children!;
       expect((spans[0] as TextSpan).style!.color, decor.amountColor);
+      expect(decor.amountWeight, FontWeight.w700);
       expect(
         decor.amountColor,
-        isNot(
-          Theme.of(tester.element(find.byType(AmountLine))).colorScheme.primary,
-        ),
+        Theme.of(tester.element(find.byType(AmountLine))).colorScheme.primary,
       );
     },
   );

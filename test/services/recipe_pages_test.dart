@@ -401,49 +401,87 @@ void main() {
     });
   });
 
-  group('LOOK-1/SHARE-3: the page takes the chosen look\'s light palette', () {
-    testWidgets('a Saffron page\'s background is Saffron light, not Ink '
-        'light or a fixed seed', (tester) async {
-      await tester.runAsync(() async {
-        final (repo, _, _) = await testRepo();
-        final dir = await Directory.systemTemp.createTemp(
-          'wasfati_pages_style_test',
-        );
-        addTearDown(() {
-          if (dir.existsSync()) dir.deleteSync(recursive: true);
+  group('LOOK-1/SHARE-3: the page takes the chosen look\'s palette', () {
+    testWidgets(
+      'a page\'s background reads the surface token, and Saffron and Ink '
+      'renders actually differ (Decision 23: the two accents share every '
+      'neutral — page, card, sunk, ink — and differ only in accent colour, '
+      'so the background is no longer a way to tell them apart)',
+      (tester) async {
+        await tester.runAsync(() async {
+          final (repo, _, _) = await testRepo();
+          final dir = await Directory.systemTemp.createTemp(
+            'wasfati_pages_style_test',
+          );
+          addTearDown(() {
+            if (dir.existsSync()) dir.deleteSync(recursive: true);
+          });
+
+          Future<({int width, Uint8List rgba})> renderFor(
+            AppStyle style,
+          ) async {
+            final paths = await renderSharePages(
+              kabsa(repo),
+              factor: Rational.one,
+              view: UnitView.asWritten,
+              digits: DigitStyle.western,
+              uiDirection: TextDirection.rtl,
+              style: style,
+              ingredientsHeading: 'المقادير',
+              stepsHeading: 'الطريقة',
+              notScaledMark: _notScaledMark,
+              unscaledLineText: _unscaledLineText,
+              servingsLabel: (n) => '$n حصص',
+              prepTimeLabel: (m) => 'التحضير $m دقيقة',
+              cookTimeLabel: (m) => 'الطبخ $m دقيقة',
+              brand: 'وصفاتي',
+              storage: FakeShareStorage(dir),
+            );
+            expect(paths, isNotNull);
+            return _decodePixels(paths!.first);
+          }
+
+          final saffronPng = await renderFor(AppStyle.saffron);
+          final inkPng = await renderFor(AppStyle.ink);
+
+          final saffron = wasfatiColorScheme(
+            AppStyle.saffron,
+            Brightness.light,
+          );
+          final ink = wasfatiColorScheme(AppStyle.ink, Brightness.light);
+          // Decision 23: the neutrals are shared now — only the accent
+          // (primary) differs between the two.
+          expect(saffron.surface, ink.surface);
+          expect(saffron.primary, isNot(ink.primary));
+
+          // A corner well clear of any text or the photo band: the page's
+          // own background fill, read from the (now shared) surface token
+          // rather than a fixed seed.
+          expect(_pixel(saffronPng, 4, 4), _rgba(saffron.surface));
+          expect(_pixel(inkPng, 4, 4), _rgba(ink.surface));
+
+          // The two renders still differ somewhere (the accent-coloured
+          // amounts, at least), proving the chosen look actually reaches
+          // the page rather than being ignored.
+          expect(saffronPng.rgba, isNot(equals(inkPng.rgba)));
+
+          // Not just "differs somewhere" — the *chosen* accent actually
+          // reaches the page, not a swapped one: `_drawFooter` fills the
+          // whole footer band in `colors.primary`, so a pixel at its
+          // vertical centre (clear of the brand/counter text at either
+          // edge, LANG-5) pins the exact colour.
+          final footerY = shareImageHeight - shareFooterHeight / 2;
+          final footerX = shareImageWidth / 2;
+          expect(
+            _pixel(saffronPng, footerX.round(), footerY.round()),
+            _rgba(saffron.primary),
+          );
+          expect(
+            _pixel(inkPng, footerX.round(), footerY.round()),
+            _rgba(ink.primary),
+          );
         });
-
-        final paths = await renderSharePages(
-          kabsa(repo),
-          factor: Rational.one,
-          view: UnitView.asWritten,
-          digits: DigitStyle.western,
-          uiDirection: TextDirection.rtl,
-          style: AppStyle.saffron,
-          ingredientsHeading: 'المقادير',
-          stepsHeading: 'الطريقة',
-          notScaledMark: _notScaledMark,
-          unscaledLineText: _unscaledLineText,
-          servingsLabel: (n) => '$n حصص',
-          prepTimeLabel: (m) => 'التحضير $m دقيقة',
-          cookTimeLabel: (m) => 'الطبخ $m دقيقة',
-          brand: 'وصفاتي',
-          storage: FakeShareStorage(dir),
-        );
-        expect(paths, isNotNull);
-
-        final png = await _decodePixels(paths!.first);
-        // A corner well clear of any text or the photo band: the page's
-        // own background fill.
-        final bg = _pixel(png, 4, 4);
-        final saffron = wasfatiColorScheme(AppStyle.saffron, Brightness.light);
-        final ink = wasfatiColorScheme(AppStyle.ink, Brightness.light);
-        // The two looks' light surfaces are genuinely different colours,
-        // so a match against Saffron's below isn't Ink's palette by
-        // coincidence.
-        expect(saffron.surface, isNot(ink.surface));
-        expect(bg, _rgba(saffron.surface));
-      });
-    });
+      },
+    );
   });
 }

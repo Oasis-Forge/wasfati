@@ -4,6 +4,16 @@ Notable changes per release, written for users. Versions follow [Semantic Versio
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-09-26
+
+### Added
+- The new سُفرة look, in two accent colours (زعفران Saffron and حبر Ink) with زعفران as the default for new installs — light and dark, both now included in the app's contrast tests.
+- A floating navigation bar with الإعدادات (Settings) in it, and a centre "+" that opens one place to add a recipe — from a link, a photo, pasted text, or writing it yourself.
+- Drawn covers for recipes without a photo, in both light and dark.
+
+### Changed
+- Every screen takes the new colours, shapes and shared components (buttons, cards, the segmented control, the stepper) at once; per-screen layouts follow in later releases.
+
 ## [0.17.0] - 2026-09-25
 
 ### Added

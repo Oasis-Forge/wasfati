@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wasfati/widgets/nav_pill.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:wasfati/db/db_helper.dart';
 import 'package:wasfati/db/recipe_repository.dart';
@@ -78,7 +79,7 @@ void main() {
     expect(find.byType(SegmentedButton<String>), findsOneWidget);
     expect(find.byType(SegmentedButton<DigitStyle>), findsOneWidget);
     expect(find.byType(TextField), findsNothing); // no account, no profile
-    expect(find.byType(NavigationBar), findsNothing); // not the library yet
+    expect(find.byType(NavPill), findsNothing); // not the library yet
 
     await tester.tap(find.text('متابعة'));
     await settle(tester);
@@ -240,7 +241,7 @@ void main() {
     final (_, settings) = await pumpApp(tester, existingDb: db);
 
     expect(find.text('كبسة لحم'), findsOneWidget);
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(NavPill), findsOneWidget);
     expect(find.text('أهلًا بك في وصفاتي'), findsNothing);
     expect(find.text(_arPages[0]), findsNothing);
     expect(settings.settings.firstRunComplete, isTrue);
@@ -340,7 +341,13 @@ void main() {
 
   group('RUN-5: the store\'s review prompt', () {
     Future<void> openCookMode(WidgetTester tester) async {
-      await tester.ensureVisible(find.text('ابدأ الطبخ'));
+      // Decision 23's larger type scale can push "ابدأ الطبخ" out of the
+      // ListView's initial build range.
+      await tester.scrollUntilVisible(
+        find.text('ابدأ الطبخ'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
       await settle(tester);
       await tester.tap(find.text('ابدأ الطبخ'));
       await settle(tester);
@@ -383,7 +390,14 @@ void main() {
       await settle(tester);
       expect(storeReview.requests, 1);
       expect(settings.settings.reviewAskedAt, clock.now);
-      expect(find.text('ابدأ الطبخ'), findsOneWidget); // back on the recipe
+      // Back on the recipe (Decision 23's larger type scale can leave the
+      // button out of the ListView's initial build range here too).
+      await tester.scrollUntilVisible(
+        find.text('ابدأ الطبخ'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('ابدأ الطبخ'), findsOneWidget);
       await tester.pump(const Duration(seconds: 5)); // the snackbar goes
       await settle(tester);
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wasfati/widgets/nav_pill.dart';
 import 'package:wasfati/models/plan.dart';
 import 'package:wasfati/models/quantity/format.dart';
 import 'package:wasfati/models/ramadan.dart';
@@ -43,7 +44,7 @@ final ramadanDay5 = const RamadanMonth(1448, 2026, 9, 15, 30);
 Future<void> goToPlan(WidgetTester tester) async {
   await tester.tap(
     find.descendant(
-      of: find.byType(NavigationBar),
+      of: find.byType(NavPill),
       matching: find.byIcon(Icons.calendar_month_outlined),
     ),
   );
@@ -53,7 +54,7 @@ Future<void> goToPlan(WidgetTester tester) async {
 Future<void> goToLibrary(WidgetTester tester) async {
   await tester.tap(
     find.descendant(
-      of: find.byType(NavigationBar),
+      of: find.byType(NavPill),
       matching: find.byIcon(Icons.menu_book_outlined),
     ),
   );

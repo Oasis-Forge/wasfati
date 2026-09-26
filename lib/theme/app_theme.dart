@@ -1,53 +1,64 @@
 import 'package:flutter/material.dart';
 
 import '../models/settings.dart' show AppStyle;
-import '../widgets/chamfered_border.dart';
 import 'colors.dart';
 import 'decor.dart';
 import 'type.dart';
 
-/// LOOK-1/LOOK-2: builds the whole [ThemeData] for a look and a brightness
-/// — [ColorScheme], [TextTheme] and every component theme design-styles.md
-/// lists, with a [Decor] extension attached for what `ThemeData` itself
-/// cannot carry. Screens never fork on [AppStyle]; they read `Theme.of`
-/// and [Decor.of] like any other themed value (LOOK-2).
+/// LOOK-1/LOOK-6, Decision 23: builds the whole [ThemeData] for an accent
+/// and a brightness — one layout, سُفرة / Sufra, with the accent (زعفران/
+/// Saffron or حبر/Ink) picked in Settings. Screens never fork on
+/// [AppStyle]; they read `Theme.of` and [Decor.of] like any other themed
+/// value (LOOK-2: the accent changes only colour).
 ///
-/// Both looks: elevation, shadow and surface tint are zero everywhere in
-/// `ThemeData` itself (LOOK-7) — Ink has no raised object at all, and
-/// Saffron's one 2dp press ledge is drawn by a widget reading
-/// [Decor.ledgeDepth]/[Decor.ledgeColor], never by Material elevation.
-/// Disabled content is composited at 55% (light) / 45% (dark) of
-/// `onSurface`, never Material's default 38%, so it never drops under
-/// 3:1 (LOOK-3); hint text is full `onSurfaceVariant`, never faded.
+/// Cards, the search field and floating round buttons carry one soft warm
+/// shadow in light (`Decor.liftShadow`) and the navigation pill and primary
+/// buttons a deeper one (`Decor.floatShadow`); dark has no shadows — a 1dp
+/// hairline stands in on a card's own edge instead (`Decor.cardHairline`).
+/// Material's own elevation tint is never used: every `*ThemeData` below
+/// sets elevation/surfaceTintColor to 0/transparent.
 ThemeData wasfatiTheme(AppStyle style, Brightness brightness) {
   final cs = wasfatiColorScheme(style, brightness);
-  final radii = wasfatiRadii(style);
-  final isInk = style == AppStyle.ink;
+  final n = sufraNeutrals(brightness);
+  final isLight = brightness == Brightness.light;
 
-  final textTheme = wasfatiTextTheme(style)
-      .apply(bodyColor: cs.onSurface, displayColor: cs.onSurface);
+  final textTheme = sufraTextTheme().apply(
+    bodyColor: cs.onSurface,
+    displayColor: cs.onSurface,
+  );
 
   // LOOK-3: never Material's default 38% (light: 2.38:1, fails).
-  final disabledColor = cs.onSurface.withValues(
-    alpha: brightness == Brightness.light ? 0.55 : 0.45,
-  );
-  final disabledBackground = cs.surfaceContainerHigh;
+  final disabledColor = cs.onSurface.withValues(alpha: isLight ? 0.55 : 0.45);
+  final disabledBackground = n.sunk;
 
-  // 1dp in Ink (hairline architecture), 1.5dp in Saffron (design-styles.md
-  // "Shape and spacing", both looks).
-  final outlineWidth = isInk ? 1.0 : 1.5;
-
+  const pill = StadiumBorder();
   OutlinedBorder rounded(double radius) =>
       RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius));
 
-  // LOOK-6: Saffron's chamfer on chips, one of the five named targets
-  // (design-styles.md "Signature moves"); Ink stays a plain rounded rect.
-  // Shared with Decor.chipShape below, so a hand-built badge (the recipe
-  // step number) gets the same shape as an actual Chip instead of a second,
-  // driftable definition.
-  final OutlinedBorder chipShape = isInk
-      ? rounded(radii.chip)
-      : ChamferedBorder(borderRadius: radii.chip);
+  // design spec §1 "Shadows": --lift and --float, empty in dark.
+  final liftShadow = isLight
+      ? const [
+          BoxShadow(
+            color: Color(0x0F2F2012), // rgba(47,32,18,.06)
+            blurRadius: 2,
+            offset: Offset(0, 1),
+          ),
+          BoxShadow(
+            color: Color(0x142F2012), // rgba(47,32,18,.08)
+            blurRadius: 24,
+            offset: Offset(0, 8),
+          ),
+        ]
+      : const <BoxShadow>[];
+  final floatShadow = isLight
+      ? const [
+          BoxShadow(
+            color: Color(0x471F1A15), // rgba(31,26,21,.28)
+            blurRadius: 32,
+            offset: Offset(0, 12),
+          ),
+        ]
+      : const <BoxShadow>[];
 
   WidgetStateProperty<Color?> foregroundWithDisabled(Color normal) =>
       WidgetStateProperty.resolveWith(
@@ -69,155 +80,183 @@ ThemeData wasfatiTheme(AppStyle style, Brightness brightness) {
     surfaceTintColor: Colors.transparent,
     shadowColor: Colors.transparent,
     centerTitle: false,
-    toolbarHeight: isInk ? 60 : 64,
+    toolbarHeight: 64,
     titleTextStyle: textTheme.titleLarge,
-    // A static hairline, always on (design-styles.md: not scroll-driven).
-    shape: Border(bottom: BorderSide(color: cs.outlineVariant, width: 1)),
+    // No Sufra mockup draws a rule under a screen title — it sits directly
+    // on the linen/page. `line` (design spec §1) is only a hairline
+    // separator inside a card, or (dark only) a card's own edge.
+  );
+
+  // LOOK-6: 22dp radius, a shadow in light (drawn by SufraCard/other
+  // widgets, never Material elevation) and a 1dp hairline edge in dark.
+  final cardShape = RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(22),
+    side: isLight ? BorderSide.none : BorderSide(color: n.line),
   );
 
   final cardTheme = CardThemeData(
     elevation: 0,
-    color: cs.surfaceContainerLow,
+    color: n.card,
     surfaceTintColor: Colors.transparent,
     shadowColor: Colors.transparent,
     margin: EdgeInsets.zero,
     clipBehavior: Clip.antiAlias,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(radii.card),
-      side: BorderSide(color: cs.outline, width: outlineWidth),
-    ),
+    shape: cardShape,
   );
 
   final chipTheme = ChipThemeData(
-    shape: chipShape,
-    // should-fix, platform review: a selected chip's only state signal used
-    // to be a ~1.3:1 fill (primaryContainer on surface) — the same failure
-    // LOOK-3 already calls out for the nav indicator, which does carry this
-    // 2dp primary border. design-styles.md specifies exactly this per-chip
-    // resolution for both looks.
+    shape: pill,
     side: WidgetStateBorderSide.resolveWith(
       (states) => states.contains(WidgetState.selected)
-          ? BorderSide(color: cs.primary, width: 2)
-          : BorderSide(color: cs.outline, width: outlineWidth),
+          ? BorderSide.none
+          : BorderSide(color: cs.outline),
     ),
-    backgroundColor: Colors.transparent,
-    selectedColor: cs.primaryContainer,
-    labelStyle: textTheme.labelLarge?.copyWith(color: cs.onSurfaceVariant),
+    backgroundColor: n.sunk,
+    selectedColor: cs.onSurface,
+    // A plain `TextStyle.color` is state-aware here (`WidgetStateColor`
+    // implements `Color`, and RawChip resolves it against the chip's own
+    // states): FilterChip only ever reads `labelStyle` — never
+    // `secondaryLabelStyle`, which only ChoiceChip picks up — so a selected
+    // FilterChip label must read as `card` (on the dark `selectedColor`
+    // fill) here too, not just `onSurfaceVariant` (LOOK-3: was 2.45:1
+    // light, 1.82:1 dark).
+    labelStyle: textTheme.labelLarge?.copyWith(
+      color: WidgetStateColor.resolveWith(
+        (states) => states.contains(WidgetState.selected)
+            ? n.card
+            : cs.onSurfaceVariant,
+      ),
+    ),
     secondaryLabelStyle: textTheme.labelLarge?.copyWith(
-      color: cs.onPrimaryContainer,
+      color: n.card,
       fontWeight: FontWeight.w600,
     ),
     showCheckmark: false,
-    padding: EdgeInsets.symmetric(
-      horizontal: isInk ? 14 : 16,
-      vertical: isInk ? 10 : 12,
-    ),
+    // design-styles.md: chips are 36dp visual with a 48dp tap target. The
+    // default `labelPadding` (8dp) is kept — several chips carry an
+    // `avatar` icon that needs that gap — so only the outer padding is
+    // trimmed to still land on 16dp sides and ~36dp height.
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+    labelPadding: const EdgeInsets.symmetric(horizontal: 8),
     elevation: 0,
     pressElevation: 0,
   );
 
   final inputTheme = InputDecorationTheme(
     filled: true,
-    fillColor: cs.surfaceContainerLow,
+    fillColor: n.card,
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(radii.field),
-      borderSide: BorderSide(color: cs.outline, width: outlineWidth),
+      borderRadius: BorderRadius.circular(16),
+      borderSide: BorderSide(color: cs.outline),
     ),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(radii.field),
-      borderSide: BorderSide(color: cs.outline, width: outlineWidth),
+      borderRadius: BorderRadius.circular(16),
+      borderSide: BorderSide(color: cs.outline),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(radii.field),
+      borderRadius: BorderRadius.circular(16),
       borderSide: BorderSide(color: cs.primary, width: 2),
     ),
     errorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(radii.field),
-      borderSide: BorderSide(color: cs.error, width: isInk ? 1.5 : 2),
+      borderRadius: BorderRadius.circular(16),
+      borderSide: BorderSide(color: cs.error, width: 2),
     ),
     contentPadding: const EdgeInsetsDirectional.fromSTEB(16, 14, 16, 14),
-    constraints: isInk ? null : const BoxConstraints(minHeight: 56),
     floatingLabelBehavior: FloatingLabelBehavior.always,
-    labelStyle: (isInk ? textTheme.labelMedium : textTheme.labelSmall)
-        ?.copyWith(color: cs.onSurfaceVariant),
-    floatingLabelStyle: (isInk ? textTheme.labelMedium : textTheme.labelSmall)
-        ?.copyWith(color: cs.primary),
+    labelStyle: textTheme.labelMedium?.copyWith(color: cs.onSurfaceVariant),
+    floatingLabelStyle: textTheme.labelMedium?.copyWith(color: cs.primary),
     // LOOK-3: hint text at full onSurfaceVariant, never faded.
     hintStyle: textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
     helperStyle: textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
     errorStyle: textTheme.bodySmall?.copyWith(color: cs.error),
   );
 
+  // LOOK-6: the search field is a 52dp pill.
+  final searchBarTheme = SearchBarThemeData(
+    elevation: const WidgetStatePropertyAll(0),
+    backgroundColor: WidgetStatePropertyAll(n.card),
+    surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+    shadowColor: const WidgetStatePropertyAll(Colors.transparent),
+    shape: const WidgetStatePropertyAll(pill),
+    side: WidgetStatePropertyAll(BorderSide(color: cs.outline)),
+    constraints: const BoxConstraints(minHeight: 52, maxHeight: 52),
+    hintStyle: WidgetStatePropertyAll(
+      textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+    ),
+    textStyle: WidgetStatePropertyAll(
+      textTheme.bodyMedium?.copyWith(color: cs.onSurface),
+    ),
+  );
+
   final listTileTheme = ListTileThemeData(
     minVerticalPadding: 12,
     contentPadding: const EdgeInsetsDirectional.fromSTEB(16, 4, 12, 4),
-    horizontalTitleGap: isInk ? 14 : 12,
+    horizontalTitleGap: 12,
     titleTextStyle: textTheme.bodyLarge,
-    subtitleTextStyle: (isInk ? textTheme.bodySmall : textTheme.bodyMedium)
-        ?.copyWith(color: cs.onSurfaceVariant),
+    subtitleTextStyle: textTheme.bodyMedium?.copyWith(
+      color: cs.onSurfaceVariant,
+    ),
     iconColor: cs.onSurfaceVariant,
     selectedColor: cs.primary,
-    // Selection is drawn by the row itself (a rail, a fill, a check
-    // badge), never by M3's own tint (design-styles.md, both looks).
     selectedTileColor: Colors.transparent,
-    shape: rounded(radii.listTile),
+    shape: rounded(16),
   );
 
+  // LOOK-6: dialogs at 28dp.
   final dialogTheme = DialogThemeData(
-    backgroundColor: cs.surfaceContainerLow,
+    backgroundColor: n.card,
     surfaceTintColor: Colors.transparent,
     elevation: 0,
     shadowColor: Colors.transparent,
-    // should-fix, platform review: `outlineVariant` is 1.68:1 against this
-    // dialog's own fill (surfaceContainerLow) in Ink light — design-styles.md
-    // is explicit that outlineVariant is only for a row separator inside an
-    // already-bounded group and "may never be the edge of a control or of a
-    // container" (LOOK-3's 3:1 floor). `outline` is what Saffron already
-    // used, and what every other container edge in both looks uses.
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(radii.dialog),
-      side: BorderSide(color: cs.outline, width: outlineWidth),
+      borderRadius: BorderRadius.circular(28),
+      side: BorderSide(color: cs.outline),
     ),
     insetPadding: const EdgeInsets.all(24),
-    titleTextStyle: isInk ? textTheme.titleMedium : textTheme.titleLarge,
-    contentTextStyle: (isInk ? textTheme.bodyMedium : textTheme.bodyLarge)
-        ?.copyWith(color: cs.onSurfaceVariant),
-    barrierColor: brightness == Brightness.light
+    titleTextStyle: textTheme.titleMedium,
+    contentTextStyle: textTheme.bodyMedium?.copyWith(
+      color: cs.onSurfaceVariant,
+    ),
+    barrierColor: isLight
         ? Colors.black.withValues(alpha: 0.48)
         : Colors.black.withValues(alpha: 0.64),
   );
 
+  // LOOK-6: a bottom sheet's top corners at 28dp, with a drag handle.
   final bottomSheetTheme = BottomSheetThemeData(
-    backgroundColor: cs.surfaceContainerLow,
+    backgroundColor: n.card,
     surfaceTintColor: Colors.transparent,
     elevation: 0,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(radii.sheet)),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
     ),
     showDragHandle: true,
     dragHandleColor: cs.outline,
     dragHandleSize: const Size(40, 4),
   );
 
+  // LOOK-6: floating snackbars at 16dp.
   final snackBarTheme = SnackBarThemeData(
     behavior: SnackBarBehavior.floating,
     backgroundColor: cs.inverseSurface,
-    contentTextStyle: (isInk ? textTheme.bodyMedium : textTheme.bodyLarge)
-        ?.copyWith(color: cs.onInverseSurface),
+    contentTextStyle: textTheme.bodyMedium?.copyWith(
+      color: cs.onInverseSurface,
+    ),
     actionTextColor: cs.inversePrimary,
-    shape: rounded(radii.snackBar),
+    shape: rounded(16),
     elevation: 0,
     insetPadding: const EdgeInsets.all(16),
   );
 
+  // LOOK-6: buttons are pills — primary 56dp, everything else 48dp.
   final filledButtonTheme = FilledButtonThemeData(
     style: ButtonStyle(
       backgroundColor: backgroundWithDisabled(cs.primary),
       foregroundColor: foregroundWithDisabled(cs.onPrimary),
-      minimumSize: WidgetStatePropertyAll(Size(0, isInk ? 52 : 56)),
-      shape: WidgetStatePropertyAll(rounded(radii.button)),
+      minimumSize: const WidgetStatePropertyAll(Size(0, 56)),
+      shape: const WidgetStatePropertyAll(pill),
       textStyle: WidgetStatePropertyAll(textTheme.labelLarge),
-      iconSize: WidgetStatePropertyAll(isInk ? 22 : 24),
+      iconSize: const WidgetStatePropertyAll(24),
       elevation: const WidgetStatePropertyAll(0),
       overlayColor: WidgetStatePropertyAll(cs.onPrimary.withValues(alpha: 0.1)),
     ),
@@ -227,19 +266,16 @@ ThemeData wasfatiTheme(AppStyle style, Brightness brightness) {
     style: ButtonStyle(
       side: WidgetStateProperty.resolveWith(
         (states) => BorderSide(
-          color: !isInk && states.contains(WidgetState.pressed)
-              ? cs.primary
-              : cs.outline,
-          width: isInk ? 1.5 : 2,
+          color: states.contains(WidgetState.pressed) ? cs.primary : cs.outline,
+          width: 1.5,
         ),
       ),
       foregroundColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.disabled)) return disabledColor;
-        if (isInk) return cs.primary;
         return states.contains(WidgetState.pressed) ? cs.primary : cs.onSurface;
       }),
-      minimumSize: WidgetStatePropertyAll(Size(0, isInk ? 52 : 56)),
-      shape: WidgetStatePropertyAll(rounded(radii.button)),
+      minimumSize: const WidgetStatePropertyAll(Size(0, 48)),
+      shape: const WidgetStatePropertyAll(pill),
       textStyle: WidgetStatePropertyAll(textTheme.labelLarge),
       overlayColor: WidgetStatePropertyAll(cs.primary.withValues(alpha: 0.08)),
     ),
@@ -249,8 +285,16 @@ ThemeData wasfatiTheme(AppStyle style, Brightness brightness) {
     style: ButtonStyle(
       foregroundColor: foregroundWithDisabled(cs.primary),
       minimumSize: const WidgetStatePropertyAll(Size(0, 48)),
-      shape: WidgetStatePropertyAll(rounded(radii.button)),
+      shape: const WidgetStatePropertyAll(pill),
       textStyle: WidgetStatePropertyAll(textTheme.labelLarge),
+    ),
+  );
+
+  final iconButtonTheme = IconButtonThemeData(
+    style: ButtonStyle(
+      shape: const WidgetStatePropertyAll(CircleBorder()),
+      foregroundColor: foregroundWithDisabled(cs.onSurface),
+      minimumSize: const WidgetStatePropertyAll(Size(44, 44)),
     ),
   );
 
@@ -263,7 +307,7 @@ ThemeData wasfatiTheme(AppStyle style, Brightness brightness) {
     highlightElevation: 0,
     disabledElevation: 0,
     extendedTextStyle: textTheme.labelLarge,
-    shape: rounded(radii.button),
+    shape: const StadiumBorder(),
   );
 
   final dividerTheme = DividerThemeData(
@@ -272,16 +316,33 @@ ThemeData wasfatiTheme(AppStyle style, Brightness brightness) {
     space: 1,
   );
 
+  // LOOK-6: circular checkboxes.
+  final checkboxTheme = CheckboxThemeData(
+    shape: const CircleBorder(),
+    side: BorderSide(color: cs.outline, width: 1.5),
+    fillColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.disabled)) return disabledBackground;
+      return states.contains(WidgetState.selected)
+          ? cs.secondary
+          : Colors.transparent;
+    }),
+    // `onSecondary` is `onHerb` (design-styles.md flag 2): a hard-coded
+    // white tick on herb reads at 1.98:1 in dark, well under LOOK-3's 3:1
+    // for a state indicator.
+    checkColor: WidgetStatePropertyAll(cs.onSecondary),
+  );
+
   final switchTheme = SwitchThemeData(
     thumbColor: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.disabled)) return disabledColor;
+      // `outline` (not `card`), so the "off" thumb reads against the sunk
+      // track (LOOK-3: card-on-sunk is only ~1.2:1 without the drop shadow
+      // Flutter's Switch thumb doesn't draw).
       return states.contains(WidgetState.selected) ? cs.onPrimary : cs.outline;
     }),
     trackColor: WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.disabled)) return disabledBackground;
-      return states.contains(WidgetState.selected)
-          ? cs.primary
-          : cs.surfaceContainerHighest;
+      return states.contains(WidgetState.selected) ? cs.primary : n.sunk;
     }),
     trackOutlineColor: WidgetStateProperty.resolveWith(
       (states) => states.contains(WidgetState.selected)
@@ -290,9 +351,37 @@ ThemeData wasfatiTheme(AppStyle style, Brightness brightness) {
     ),
   );
 
+  final progressTheme = ProgressIndicatorThemeData(
+    color: cs.primary,
+    linearTrackColor: n.sunk,
+    circularTrackColor: n.sunk,
+  );
+
+  final segmentedButtonTheme = SegmentedButtonThemeData(
+    style: ButtonStyle(
+      shape: const WidgetStatePropertyAll(pill),
+      // The unselected fill is `sunk` (not transparent), so the whole group
+      // reads as one sunk pill track — the design's segmented-pill — with
+      // the selected segment's `card` fill lifted on top of it, rather than
+      // bare text with no track at all.
+      backgroundColor: WidgetStateProperty.resolveWith(
+        (states) => states.contains(WidgetState.selected) ? n.card : n.sunk,
+      ),
+      foregroundColor: WidgetStateProperty.resolveWith(
+        (states) => states.contains(WidgetState.selected)
+            ? cs.onSurface
+            : cs.onSurfaceVariant,
+      ),
+      // A group edge at `outline` (>= 3:1, LOOK-3), since the sunk fill
+      // alone isn't a boundary against the page (~1:1).
+      side: WidgetStatePropertyAll(BorderSide(color: cs.outline)),
+      textStyle: WidgetStatePropertyAll(textTheme.labelLarge),
+    ),
+  );
+
   final sliderTheme = SliderThemeData(
     activeTrackColor: cs.primary,
-    inactiveTrackColor: cs.surfaceContainerHighest,
+    inactiveTrackColor: n.sunk,
     thumbColor: cs.primary,
     overlayColor: cs.primary.withValues(alpha: 0.12),
     disabledActiveTrackColor: disabledColor,
@@ -311,47 +400,11 @@ ThemeData wasfatiTheme(AppStyle style, Brightness brightness) {
     indicatorSize: TabBarIndicatorSize.label,
     dividerColor: cs.outlineVariant,
     dividerHeight: 1,
-    labelStyle: isInk ? textTheme.titleSmall : textTheme.labelLarge,
-    unselectedLabelStyle: isInk ? textTheme.titleSmall : textTheme.labelLarge,
+    labelStyle: textTheme.labelLarge,
+    unselectedLabelStyle: textTheme.labelLarge,
     labelColor: cs.onSurface,
     unselectedLabelColor: cs.onSurfaceVariant,
     overlayColor: WidgetStatePropertyAll(cs.primary.withValues(alpha: 0.08)),
-  );
-
-  final navBarTheme = NavigationBarThemeData(
-    height: isInk ? 72 : 80,
-    backgroundColor: isInk ? cs.surfaceContainerLow : cs.surfaceContainer,
-    elevation: 0,
-    surfaceTintColor: Colors.transparent,
-    shadowColor: Colors.transparent,
-    labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-    indicatorColor: cs.primaryContainer,
-    // The framework hard-codes the indicator's own 64x32 size
-    // (navigation_bar.dart) — only shape and colour are themeable, so the
-    // 2dp primary border is what carries the selected state: primary on
-    // this background clears 3:1 while primaryContainer's fill alone does
-    // not (design-styles.md, both looks).
-    indicatorShape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(isInk ? 10 : 12),
-      side: BorderSide(color: cs.primary, width: 2),
-    ),
-    iconTheme: WidgetStateProperty.resolveWith(
-      (states) => IconThemeData(
-        size: isInk ? 24 : 26,
-        color: states.contains(WidgetState.selected)
-            ? cs.onPrimaryContainer
-            : cs.onSurfaceVariant,
-      ),
-    ),
-    labelTextStyle: WidgetStateProperty.resolveWith((states) {
-      final selected = states.contains(WidgetState.selected);
-      return textTheme.labelMedium?.copyWith(
-        color: selected ? cs.onSurface : cs.onSurfaceVariant,
-        fontWeight: selected
-            ? (isInk ? FontWeight.w600 : FontWeight.w700)
-            : FontWeight.w600,
-      );
-    }),
   );
 
   return ThemeData(
@@ -360,14 +413,7 @@ ThemeData wasfatiTheme(AppStyle style, Brightness brightness) {
     colorScheme: cs,
     textTheme: textTheme,
     scaffoldBackgroundColor: cs.surface,
-    // LOOK-3: what a disabled ListTile (Settings' backup rows while a backup
-    // runs) and any other widget without its own disabled theme paints its
-    // text in. Unset, it's Material's black/white at 38%, 2.62:1 on the
-    // grouped-row fill in light.
     disabledColor: disabledColor,
-    // LOOK-7: no shadow, elevation or surface tint anywhere — Saffron's
-    // one press ledge is Decor data for a widget to draw, never Material
-    // elevation (see the class doc comment above).
     shadowColor: Colors.transparent,
     splashFactory: InkRipple.splashFactory,
     highlightColor: Colors.transparent,
@@ -381,6 +427,7 @@ ThemeData wasfatiTheme(AppStyle style, Brightness brightness) {
     cardTheme: cardTheme,
     chipTheme: chipTheme,
     inputDecorationTheme: inputTheme,
+    searchBarTheme: searchBarTheme,
     listTileTheme: listTileTheme,
     dialogTheme: dialogTheme,
     bottomSheetTheme: bottomSheetTheme,
@@ -388,93 +435,54 @@ ThemeData wasfatiTheme(AppStyle style, Brightness brightness) {
     filledButtonTheme: filledButtonTheme,
     outlinedButtonTheme: outlinedButtonTheme,
     textButtonTheme: textButtonTheme,
+    iconButtonTheme: iconButtonTheme,
     floatingActionButtonTheme: fabTheme,
     dividerTheme: dividerTheme,
+    checkboxTheme: checkboxTheme,
     switchTheme: switchTheme,
+    progressIndicatorTheme: progressTheme,
+    segmentedButtonTheme: segmentedButtonTheme,
     sliderTheme: sliderTheme,
     tabBarTheme: tabBarTheme,
-    navigationBarTheme: navBarTheme,
-    extensions: [_decorFor(style, cs, radii, chipShape)],
-  );
-}
-
-/// Saffron's one press ledge colour (LOOK-7), design-styles.md's `ledge`
-/// token: `#A86C00`, fixed rather than derived from `primary`. should-fix,
-/// platform review: deriving it as `primary` minus an absolute 0.18 HSL
-/// lightness step composited to near-black (`#2E1B00`, 15.84:1 on the page)
-/// in Saffron light, because in this build `primary` already **is** the
-/// button's own fill and is itself fairly dark (`#8A5200`, L 0.27) — no
-/// separate, brighter "slab" role survived the merge into one `ColorScheme`
-/// per look for [primary] to shade relative to. This fixed value is
-/// 4.19:1 on the light page and 4.34:1 on the dark one (design-styles.md's
-/// own measurements), so it reads as shading, not a black rule, in both.
-const _saffronLedge = Color(0xFFA86C00);
-
-Decor _decorFor(
-  AppStyle style,
-  ColorScheme cs,
-  WasfatiRadii radii,
-  OutlinedBorder chipShape,
-) {
-  OutlinedBorder rounded(double radius) =>
-      RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius));
-
-  if (style == AppStyle.ink) {
-    return Decor(
-      // The reading-edge rail, Ink's signature move (design-styles.md
-      // "Signature moves" #1).
-      railWidth: 3,
-      railColor: cs.primary,
-      cardShape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(radii.card),
-        side: BorderSide(color: cs.outline),
+    extensions: [
+      Decor(
+        sunk: n.sunk,
+        cardHairline: isLight ? null : n.line,
+        liftShadow: liftShadow,
+        floatShadow: floatShadow,
+        // LOOK-7: always a dark chrome, regardless of the app's own
+        // brightness — light: `ink` (already dark); dark: `sunk`, with a
+        // border standing in for the shadow it loses.
+        navFill: isLight ? n.ink : n.sunk,
+        navBorder: n.navBorder,
+        navInactive: n.navInactive,
+        // Always a light label on the pill's own dark chrome: white in
+        // light (the pill fill is `ink`, itself dark), `ink` in dark (the
+        // pill fill is `sunk`, and dark's `ink` is the light token).
+        navActive: isLight ? Colors.white : n.ink,
+        coverTints: sufraCoverTints(brightness),
+        gutter: 20,
+        // The plan's own "today" highlight bar (unrelated to RailHeading,
+        // which no longer draws one).
+        railWidth: 4,
+        railColor: cs.primary,
+        cardShape: cardShape,
+        // "full-bleed", never rounded — the recipe hero photo.
+        photoShape: const RoundedRectangleBorder(),
+        chipShape: pill,
+        buttonShape: pill,
+        thumbnailShape: rounded(24),
+        // LOOK-4: the amount in the accent at w700, for both accents.
+        amountColor: cs.primary,
+        amountWeight: FontWeight.w700,
+        // Decision 23 drops Saffron's one press ledge: PressableSlab
+        // renders every wrapped button flat now.
+        ledgeDepth: 0,
+        ledgeColor: Colors.transparent,
+        rowHairline: n.line,
+        groupedRowFill: n.card,
+        ornament: EmptyOrnament.khatam,
       ),
-      // The hero photo's two bottom corners only (Directional, so it
-      // mirrors with the language with no code branch).
-      photoShape: RoundedRectangleBorder(
-        borderRadius: BorderRadiusDirectional.vertical(
-          bottom: Radius.circular(radii.photo),
-        ),
-      ),
-      chipShape: chipShape,
-      buttonShape: rounded(radii.button),
-      thumbnailShape: rounded(radii.chip),
-      // LOOK-4: the amount in primary at w600.
-      amountColor: cs.primary,
-      amountWeight: FontWeight.w600,
-      // LOOK-7: no shadow, elevation or ledge anywhere in Ink.
-      ledgeDepth: 0,
-      ledgeColor: Colors.transparent,
-      rowHairline: cs.outlineVariant,
-      groupedRowFill: cs.surfaceContainerLow,
-      ornament: EmptyOrnament.khatam,
-    );
-  }
-
-  return Decor(
-    // Saffron marks a heading with a thicker 4dp bar rather than dropping
-    // the rail entirely (design-styles.md's recipe/plan/settings screens).
-    railWidth: 4,
-    railColor: cs.primary,
-    cardShape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(radii.card),
-      side: BorderSide(color: cs.outline, width: 1.5),
-    ),
-    // "full-bleed and square-cut" — no rounding (design-styles.md).
-    photoShape: const RoundedRectangleBorder(),
-    chipShape: chipShape,
-    buttonShape: rounded(radii.button),
-    // LOOK-6, "The chamfer": one of the five things Saffron cuts.
-    thumbnailShape: ChamferedBorder(borderRadius: radii.chip),
-    // LOOK-4: Saffron keeps the amount in the body colour, only heavier.
-    amountColor: cs.onSurface,
-    amountWeight: FontWeight.w600,
-    // LOOK-7: Saffron's one press ledge, under exactly three primary
-    // actions; a widget built later reads this to draw and collapse it.
-    ledgeDepth: 2,
-    ledgeColor: _saffronLedge,
-    rowHairline: cs.outlineVariant,
-    groupedRowFill: cs.surfaceContainerLow,
-    ornament: EmptyOrnament.lattice,
+    ],
   );
 }

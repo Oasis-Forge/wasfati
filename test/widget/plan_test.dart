@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wasfati/widgets/nav_pill.dart';
 import 'package:wasfati/models/plan.dart';
 
 import 'app_test.dart' show plan, pumpApp, settle, shown;
@@ -20,7 +21,7 @@ void main() {
     await pumpApp(tester, withRecipe: true);
 
     // The plan is the app's second place, once there's a recipe (PLAN-1).
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(NavPill), findsOneWidget);
 
     await tester.tap(shown('كبسة لحم'));
     await settle(tester);
@@ -45,10 +46,7 @@ void main() {
     await tester.binding.handlePopRoute(); // pageBack can't see the icon
     await settle(tester);
     await tester.tap(
-      find.descendant(
-        of: find.byType(NavigationBar),
-        matching: find.text('الخطة'),
-      ),
+      find.descendant(of: find.byType(NavPill), matching: find.text('الخطة')),
     );
     await settle(tester);
     await tester.tap(find.byTooltip('هذا الأسبوع')); // scrolls to today
@@ -61,10 +59,7 @@ void main() {
       'week moves', (tester) async {
     await pumpApp(tester, withRecipe: true);
     await tester.tap(
-      find.descendant(
-        of: find.byType(NavigationBar),
-        matching: find.text('الخطة'),
-      ),
+      find.descendant(of: find.byType(NavPill), matching: find.text('الخطة')),
     );
     await settle(tester);
 

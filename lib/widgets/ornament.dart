@@ -2,29 +2,24 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../theme/decor.dart';
-
-/// LOOK-6's drawn empty-state ornament — never a bitmap. Ink draws
-/// [KhatamPainter] (an eight-point star), Saffron [LatticePainter] (a girih
-/// grid); [Ornament] itself picks between them from [Decor.ornament], so a
-/// screen never branches on the look (LOOK-2).
+/// LOOK-6/LOOK-10, Decision 23: the drawn empty-state ornament — never a
+/// bitmap — always the eight-point khatam star, سُفرة's one drawn motif
+/// (the same line pattern `RecipeCover` tiles behind a no-photo recipe).
 class Ornament extends StatelessWidget {
   const Ornament({super.key, this.size = 120, this.opacity = 0.08, this.color});
 
   final double size;
 
-  /// design-styles.md: 8% behind an empty state (both looks' khatam), kept
-  /// as the default for the lattice too so neither ornament competes with
-  /// the heading and body text in front of it.
+  /// 8% behind an empty state, so it never competes with the heading and
+  /// body text in front of it.
   final double opacity;
 
   /// Defaults to `onSurface`, tinted by [opacity] — legible on any surface
-  /// step in the ladder without a colour of its own.
+  /// without a colour of its own.
   final Color? color;
 
   @override
   Widget build(BuildContext context) {
-    final decor = Decor.of(context);
     final tint = (color ?? Theme.of(context).colorScheme.onSurface).withValues(
       alpha: opacity,
     );
@@ -32,11 +27,7 @@ class Ornament extends StatelessWidget {
       child: SizedBox(
         width: size,
         height: size,
-        child: CustomPaint(
-          painter: decor.ornament == EmptyOrnament.khatam
-              ? KhatamPainter(color: tint)
-              : LatticePainter(color: tint),
-        ),
+        child: CustomPaint(painter: KhatamPainter(color: tint)),
       ),
     );
   }

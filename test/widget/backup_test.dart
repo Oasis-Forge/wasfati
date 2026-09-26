@@ -70,6 +70,13 @@ Future<void> openSettings(WidgetTester tester) async {
   await settle(tester);
 }
 
+/// LOOK-7: Settings is a navigation-pill tab now, not a pushed screen, so
+/// leaving it taps the recipes tab instead of a system Back.
+Future<void> closeSettings(WidgetTester tester) async {
+  await tester.tap(find.byTooltip('الوصفات'));
+  await settle(tester);
+}
+
 /// Keeps calling [settle] until [check] is true, up to [max] times
 /// (must-fix, review: `createBackup()`'s real filesystem awaits — creating
 /// `_backupsDir`, closing the zip encoder, reading and deleting the scratch
@@ -141,8 +148,7 @@ void main() {
       await tester.tap(find.text('تم'));
       await settle(tester);
 
-      await tester.binding.handlePopRoute(); // back to the library
-      await settle(tester);
+      await closeSettings(tester); // back to the library
       expect(shown('من النسخة'), findsOneWidget);
     },
   );
@@ -173,8 +179,7 @@ void main() {
     await settle(tester);
     expect(find.text('اكتملت الاستعادة'), findsNothing); // nothing happened
 
-    await tester.binding.handlePopRoute();
-    await settle(tester);
+    await closeSettings(tester); // back to the library
     expect(shown('كبسة لحم'), findsOneWidget); // the original, untouched
     expect(shown('من النسخة'), findsNothing);
   });
@@ -193,8 +198,7 @@ void main() {
 
       expect(find.text('هذا ليس ملف نسخة احتياطية من وصفاتي.'), findsOneWidget);
 
-      await tester.binding.handlePopRoute();
-      await settle(tester);
+      await closeSettings(tester); // back to the library
       expect(shown('كبسة لحم'), findsOneWidget); // untouched
     },
   );
@@ -376,8 +380,7 @@ void main() {
       await tester.tap(find.text('إلغاء'));
       await settle(tester);
       expect(find.text('هل أنت متأكد؟'), findsNothing);
-      await tester.binding.handlePopRoute();
-      await settle(tester);
+      await closeSettings(tester); // back to the library
       expect(shown('كبسة لحم'), findsOneWidget);
 
       // Confirming the first, then cancelling the SECOND (are you sure?)
@@ -389,8 +392,7 @@ void main() {
       await tester.tap(find.text('إلغاء'));
       await settle(tester);
       expect(find.text('اكتملت الاستعادة'), findsNothing);
-      await tester.binding.handlePopRoute();
-      await settle(tester);
+      await closeSettings(tester); // back to the library
       expect(shown('كبسة لحم'), findsOneWidget);
       expect(shown('من النسخة'), findsNothing);
 
@@ -403,8 +405,7 @@ void main() {
       expect(find.text('اكتملت الاستعادة'), findsOneWidget);
       await tester.tap(find.text('تم'));
       await settle(tester);
-      await tester.binding.handlePopRoute();
-      await settle(tester);
+      await closeSettings(tester); // back to the library
       expect(shown('من النسخة'), findsOneWidget);
       expect(shown('كبسة لحم'), findsNothing);
     },
@@ -624,8 +625,7 @@ void main() {
       await tester.tap(find.text('تم'));
       await settle(tester);
 
-      await tester.binding.handlePopRoute();
-      await settle(tester);
+      await closeSettings(tester); // back to the library
       expect(shown('كبسة لحم'), findsOneWidget); // back to the pre-merge state
       expect(shown('سطحية'), findsNothing);
     },
@@ -654,8 +654,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    await tester.binding.handlePopRoute();
-    await settle(tester);
+    await closeSettings(tester); // back to the library
     expect(shown('كبسة لحم'), findsOneWidget);
   });
 
@@ -677,8 +676,7 @@ void main() {
     await settle(tester);
 
     expect(find.text('هذا الملف تالف.'), findsOneWidget);
-    await tester.binding.handlePopRoute();
-    await settle(tester);
+    await closeSettings(tester); // back to the library
     expect(shown('كبسة لحم'), findsOneWidget);
   });
 }

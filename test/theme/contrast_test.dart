@@ -1,3 +1,21 @@
+// LOOK-3, Decision 23: computes the WCAG 2.1 contrast ratio of every
+// text/surface and boundary/surface pair سُفرة / Sufra's design actually
+// uses, for both accents (زعفران/Saffron, حبر/Ink) and both brightnesses,
+// from nothing but [wasfatiColorScheme] and the [Decor] extension
+// [wasfatiTheme] attaches, and fails below the bar:
+// - body text (ink, ink2, the accent) at least 4.5:1 against every surface
+//   it can sit on (page, card, sunk);
+// - onPrimary on primary, onAccentSoft on accentSoft, onHerbSoft on
+//   herbSoft: at least 4.5:1 — a role's own "on" colour against its fill;
+// - the navigation pill's inactive and active colours on its own fill (a
+//   fixed dark chrome, independent of the app's own brightness): 4.5:1;
+// - white on the photo-card title scrim (design spec §1: a gradient to at
+//   least 78% near-black) at its worst case, over a light photo: 4.5:1;
+// - each of the six drawn-cover tints' dark tone on its own light tone (the
+//   star pattern, the centred letter — large text): 3:1;
+// - a control boundary (`outline`) against card and page: 3:1;
+// - disabled text (composited exactly as `app_theme.dart` composites it,
+//   never Material's default 38%): 3:1.
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -8,20 +26,6 @@ import 'package:wasfati/theme/app_theme.dart';
 import 'package:wasfati/theme/colors.dart';
 import 'package:wasfati/theme/decor.dart';
 
-/// LOOK-3: computes the WCAG 2.1 contrast ratio of every text/surface and
-/// boundary/surface pair each of the four themes (Ink/Saffron x
-/// light/dark) actually uses, from nothing but their [ColorScheme]s, and
-/// fails below the bar:
-/// - body text: at least 4.5:1 against every surface it can sit on;
-/// - large text (a heading, an amount, a big digit): at least 3:1;
-/// - a control or container boundary: at least 3:1 (a fill step alone is
-///   never enough — LOOK-3 explicitly rejects that);
-/// - disabled text (composited exactly as `app_theme.dart` composites it,
-///   never Material's default 38%) and hint text (full `onSurfaceVariant`,
-///   never faded): at least 3:1.
-///
-/// The ratio helper below is written from the WCAG 2.1 formula directly —
-/// no package.
 void main() {
   const bodyMin = 4.5;
   const largeMin = 3.0;
@@ -31,69 +35,94 @@ void main() {
   for (final style in AppStyle.values) {
     for (final brightness in Brightness.values) {
       final cs = wasfatiColorScheme(style, brightness);
-      final label = '$style/${brightness.name}';
+      final n = sufraNeutrals(brightness);
+      final decor = wasfatiTheme(style, brightness).extension<Decor>()!;
+      final label = '${style.name}/${brightness.name}';
 
       group(label, () {
-        // The warm/cool surface ladder every card, sheet and group fill
-        // is drawn on (design-styles.md's "Contrast" section, both looks).
-        final ladder = <String, Color>{
-          'surface': cs.surface,
-          'surfaceContainerLow': cs.surfaceContainerLow,
-          'surfaceContainer': cs.surfaceContainer,
-          'surfaceContainerHigh': cs.surfaceContainerHigh,
-          'surfaceContainerHighest': cs.surfaceContainerHighest,
+        final surfaces = <String, Color>{
+          'page': cs.surface,
+          'card': cs.surfaceContainerLowest,
+          'sunk': decor.sunk,
         };
 
-        // Ordinary reading text: ingredient lines, list titles, dialog and
-        // settings body copy (bodyLarge/bodyMedium/bodySmall, w400-500).
+        // LOOK-3: ink and ink2, as ordinary body text, on every surface the
+        // design sits it on.
         final bodyTextColors = <String, Color>{
-          'onSurface': cs.onSurface,
-          'onSurfaceVariant': cs.onSurfaceVariant,
+          'ink': cs.onSurface,
+          'ink2': cs.onSurfaceVariant,
         };
         for (final MapEntry(key: textName, value: text)
             in bodyTextColors.entries) {
-          for (final MapEntry(key: surfName, value: surf) in ladder.entries) {
-            test('body text $textName on $surfName >= $bodyMin:1', () {
+          for (final MapEntry(key: surfName, value: surf) in surfaces.entries) {
+            test('$textName text on $surfName >= $bodyMin:1', () {
               expect(contrastRatio(text, surf), greaterThanOrEqualTo(bodyMin));
             });
           }
         }
 
-        // A role's own "on" colour against its own container/fill — also
-        // read as body-sized text (a chip label, a selected settings row,
-        // a SnackBar).
-        final onContainerPairs = <String, (Color, Color)>{
+        // LOOK-4: the accent as body text — an amount at weight 700 (16sp,
+        // not WCAG large text), a `TextButton` label, a floating field
+        // label — on the two surfaces it actually sits on this way (page,
+        // card): 4.5:1, the same bar as any other body text. It never sits
+        // as body text on `sunk` (only as an icon/dot, checked at
+        // $largeMin below), so that pair is intentionally excluded here.
+        for (final surfName in ['page', 'card']) {
+          test('accent text on $surfName >= $bodyMin:1', () {
+            expect(
+              contrastRatio(cs.primary, surfaces[surfName]!),
+              greaterThanOrEqualTo(bodyMin),
+            );
+          });
+        }
+        // LOOK-4: the accent as large text/an icon (an active nav dot,
+        // >=18.66sp bold) on every surface, `sunk` included: at least 3:1.
+        for (final MapEntry(key: surfName, value: surf) in surfaces.entries) {
+          test('accent icon/large text on $surfName >= $largeMin:1', () {
+            expect(
+              contrastRatio(cs.primary, surf),
+              greaterThanOrEqualTo(largeMin),
+            );
+          });
+        }
+
+        // LOOK-4: onPrimary on primary (a filled button, e.g. "ابدأ
+        // الطبخ"); onAccentSoft on accentSoft (a soft icon circle, a
+        // selected chip); onHerbSoft on herbSoft (the "في الخطة" band).
+        final onFillPairs = <String, (Color, Color)>{
           'onPrimary/primary': (cs.onPrimary, cs.primary),
-          'onPrimaryContainer/primaryContainer': (
+          'onAccentSoft/accentSoft (onPrimaryContainer/primaryContainer)': (
             cs.onPrimaryContainer,
             cs.primaryContainer,
           ),
-          'onSecondary/secondary': (cs.onSecondary, cs.secondary),
-          'onSecondaryContainer/secondaryContainer': (
+          'onHerbSoft/herbSoft (onSecondaryContainer/secondaryContainer)': (
             cs.onSecondaryContainer,
             cs.secondaryContainer,
           ),
-          'onTertiary/tertiary': (cs.onTertiary, cs.tertiary),
-          'onTertiaryContainer/tertiaryContainer': (
-            cs.onTertiaryContainer,
-            cs.tertiaryContainer,
-          ),
+          // The import screen's failure message (`cs.error` body text) and
+          // any `errorContainer` fill — dropped from the rewrite.
           'onError/error': (cs.onError, cs.error),
           'onErrorContainer/errorContainer': (
             cs.onErrorContainer,
             cs.errorContainer,
           ),
-          'onInverseSurface/inverseSurface (SnackBar)': (
+          // Every SnackBar and its action (app_theme.dart's snackBarTheme):
+          // the content text on `inverseSurface`, and the action label
+          // (`inversePrimary`) on the same fill.
+          'onInverseSurface/inverseSurface (SnackBar text)': (
             cs.onInverseSurface,
             cs.inverseSurface,
           ),
-          'onSurface/primaryContainer (a selected settings row)': (
-            cs.onSurface,
-            cs.primaryContainer,
+          'inversePrimary/inverseSurface (SnackBar action)': (
+            cs.inversePrimary,
+            cs.inverseSurface,
           ),
+          // A selected `FilterChip`'s label (chipTheme.labelStyle, resolved
+          // selected) and a selected `ChoiceChip`'s (secondaryLabelStyle):
+          // both `card` on the chip's `selectedColor` fill (`onSurface`).
+          'selected chip label (card/onSurface)': (n.card, cs.onSurface),
         };
-        for (final MapEntry(key: name, value: pair)
-            in onContainerPairs.entries) {
+        for (final MapEntry(key: name, value: pair) in onFillPairs.entries) {
           test('$name >= $bodyMin:1', () {
             expect(
               contrastRatio(pair.$1, pair.$2),
@@ -102,160 +131,217 @@ void main() {
           });
         }
 
-        // LOOK-4: an amount/heading accent used as larger, heavier text —
-        // primary, secondary, tertiary and error all appear this way
-        // somewhere (the teal/amber amount, a ticked ingredient, "not
-        // scaled", a real failure) — 3:1 is the WCAG floor for large text.
-        final largeTextColors = <String, Color>{
-          'primary': cs.primary,
-          'secondary': cs.secondary,
-          'tertiary': cs.tertiary,
-          'error': cs.error,
-        };
-        for (final MapEntry(key: textName, value: text)
-            in largeTextColors.entries) {
-          for (final MapEntry(key: surfName, value: surf) in ladder.entries) {
-            test('large text $textName on $surfName >= $largeMin:1', () {
-              expect(contrastRatio(text, surf), greaterThanOrEqualTo(largeMin));
-            });
-          }
-        }
-        test(
-          'inversePrimary/inverseSurface (SnackBar action) >= $largeMin:1',
-          () {
-            expect(
-              contrastRatio(cs.inversePrimary, cs.inverseSurface),
-              greaterThanOrEqualTo(largeMin),
-            );
-          },
-        );
-
-        // LOOK-3: "the boundary of a control or container at least 3:1 (a
-        // fill step alone never makes a card a card)" — outline is every
-        // card/field/chip edge; primary at 2dp is the focus/selection
-        // border.
-        for (final MapEntry(key: surfName, value: surf) in ladder.entries) {
-          test('outline boundary on $surfName >= $boundaryMin:1', () {
-            expect(
-              contrastRatio(cs.outline, surf),
-              greaterThanOrEqualTo(boundaryMin),
-            );
-          });
-          test('primary as a focus/selection border on $surfName '
-              '>= $boundaryMin:1', () {
-            expect(
-              contrastRatio(cs.primary, surf),
-              greaterThanOrEqualTo(boundaryMin),
-            );
-          });
-        }
-
-        // should-fix, platform review: a dialog's own border colour is a
-        // container boundary (LOOK-3's 3:1 floor) same as a card or field —
-        // reads whatever `app_theme.dart` actually put on `DialogThemeData`
-        // instead of assuming it's always `outline`, so a future regression
-        // (Ink's dialog once used `outlineVariant`, 1.68:1 here) fails this
-        // test directly rather than only failing to be caught by it.
-        test('dialog boundary on its own fill >= $boundaryMin:1', () {
-          final shape = wasfatiTheme(style, brightness).dialogTheme.shape;
-          final side = (shape! as OutlinedBorder).side;
+        // LOOK-7: the navigation pill is a fixed dark chrome (light: `ink`;
+        // dark: `sunk`), independent of the app's own brightness — its
+        // inactive and active colours must clear the bar against it either
+        // way.
+        test('nav pill inactive on its fill >= $bodyMin:1', () {
           expect(
-            contrastRatio(side.color, cs.surfaceContainerLow),
+            contrastRatio(decor.navInactive, decor.navFill),
+            greaterThanOrEqualTo(bodyMin),
+          );
+        });
+        test('nav pill active on its fill >= $bodyMin:1', () {
+          expect(
+            contrastRatio(decor.navActive, decor.navFill),
+            greaterThanOrEqualTo(bodyMin),
+          );
+        });
+        // LOOK-7: the selected-tab dot (`nav_pill.dart`'s own
+        // `theme.colorScheme.primary`) painted on the pill's fill — a state
+        // indicator, not body text: $largeMin:1.
+        test('nav dot (accent) on the pill fill >= $largeMin:1', () {
+          expect(
+            contrastRatio(cs.primary, decor.navFill),
+            greaterThanOrEqualTo(largeMin),
+          );
+        });
+
+        // LOOK-3: `cs.error` used directly as body text (the import
+        // screen's failure message, an ingredient-section error line), not
+        // just `onError` on the filled `errorContainer`.
+        for (final surfName in ['page', 'card']) {
+          test('error text on $surfName >= $bodyMin:1', () {
+            expect(
+              contrastRatio(cs.error, surfaces[surfName]!),
+              greaterThanOrEqualTo(bodyMin),
+            );
+          });
+        }
+
+        // LOOK-3: white on a photo card's title scrim — a gradient to at
+        // least 78% near-black (rgba(20,14,10,.78), design spec §1) — at
+        // its worst case, composited over a light (white) photo.
+        test('white on the photo-card title scrim (worst case) '
+            '>= $bodyMin:1', () {
+          const nearBlack = Color(0xFF14140A);
+          final scrimOverWhite = Color.alphaBlend(
+            nearBlack.withValues(alpha: 0.78),
+            Colors.white,
+          );
+          expect(
+            contrastRatio(Colors.white, scrimOverWhite),
+            greaterThanOrEqualTo(bodyMin),
+          );
+        });
+
+        // LOOK-3: an outlined control's boundary against the two surfaces
+        // it can sit on.
+        test('outline boundary on card >= $boundaryMin:1', () {
+          expect(
+            contrastRatio(cs.outline, cs.surfaceContainerLowest),
+            greaterThanOrEqualTo(boundaryMin),
+          );
+        });
+        test('outline boundary on page >= $boundaryMin:1', () {
+          expect(
+            contrastRatio(cs.outline, cs.surface),
             greaterThanOrEqualTo(boundaryMin),
           );
         });
 
-        // LOOK-3: disabled text at least 3:1, never Material's default
-        // 38% alpha (composited exactly as app_theme.dart composites it:
-        // 55% light / 45% dark).
+        // LOOK-3: disabled text at least 3:1, never Material's default 38%
+        // alpha (composited exactly as app_theme.dart composites it: 55%
+        // light / 45% dark, over `card`, where a disabled control sits).
         final disabledAlpha = brightness == Brightness.light ? 0.55 : 0.45;
         final disabledText = Color.alphaBlend(
           cs.onSurface.withValues(alpha: disabledAlpha),
-          cs.surface,
+          cs.surfaceContainerLowest,
         );
-        test('disabled text on surface >= $disabledMin:1', () {
+        test('disabled text on card >= $disabledMin:1', () {
           expect(
-            contrastRatio(disabledText, cs.surface),
+            contrastRatio(disabledText, cs.surfaceContainerLowest),
             greaterThanOrEqualTo(disabledMin),
           );
         });
-        // Documented only for light (design-styles.md: "not M3's 38%,
-        // which composites to 2.38:1 in light and fails") — dark surfaces
-        // have enough headroom that 38% isn't guaranteed to fail there
-        // too, so this illustrative check doesn't overreach into dark.
         if (brightness == Brightness.light) {
           test("Material's own 38% default would fail (why LOOK-3 exists)", () {
             final materialDefault = Color.alphaBlend(
               cs.onSurface.withValues(alpha: 0.38),
-              cs.surface,
+              cs.surfaceContainerLowest,
             );
             expect(
-              contrastRatio(materialDefault, cs.surface),
+              contrastRatio(materialDefault, cs.surfaceContainerLowest),
               lessThan(disabledMin),
             );
           });
         }
 
-        // LOOK-3: a disabled ListTile (Settings' backup rows while a backup
-        // runs) takes its text colour from ThemeData.disabledColor, not
-        // from any colour composited above. This reads the colour the tile
-        // actually paints its title, subtitle and leading icon in, on the
-        // grouped-row fill those rows now sit on (LOOK-6). Unset, it was
-        // Material's 38%: 2.62:1 in Ink light.
-        testWidgets('a disabled ListTile on the grouped-row fill '
-            '>= $disabledMin:1', (tester) async {
-          final theme = wasfatiTheme(style, brightness);
-          final fill = theme.extension<Decor>()!.groupedRowFill;
-          await tester.pumpWidget(
-            MaterialApp(
-              theme: theme,
-              home: Material(
-                color: fill,
-                child: const ListTile(
-                  enabled: false,
-                  leading: Icon(Icons.save_outlined),
-                  title: Text('حفظ نسخة احتياطية'),
-                  subtitle: Text('جارٍ النسخ'),
-                ),
-              ),
-            ),
-          );
-          Color painted(String text) => tester
-              .renderObject<RenderParagraph>(find.text(text))
-              .text
-              .style!
-              .color!;
-          final iconColor = tester
-              .widget<RichText>(
-                find.descendant(
-                  of: find.byIcon(Icons.save_outlined),
-                  matching: find.byType(RichText),
-                ),
-              )
-              .text
-              .style!
-              .color!;
-          for (final color in [
-            painted('حفظ نسخة احتياطية'),
-            painted('جارٍ النسخ'),
-            iconColor,
-          ]) {
-            expect(
-              contrastRatio(Color.alphaBlend(color, fill), fill),
-              greaterThanOrEqualTo(disabledMin),
-            );
-          }
-        });
-
-        // LOOK-3: hint text at full onSurfaceVariant, never faded — checked
-        // against the field fill it actually sits on.
+        // LOOK-3: hint text at full onSurfaceVariant, never faded, on the
+        // field fill it actually sits on (`card`).
         test('hint text (full onSurfaceVariant) on the field fill '
             '>= $bodyMin:1', () {
           expect(
-            contrastRatio(cs.onSurfaceVariant, cs.surfaceContainerLow),
+            contrastRatio(cs.onSurfaceVariant, cs.surfaceContainerLowest),
             greaterThanOrEqualTo(bodyMin),
           );
         });
+
+        // LOOK-3: a checked checkbox's glyph (`checkboxTheme.checkColor`,
+        // `onSecondary`) on its own fill (`secondary`) — a state indicator,
+        // not body text: 3:1 (WCAG 1.4.11).
+        test('checkbox glyph (onSecondary/secondary) >= $boundaryMin:1', () {
+          expect(
+            contrastRatio(cs.onSecondary, cs.secondary),
+            greaterThanOrEqualTo(boundaryMin),
+          );
+        });
+
+        // LOOK-3: the switch's "off" thumb (`switchTheme.thumbColor`,
+        // `outline`) on its track (`sunk`) — a state indicator: 3:1.
+        test('switch off-thumb (outline) on sunk track >= $boundaryMin:1', () {
+          expect(
+            contrastRatio(cs.outline, n.sunk),
+            greaterThanOrEqualTo(boundaryMin),
+          );
+        });
+
+        // LOOK-3: a disabled `FilledButton`'s label (`disabledColor` on
+        // `disabledBackground`, composited exactly as app_theme.dart
+        // composites it) — never Material's default 38%.
+        final disabledOnSunk = Color.alphaBlend(
+          cs.onSurface.withValues(alpha: disabledAlpha),
+          n.sunk,
+        );
+        test('disabled label on disabled fill (filled button) '
+            '>= $disabledMin:1', () {
+          expect(
+            contrastRatio(disabledOnSunk, n.sunk),
+            greaterThanOrEqualTo(disabledMin),
+          );
+        });
+      });
+    }
+  }
+
+  // LOOK-10: the six drawn-cover tints — style/brightness-independent — a
+  // dark tone (the star pattern, the centred letter) on its own light tone,
+  // as large text.
+  group('LOOK-10: cover tints', () {
+    final tints = wasfatiTheme(
+      AppStyle.saffron,
+      Brightness.light,
+    ).extension<Decor>()!.coverTints;
+
+    test('there are six', () {
+      expect(tints, hasLength(6));
+    });
+
+    for (final (i, tint) in tints.indexed) {
+      test('tint $i: the dark tone on its light tone >= $largeMin:1', () {
+        expect(contrastRatio(tint.$2, tint.$1), greaterThanOrEqualTo(largeMin));
+      });
+    }
+
+    test('spread across distinct tints (never all the same colour)', () {
+      expect(tints.map((t) => t.$1).toSet(), hasLength(6));
+    });
+  });
+
+  // LOOK-10: the same six covers in dark — the dark `card` fill with each
+  // tint's lighter tone drawn on it — never measured before: only the
+  // light theme's `coverTints` was read above.
+  group('LOOK-10: cover tints (dark)', () {
+    final darkTints = wasfatiTheme(
+      AppStyle.saffron,
+      Brightness.dark,
+    ).extension<Decor>()!.coverTints;
+
+    test('there are six', () {
+      expect(darkTints, hasLength(6));
+    });
+
+    for (final (i, tint) in darkTints.indexed) {
+      test('tint $i: its tone on the dark card fill >= $largeMin:1', () {
+        expect(contrastRatio(tint.$2, tint.$1), greaterThanOrEqualTo(largeMin));
+      });
+    }
+  });
+
+  // LOOK-3: not just the computed pair, but the colour Flutter actually
+  // paints — a disabled `ListTile` (used across Settings) with the real
+  // theme, read back from its rendered `RenderParagraph`.
+  for (final style in AppStyle.values) {
+    for (final brightness in Brightness.values) {
+      testWidgets('a disabled ListTile paints its title at $disabledMin:1 '
+          '(${style.name}/${brightness.name})', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: wasfatiTheme(style, brightness),
+            home: const Scaffold(
+              body: ListTile(enabled: false, title: Text('عنوان')),
+            ),
+          ),
+        );
+        final paragraph = tester.renderObject<RenderParagraph>(
+          find.text('عنوان'),
+        );
+        final painted = paragraph.text.style!.color!;
+        final cs = wasfatiColorScheme(style, brightness);
+        expect(
+          contrastRatio(painted, cs.surfaceContainerLowest),
+          greaterThanOrEqualTo(disabledMin),
+        );
       });
     }
   }

@@ -94,6 +94,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get recipesAdd => 'أضف وصفة';
 
   @override
+  String get addSheetSubtitle => 'من أي مكان وجدتها، وبعربية سليمة.';
+
+  @override
   String recipesCount(int count, String shown) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -579,6 +582,21 @@ class AppLocalizationsAr extends AppLocalizations {
   String get importTitle => 'استيراد من رابط';
 
   @override
+  String get addSheetPhoto => 'من صورة';
+
+  @override
+  String get addSheetLinkDesc => 'فتافيت، كوكباد، تيك توك…';
+
+  @override
+  String get addSheetPhotoDesc => 'كتاب طبخ أو ورقة بخط اليد';
+
+  @override
+  String get addSheetPasteText => 'الصق نصًا';
+
+  @override
+  String get addSheetPasteDesc => 'وصف منشور أو رسالة';
+
+  @override
   String get importHint => 'الصق رابط الوصفة';
 
   @override
@@ -609,6 +627,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get addByHand => 'أضفها بنفسك';
+
+  @override
+  String get addSheetByHandDesc => 'اكتب وصفتك بطريقتك';
 
   @override
   String get duplicateTitle => 'محفوظة مسبقًا';
@@ -1425,4 +1446,16 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsAdPrivacy => 'خيارات الخصوصية في الإعلانات';
+
+  @override
+  String get addSheetQuotaLabel => 'الاستيراد الذكي';
+
+  @override
+  String addSheetQuotaCount(String shown, String quota) {
+    return '$shown من $quota متبقية';
+  }
+
+  @override
+  String get addSheetQuotaCaption =>
+      'تتجدد في الأول من كل شهر · استيراد صفحات المواقع يبقى مجانيًا وبلا حدود.';
 }
